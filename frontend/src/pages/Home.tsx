@@ -22,7 +22,7 @@ export function HomePage() {
 
           <section aria-label="Тестовые профили" className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {TEST_PROFILES.map((profile) => (
-              <ProfileCard key={profile.id} profile={profile} />
+              <ProfileCard key={profile.name} profile={profile} />
             ))}
             <AddProfileButton />
           </section>

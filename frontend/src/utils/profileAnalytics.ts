@@ -1,13 +1,13 @@
-import type { PurchaseRecord } from '@/types/profile.type'
+import type { OwnAd, PurchasedViewedAd, SoldOwnAd, ViewedAd } from '@/types/profile.type'
 
-export function getAnnualSpending(purchases: PurchaseRecord[]) {
-  return purchases.reduce((total, purchase) => total + purchase.price, 0)
+export function getPurchasedAds(views: ViewedAd[]): PurchasedViewedAd[] {
+  return views.filter((view): view is PurchasedViewedAd => view.isPurchased)
 }
 
-export function getLargestPurchase(purchases: PurchaseRecord[]) {
-  return purchases.reduce((largest, purchase) => (purchase.price > largest.price ? purchase : largest))
+export function getSoldAds(ownAds: OwnAd[]): SoldOwnAd[] {
+  return ownAds.filter((ad): ad is SoldOwnAd => ad.isSold)
 }
 
-export function getSmallestPurchase(purchases: PurchaseRecord[]) {
-  return purchases.reduce((smallest, purchase) => (purchase.price < smallest.price ? purchase : smallest))
+export function getTotalViewCount(views: ViewedAd[]) {
+  return views.reduce((total, view) => total + view.viewCount, 0)
 }

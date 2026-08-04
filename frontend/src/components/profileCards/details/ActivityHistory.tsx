@@ -1,48 +1,41 @@
-import { ChevronDown, Eye, ShoppingBag, Tag } from 'lucide-react'
+import { ChevronDown, ShoppingBag, Tag } from 'lucide-react'
 
 import type { ReactNode } from 'react'
 
-import type { TestProfile } from '@/types/profile.type'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { formatDate, formatDateTime } from '@/utils/formatterDate'
+import type { TestProfile } from '@/types/profile.type'
+import { formatDate } from '@/utils/formatterDate'
 import { formatCurrency } from '@/utils/formatterNumber'
+import { getPurchasedAds, getSoldAds } from '@/utils/profileAnalytics'
 
 interface ActivityHistoryProps {
   profile: TestProfile
 }
 
 export function ActivityHistory({ profile }: ActivityHistoryProps) {
+  const purchases = getPurchasedAds(profile.views)
+  const sales = getSoldAds(profile.ownAds)
+
   return (
     <div className="space-y-6">
-      <ActivitySection icon={ShoppingBag} title="Все покупки" count={profile.purchases.length}>
-        {profile.purchases.map((purchase) => (
+      <ActivitySection icon={ShoppingBag} title="Все покупки" count={purchases.length}>
+        {purchases.map((purchase) => (
           <ActivityRow
-            key={`${purchase.title}-${purchase.date}`}
-            meta={`${purchase.category} · ${formatDate(purchase.date)}`}
+            key={`${purchase.title}-${purchase.purchasedAt}`}
+            meta={`${purchase.category} · ${formatDate(purchase.purchasedAt)}`}
             title={purchase.title}
             value={formatCurrency(purchase.price)}
           />
         ))}
       </ActivitySection>
 
-      <ActivitySection icon={Tag} title="Все продажи" count={profile.sales.length}>
-        {profile.sales.map((sale) => (
+      <ActivitySection icon={Tag} title="Все продажи" count={sales.length}>
+        {sales.map((sale) => (
           <ActivityRow
-            key={`${sale.title}-${sale.date}`}
-            meta={`${sale.category} · ${formatDate(sale.date)} · ${sale.inquiriesCount} отклика`}
+            key={`${sale.title}-${sale.soldAt}`}
+            meta={`${sale.category} · ${formatDate(sale.soldAt)} · ${sale.viewCount} просмотров`}
             title={sale.title}
             value={formatCurrency(sale.price)}
-          />
-        ))}
-      </ActivitySection>
-
-      <ActivitySection icon={Eye} title="Просмотры объявлений" count={profile.listingViews.length}>
-        {profile.listingViews.map((view) => (
-          <ActivityRow
-            key={`${view.title}-${view.viewedAt}`}
-            meta={`${view.category} · ${view.likes} лайков · ${view.viewCount} просмотров`}
-            title={view.title}
-            value={formatDateTime(view.viewedAt)}
           />
         ))}
       </ActivitySection>

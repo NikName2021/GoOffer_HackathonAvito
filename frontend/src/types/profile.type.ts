@@ -1,43 +1,77 @@
-export interface PurchaseRecord {
+export interface Review {
+  comment: string
+  createdAt: string
+  rating: number
+}
+
+export interface AdBase {
   title: string
   category: string
+  subcategory?: string
+  imageUrl?: string
   price: number
-  date: string
-}
-
-export interface SaleRecord extends PurchaseRecord {
-  inquiriesCount: number
-}
-
-export interface ListingViewRecord {
-  title: string
-  category: string
-  likes: number
-  viewedAt: string
   viewCount: number
 }
 
-export interface ProfileMetrics {
-  activeDays: number
-  city: string
-  createdListings: number
-  favoriteListings: number
-  likes: number
-  rating: number
-  reviews: number
+type SaleState =
+  | {
+      isSold: false
+      soldAt?: never
+      review?: never
+    }
+  | {
+      isSold: true
+      soldAt: string
+      review?: Review
+    }
+
+type FavoriteState =
+  | {
+      isFavorite: false
+      favoritedAt?: never
+    }
+  | {
+      isFavorite: true
+      favoritedAt: string
+    }
+
+type PurchaseState =
+  | {
+      isPurchased: false
+      purchasedAt?: never
+    }
+  | {
+      isPurchased: true
+      purchasedAt: string
+    }
+
+export type OwnAd = AdBase &
+  SaleState & {
+    isArchived: boolean
+  }
+
+export type ViewedAd = AdBase &
+  FavoriteState &
+  PurchaseState & {
+    lastViewedAt: string
+  }
+
+export type SoldOwnAd = OwnAd & {
+  isSold: true
+  soldAt: string
+}
+
+export type PurchasedViewedAd = ViewedAd & {
+  isPurchased: true
+  purchasedAt: string
 }
 
 export interface TestProfile {
-  id: number
   name: string
   joinedAt: string
-  avatarUrl: string
-  avatarFallback: string
-  accentColor: string
+  avatarUrl?: string
+  likes: number
   chatsCount: number
-  favoriteCategory: string
-  metrics: ProfileMetrics
-  purchases: PurchaseRecord[]
-  sales: SaleRecord[]
-  listingViews: ListingViewRecord[]
+  views: ViewedAd[]
+  ownAds: OwnAd[]
 }
