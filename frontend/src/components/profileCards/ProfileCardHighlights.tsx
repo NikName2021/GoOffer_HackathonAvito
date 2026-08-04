@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Heart, MessageCircle, Sparkles } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, Sparkles } from 'lucide-react'
 
 import type { ProfileHighlightsResponse, ProfileStatsResponse } from '@/types/profileResponse.type'
 import { formatCurrency } from '@/utils/formatterNumber'
@@ -47,17 +47,6 @@ export function ProfileCardHighlights({ highlights, stats }: ProfileCardHighligh
           title={highlights.mostExpensiveSale?.title ?? 'Пока нет'}
           value={highlights.mostExpensiveSale ? formatCurrency(highlights.mostExpensiveSale.price) : '—'}
         />
-      </div>
-
-      <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#eceeef] pt-3 text-[11px] text-[#6f7377]">
-        <span className="flex min-w-0 items-center gap-1.5">
-          <Heart aria-hidden="true" className="size-3.5 shrink-0 text-[#00aaff]" />
-          <span className="truncate">{highlights.favoriteCategory ?? 'Любимая категория ещё не определена'}</span>
-        </span>
-        <span className="flex shrink-0 items-center gap-1.5">
-          <MessageCircle aria-hidden="true" className="size-3.5" />
-          {stats.chatsCount}
-        </span>
       </div>
     </div>
   )
