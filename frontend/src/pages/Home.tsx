@@ -1,9 +1,22 @@
+import { useState } from 'react'
+
 import { AddProfileButton } from '@/components/profileCards/AddProfileButton'
+import { CreateProfileDialog } from '@/components/profileCards/createProfile/CreateProfileDialog'
 import { ProfileCard } from '@/components/profileCards/ProfileCard'
 import { Sidebar } from '@/components/sidebar/Sidebar'
+import { createMockProfileResponse } from '@/constants/createMockProfileResponse'
 import { TEST_PROFILES } from '@/constants/testProfiles'
+import type { CreateProfileRequest } from '@/types/profileRequest.type'
+import type { GetProfileResponse } from '@/types/profileResponse.type'
 
 export function HomePage() {
+  const [profiles, setProfiles] = useState<GetProfileResponse[]>(TEST_PROFILES)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
+  function handleCreateProfile(profile: CreateProfileRequest) {
+    setProfiles((current) => [...current, createMockProfileResponse(profile)])
+  }
+
   return (
     <div className="flex min-h-dvh bg-white text-[#1f1f1f]">
       <Sidebar />
@@ -21,13 +34,19 @@ export function HomePage() {
           </header>
 
           <section aria-label="Тестовые профили" className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {TEST_PROFILES.map((profile) => (
-              <ProfileCard key={profile.name} profile={profile} />
+            {profiles.map((profile) => (
+              <ProfileCard key={`${profile.name}-${profile.joinedAt}`} profile={profile} />
             ))}
-            <AddProfileButton />
+            <AddProfileButton onClick={() => setIsCreateDialogOpen(true)} />
           </section>
         </div>
       </main>
+
+      <CreateProfileDialog
+        onCreate={handleCreateProfile}
+        onOpenChange={setIsCreateDialogOpen}
+        open={isCreateDialogOpen}
+      />
     </div>
   )
 }

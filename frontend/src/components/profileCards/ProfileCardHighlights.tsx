@@ -1,7 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Sparkles } from 'lucide-react'
 
 import type { ProfileHighlightsResponse, ProfileStatsResponse } from '@/types/profileResponse.type'
-import { formatCurrency } from '@/utils/formatterNumber'
+import { formatCount, formatCurrency } from '@/utils/formatterNumber'
 
 interface ProfileCardHighlightsProps {
   highlights: ProfileHighlightsResponse
@@ -16,7 +16,9 @@ export function ProfileCardHighlights({ highlights, stats }: ProfileCardHighligh
           <Sparkles aria-hidden="true" className="size-3.5 text-[#00aaff]" />
           Итоги 2026 года
         </p>
-        <span className="text-[11px] font-medium text-[#8a8d91]">{stats.purchasesCount + stats.salesCount} сделок</span>
+        <span className="text-[11px] font-medium text-[#8a8d91]">
+          {formatCount(stats.purchasesCount + stats.salesCount, ['сделка', 'сделки', 'сделок'])}
+        </span>
       </div>
 
       <div className="mt-2.5 grid grid-cols-2 gap-2">

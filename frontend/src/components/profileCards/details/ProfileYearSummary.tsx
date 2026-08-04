@@ -2,7 +2,7 @@ import { ArrowDownRight, ArrowUpRight, Eye, Heart, MessageCircle, ShoppingBag, S
 
 import { DealMetric, SmallMetric, TopActivity } from './profileYearSummary/SummaryMetrics'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
-import { formatCurrency } from '@/utils/formatterNumber'
+import { formatCount, formatCurrency } from '@/utils/formatterNumber'
 
 interface ProfileYearSummaryProps {
   profile: GetProfileResponse
@@ -19,7 +19,7 @@ export function ProfileYearSummary({ profile }: ProfileYearSummaryProps) {
           <p className="mt-0.5 text-xs text-[#8a8d91]">Активность пользователя за год</p>
         </div>
         <span className="rounded-full bg-[#f2f3f5] px-2.5 py-1 text-xs font-semibold text-[#6f7377]">
-          {stats.purchasesCount + stats.salesCount} сделок
+          {formatCount(stats.purchasesCount + stats.salesCount, ['сделка', 'сделки', 'сделок'])}
         </span>
       </div>
 
