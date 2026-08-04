@@ -110,13 +110,41 @@ API эндпоинты (уже спроектированы):
 ============================================================================================================
 Место для Backend-2:
 
+[ГОТОВО] BACKEND 2
+--------------------------------------------------------------------------
+Зона ответственности: миграции, PostgreSQL-репозитории, Redis-кэш
 
+Что сделано:
+  - migrations/001_init.*           — таблицы users, categories, actions, recaps
+  - migrations/002_seed_*           — 4 тестовых профиля с actions за 2025
+  - repository/postgres/            — UserRepository, ActionRepository, RecapRepository
+  - repository/redis/recap_cache.go — реализация ports.Cache (JSON + TTL)
+  - internal/config/config.go       — загрузка DSN для PostgreSQL и Redis
+  - pkg/errors/errors.go            — ErrNotFound и др.
+  - go.mod                          — исправлен module path + зависимости pgx, redis
 
+UUID тестовых профилей:
+  a0000001-0000-4000-8000-000000000001 — Анна (shopaholic, enthusiast)
+  a0000002-0000-4000-8000-000000000002 — Михаил (seller_master, social_butterfly)
+  a0000003-0000-4000-8000-000000000003 — Елена (curious, veteran)
+  a0000004-0000-4000-8000-000000000004 — Даниил (explorer)
 
+Запуск миграций:
+  docker compose --env-file .env up -d postgres redis
+  PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/001_init.up.sql
+  PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/002_seed_test_profiles.up.sql
 
+Интеграционный тест:
+  DB_PORT=5446 go test ./tests/integration/... -v
 
+Для Backend 3 (подключение репозиториев):
+  pool, _ := postgres.NewPool(ctx, cfg.Database.DSN())
+  userRepo := postgres.NewUserRepository(pool)
+  actionRepo := postgres.NewActionRepository(pool)
+  recapRepo := postgres.NewRecapRepository(pool)
+  cache, _ := redisrepo.NewCache(cfg.Redis.URL)
 
-
+============================================================================================================
 
 
 
