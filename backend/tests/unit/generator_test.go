@@ -3,13 +3,12 @@ package unit
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"testing"
 	"time"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/usecase/generator"
 	"github.com/google/uuid"
+	"gooffer/backend/internal/domain"
+	"gooffer/backend/internal/usecase/generator"
 )
 
 type mockUserRepo struct {
@@ -17,7 +16,7 @@ type mockUserRepo struct {
 	err   error // добавляем поддержку ошибок
 }
 
-func (m *mockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
+func (m *mockUserRepo) GetByID(ctx context.Context, _ uuid.UUID, id uuid.UUID) (*domain.User, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -27,7 +26,7 @@ func (m *mockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.User,
 	return nil, errors.New("user not found")
 }
 
-func (m *mockUserRepo) ListProfiles(ctx context.Context) ([]domain.User, error) {
+func (m *mockUserRepo) ListProfiles(ctx context.Context, _ uuid.UUID) ([]domain.User, error) {
 	var list []domain.User
 	for _, u := range m.users {
 		list = append(list, u)
@@ -76,48 +75,9 @@ func (m *mockRecapRepo) GetByUserAndYear(ctx context.Context, userID uuid.UUID, 
 	return nil, nil
 }
 
-type mockCache struct {
-	data map[string]interface{}
-	err  error
-}
-
-func (m *mockCache) Get(ctx context.Context, key string, dest any) (bool, error) {
-	if m.err != nil {
-		return false, m.err
-	}
-	if val, ok := m.data[key]; ok {
-		switch d := dest.(type) {
-		case *domain.Recap:
-			if v, ok := val.(domain.Recap); ok {
-				*d = v
-			}
-		case *[]domain.User:
-			if v, ok := val.([]domain.User); ok {
-				*d = v
-			}
-		}
-		return true, nil
-	}
-	return false, nil
-}
-
-func (m *mockCache) Set(ctx context.Context, key string, value any, ttl time.Duration) error {
-	if m.err != nil {
-		return m.err
-	}
-	m.data[key] = value
-	return nil
-}
-
-func (m *mockCache) Delete(ctx context.Context, key string) error {
-	if m.err != nil {
-		return m.err
-	}
-	delete(m.data, key)
-	return nil
-}
-
 // ТЕСТЫ
+
+var generatorAccountID = uuid.MustParse("99999999-9999-4999-8999-999999999999")
 
 func TestGenerator_Execute_Success(t *testing.T) {
 	userID := uuid.New()
@@ -140,12 +100,10 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
-	cache := &mockCache{data: make(map[string]interface{})}
-	logger := slog.Default()
 
-	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
+	gen := generator.New(userRepo, actionRepo, recapRepo)
 
-	recap, err := gen.Execute(context.Background(), userID, year)
+	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -176,12 +134,10 @@ func TestGenerator_Execute_NoActions(t *testing.T) {
 	}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
-	cache := &mockCache{data: make(map[string]interface{})}
-	logger := slog.Default()
 
-	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
+	gen := generator.New(userRepo, actionRepo, recapRepo)
 
-	recap, err := gen.Execute(context.Background(), userID, year)
+	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -205,12 +161,10 @@ func TestGenerator_UserNotFound(t *testing.T) {
 
 	actionRepo := &mockActionRepo{actions: make(map[string][]domain.Action)}
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
-	cache := &mockCache{data: make(map[string]interface{})}
-	logger := slog.Default()
 
-	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
+	gen := generator.New(userRepo, actionRepo, recapRepo)
 
-	_, err := gen.Execute(context.Background(), userID, year)
+	_, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -240,12 +194,10 @@ func TestCalculateMetrics(t *testing.T) {
 	}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
-	cache := &mockCache{data: make(map[string]interface{})}
-	logger := slog.Default()
 
-	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
+	gen := generator.New(userRepo, actionRepo, recapRepo)
 
-	recap, err := gen.Execute(context.Background(), userID, 2025)
+	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, 2025)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -311,12 +263,10 @@ func TestAssignAchievements(t *testing.T) {
 	}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
-	cache := &mockCache{data: make(map[string]interface{})}
-	logger := slog.Default()
 
-	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
+	gen := generator.New(userRepo, actionRepo, recapRepo)
 
-	recap, err := gen.Execute(context.Background(), userID, year)
+	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)

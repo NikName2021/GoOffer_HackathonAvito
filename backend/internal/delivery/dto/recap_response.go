@@ -3,8 +3,8 @@ package dto
 import (
 	"time"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
 	"github.com/google/uuid"
+	"gooffer/backend/internal/domain"
 )
 
 type CategoryStatDTO struct {
@@ -23,6 +23,19 @@ type AchievementDTO struct {
 type RecapResponse struct {
 	ID             uuid.UUID         `json:"id"`
 	UserID         uuid.UUID         `json:"user_id"`
+	Year           int               `json:"year"`
+	TotalViews     int               `json:"total_views"`
+	TotalMessages  int               `json:"total_messages"`
+	TotalFavorites int               `json:"total_favorites"`
+	TotalPurchases int               `json:"total_purchases"`
+	TotalSales     int               `json:"total_sales"`
+	TopCategories  []CategoryStatDTO `json:"top_categories"`
+	Achievements   []AchievementDTO  `json:"achievements"`
+	ActivityDays   int               `json:"activity_days"`
+	GeneratedAt    time.Time         `json:"generated_at"`
+}
+
+type ShareRecapResponse struct {
 	Year           int               `json:"year"`
 	TotalViews     int               `json:"total_views"`
 	TotalMessages  int               `json:"total_messages"`
@@ -68,5 +81,21 @@ func ToRecapResponse(recap *domain.Recap) RecapResponse {
 		Achievements:   achievements,
 		ActivityDays:   recap.ActivityDays,
 		GeneratedAt:    recap.GeneratedAt,
+	}
+}
+
+func ToShareRecapResponse(recap *domain.Recap) ShareRecapResponse {
+	full := ToRecapResponse(recap)
+	return ShareRecapResponse{
+		Year:           full.Year,
+		TotalViews:     full.TotalViews,
+		TotalMessages:  full.TotalMessages,
+		TotalFavorites: full.TotalFavorites,
+		TotalPurchases: full.TotalPurchases,
+		TotalSales:     full.TotalSales,
+		TopCategories:  full.TopCategories,
+		Achievements:   full.Achievements,
+		ActivityDays:   full.ActivityDays,
+		GeneratedAt:    full.GeneratedAt,
 	}
 }

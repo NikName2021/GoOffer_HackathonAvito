@@ -3,8 +3,8 @@ package unit
 import (
 	"testing"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/usecase/generator"
+	"gooffer/backend/internal/domain"
+	"gooffer/backend/internal/usecase/generator"
 )
 
 func TestAssignAchievements_Curious(t *testing.T) {

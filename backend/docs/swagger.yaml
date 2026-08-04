@@ -1,0 +1,600 @@
+openapi: 3.0.3
+info:
+  title: Avito Recap API
+  version: 1.0.0
+  description: API аккаунтов, пользовательских профилей и персональных «Итогов года».
+servers:
+  - url: /
+tags:
+  - name: System
+  - name: Auth
+  - name: Profiles
+  - name: Recap
+paths:
+  /health:
+    get:
+      tags: [System]
+      summary: Проверка доступности сервиса
+      operationId: health
+      responses:
+        "200":
+          description: Сервис работает
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Зарегистрировать аккаунт
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "201":
+          description: Аккаунт создан, сессия установлена в HttpOnly-cookie
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: Войти по логину и паролю
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Вход выполнен, сессия установлена в HttpOnly-cookie
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Завершить текущую сессию
+      operationId: logout
+      responses:
+        "204":
+          description: Сессия завершена
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: Получить текущий аккаунт
+      operationId: currentAccount
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Текущий аккаунт
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/profiles:
+    get:
+      tags: [Profiles]
+      summary: Получить профили текущего аккаунта
+      operationId: listProfiles
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Список профилей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Profile"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/profiles/{id}:
+    get:
+      tags: [Profiles]
+      summary: Получить тестовый профиль по ID
+      operationId: getProfile
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProfileID"
+      responses:
+        "200":
+          description: Профиль
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/recap/generate:
+    post:
+      tags: [Recap]
+      summary: Сгенерировать итоги года
+      operationId: generateRecap
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateRecapRequest"
+      responses:
+        "201":
+          description: Итоги сформированы и сохранены
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recap"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/recap/{user_id}/{year}:
+    get:
+      tags: [Recap]
+      summary: Получить ранее сгенерированные итоги
+      operationId: getRecap
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+        - $ref: "#/components/parameters/Year"
+      responses:
+        "200":
+          description: Полные личные итоги
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Recap"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/recap/{user_id}/{year}/share:
+    get:
+      tags: [Recap]
+      summary: Получить безопасную share-card
+      description: Ответ содержит только агрегаты и не раскрывает ID пользователя или recap. Доступ разрешён владельцу профиля.
+      operationId: getShareRecap
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+        - $ref: "#/components/parameters/Year"
+      responses:
+        "200":
+          description: Данные публичной карточки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShareRecap"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: gooffer_session
+  parameters:
+    ProfileID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    UserID:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Year:
+      name: year
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 2000
+        example: 2025
+  schemas:
+    Credentials:
+      type: object
+      additionalProperties: false
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          minLength: 3
+          maxLength: 32
+          pattern: "^[\\p{L}\\p{N}_.-]+$"
+          example: nikita
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+          writeOnly: true
+          example: avito2026
+    Account:
+      type: object
+      required: [id, login, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        login:
+          type: string
+          example: nikita
+        createdAt:
+          type: string
+          format: date-time
+    Profile:
+      type: object
+      required:
+        - id
+        - name
+        - joinedAt
+        - avatarUrl
+        - avatarFallback
+        - accentColor
+        - profileType
+        - chatsCount
+        - favoriteCategory
+        - metrics
+        - purchases
+        - sales
+        - listingViews
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Анна Смирнова
+        joinedAt:
+          type: string
+          format: date
+          example: "2018-04-14"
+        avatarUrl:
+          type: string
+          format: uri
+          example: https://example.com/avatar.jpg
+        avatarFallback:
+          type: string
+          example: АС
+        accentColor:
+          type: string
+          example: "#00aaff"
+        profileType:
+          type: string
+          example: mixed
+        chatsCount:
+          type: integer
+          minimum: 0
+          example: 43
+        favoriteCategory:
+          type: string
+          example: Электроника
+        metrics:
+          $ref: "#/components/schemas/ProfileMetrics"
+        purchases:
+          type: array
+          items:
+            $ref: "#/components/schemas/PurchaseRecord"
+        sales:
+          type: array
+          items:
+            $ref: "#/components/schemas/SaleRecord"
+        listingViews:
+          type: array
+          items:
+            $ref: "#/components/schemas/ListingViewRecord"
+    ProfileMetrics:
+      type: object
+      required: [activeDays, city, createdListings, favoriteListings, likes, rating, reviews]
+      properties:
+        activeDays:
+          type: integer
+          minimum: 0
+          maximum: 366
+          example: 163
+        city:
+          type: string
+          example: Москва
+        createdListings:
+          type: integer
+          minimum: 0
+          example: 25
+        favoriteListings:
+          type: integer
+          minimum: 0
+          example: 32
+        likes:
+          type: integer
+          minimum: 0
+          example: 148
+        rating:
+          type: number
+          format: double
+          minimum: 0
+          maximum: 5
+          example: 4.9
+        reviews:
+          type: integer
+          minimum: 0
+          example: 17
+    PurchaseRecord:
+      type: object
+      required: [title, category, price, date]
+      properties:
+        title:
+          type: string
+          example: Смартфон
+        category:
+          type: string
+          example: Электроника
+        price:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 118000
+        date:
+          type: string
+          format: date
+          example: "2026-03-12"
+    SaleRecord:
+      allOf:
+        - $ref: "#/components/schemas/PurchaseRecord"
+        - type: object
+          required: [inquiriesCount]
+          properties:
+            inquiriesCount:
+              type: integer
+              minimum: 0
+              example: 14
+    ListingViewRecord:
+      type: object
+      required: [title, category, likes, viewedAt, viewCount]
+      properties:
+        title:
+          type: string
+          example: Ноутбук для работы
+        category:
+          type: string
+          example: Ноутбуки
+        likes:
+          type: integer
+          minimum: 0
+          example: 12
+        viewedAt:
+          type: string
+          format: date-time
+          example: "2026-07-10T20:15"
+        viewCount:
+          type: integer
+          minimum: 0
+          example: 7
+    GenerateRecapRequest:
+      type: object
+      additionalProperties: false
+      required: [user_id, year]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        year:
+          type: integer
+          minimum: 2000
+          example: 2025
+    CategoryStat:
+      type: object
+      required: [category, count]
+      properties:
+        category:
+          type: string
+          example: Электроника
+        count:
+          type: integer
+          minimum: 0
+          example: 300
+    Achievement:
+      type: object
+      required: [slug, title, description, icon, category]
+      properties:
+        slug:
+          type: string
+          example: curious
+        title:
+          type: string
+          example: Любопытный
+        description:
+          type: string
+          example: Просмотрел не менее 500 объявлений за год
+        icon:
+          type: string
+          example: 👀
+        category:
+          type: string
+          example: views
+    RecapMetrics:
+      type: object
+      required:
+        - year
+        - total_views
+        - total_messages
+        - total_favorites
+        - total_purchases
+        - total_sales
+        - top_categories
+        - achievements
+        - activity_days
+        - generated_at
+      properties:
+        year:
+          type: integer
+          example: 2025
+        total_views:
+          type: integer
+          minimum: 0
+          example: 1500
+        total_messages:
+          type: integer
+          minimum: 0
+          example: 50
+        total_favorites:
+          type: integer
+          minimum: 0
+          example: 100
+        total_purchases:
+          type: integer
+          minimum: 0
+          example: 10
+        total_sales:
+          type: integer
+          minimum: 0
+          example: 5
+        top_categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/CategoryStat"
+        achievements:
+          type: array
+          items:
+            $ref: "#/components/schemas/Achievement"
+        activity_days:
+          type: integer
+          minimum: 0
+          maximum: 366
+          example: 300
+        generated_at:
+          type: string
+          format: date-time
+    Recap:
+      allOf:
+        - $ref: "#/components/schemas/RecapMetrics"
+        - type: object
+          required: [id, user_id]
+          properties:
+            id:
+              type: string
+              format: uuid
+            user_id:
+              type: string
+              format: uuid
+    ShareRecap:
+      $ref: "#/components/schemas/RecapMetrics"
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: invalid_request
+            message:
+              type: string
+              example: request body must be valid JSON with user_id and year
+            request_id:
+              type: string
+  responses:
+    BadRequest:
+      description: Некорректные параметры запроса
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Требуется действующая сессия
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Conflict:
+      description: Логин уже занят
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Внутренняя ошибка сервиса
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"

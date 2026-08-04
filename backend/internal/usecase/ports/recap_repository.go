@@ -3,8 +3,8 @@ package ports
 import (
 	"context"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
 	"github.com/google/uuid"
+	"gooffer/backend/internal/domain"
 )
 
 type RecapRepository interface {

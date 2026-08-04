@@ -2,55 +2,106 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
+	"gooffer/backend/internal/config"
+	"gooffer/backend/internal/repository/postgres"
+	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/auth"
+	"gooffer/backend/internal/usecase/generator"
+	"gooffer/backend/internal/usecase/profile"
+	"gooffer/backend/migrations"
 )
 
-const defaultPort = "8000"
-
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
-
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", healthHandler)
-
-	server := &http.Server{
-		Addr:              ":" + port,
-		Handler:           mux,
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	shutdownCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
-
-	go func() {
-		<-shutdownCtx.Done()
-
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if err := server.Shutdown(ctx); err != nil {
-			log.Printf("server shutdown: %v", err)
-		}
-	}()
-
-	log.Printf("backend is listening on :%s", port)
-	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		log.Fatalf("server stopped: %v", err)
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}))
+	if err := run(logger); err != nil {
+		logger.Error("application stopped", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 }
 
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(map[string]string{"status": "ok"}); err != nil {
-		log.Printf("write health response: %v", err)
+func run(logger *slog.Logger) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+
+	startupCtx, cancelStartup := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancelStartup()
+
+	poolConfig, err := pgxpool.ParseConfig(cfg.DatabaseURL())
+	if err != nil {
+		return fmt.Errorf("parse database config: %w", err)
+	}
+	database, err := pgxpool.NewWithConfig(startupCtx, poolConfig)
+	if err != nil {
+		return fmt.Errorf("connect database: %w", err)
+	}
+	defer database.Close()
+	if err := database.Ping(startupCtx); err != nil {
+		return fmt.Errorf("ping database: %w", err)
+	}
+	if err := migrations.Apply(startupCtx, database); err != nil {
+		return fmt.Errorf("apply database migrations: %w", err)
+	}
+
+	userRepository := postgres.NewUserRepository(database)
+	authRepository := postgres.NewAuthRepository(database)
+	actionRepository := postgres.NewActionRepository(database)
+	recapRepository := postgres.NewRecapRepository(database)
+	profileService := profile.New(logger, userRepository)
+	authService := auth.New(authRepository, cfg.SessionTTL)
+	recapGenerator := generator.New(
+		userRepository,
+		actionRepository,
+		recapRepository,
+	)
+
+	httpServer := server.New(cfg.HTTPAddress(), server.Dependencies{
+		Auth:           authService,
+		Profiles:       profileService,
+		RecapGenerator: recapGenerator,
+		Recaps:         recapRepository,
+	}, server.Options{
+		Logger:         logger,
+		AllowedOrigins: cfg.AllowedOrigins,
+		ReadTimeout:    cfg.ReadTimeout,
+		WriteTimeout:   cfg.WriteTimeout,
+		IdleTimeout:    cfg.IdleTimeout,
+		CookieSecure:   cfg.CookieSecure,
+	})
+
+	shutdownContext, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	serverErrors := make(chan error, 1)
+	go func() {
+		logger.Info("backend started", slog.String("address", cfg.HTTPAddress()))
+		serverErrors <- httpServer.ListenAndServe()
+	}()
+
+	select {
+	case err := <-serverErrors:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("serve HTTP: %w", err)
+		}
+		return nil
+	case <-shutdownContext.Done():
+		ctx, cancel := context.WithTimeout(context.Background(), cfg.ShutdownTimeout)
+		defer cancel()
+		if err := httpServer.Shutdown(ctx); err != nil {
+			return fmt.Errorf("shutdown HTTP server: %w", err)
+		}
+		logger.Info("backend stopped gracefully")
+		return nil
 	}
 }

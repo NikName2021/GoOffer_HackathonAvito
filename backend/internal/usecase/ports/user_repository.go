@@ -3,11 +3,11 @@ package ports
 import (
 	"context"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
 	"github.com/google/uuid"
+	"gooffer/backend/internal/domain"
 )
 
 type UserRepository interface {
-	GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error)
-	ListProfiles(ctx context.Context) ([]domain.User, error)
+	GetByID(ctx context.Context, accountID, id uuid.UUID) (*domain.User, error)
+	ListProfiles(ctx context.Context, accountID uuid.UUID) ([]domain.User, error)
 }

@@ -3,7 +3,7 @@ package generator
 import (
 	"sort"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
+	"gooffer/backend/internal/domain"
 )
 
 type UserMetrics struct {
@@ -56,6 +56,9 @@ func calculateMetrics(actions []domain.Action) *UserMetrics {
 		cats = append(cats, catCount{name, count})
 	}
 	sort.Slice(cats, func(i, j int) bool {
+		if cats[i].count == cats[j].count {
+			return cats[i].name < cats[j].name
+		}
 		return cats[i].count > cats[j].count
 	})
 
