@@ -40,36 +40,45 @@ type fakeApplication struct {
 
 func newFakeApplication() *fakeApplication {
 	user := domain.User{
-		ID:               testUserID,
-		Name:             "Анна Смирнова",
-		Avatar:           "https://example.com/anna.jpg",
-		AvatarFallback:   "АС",
-		AccentColor:      "#00aaff",
-		ProfileType:      "mixed",
-		RegisteredAt:     time.Date(2018, time.April, 14, 0, 0, 0, 0, time.UTC),
-		ChatsCount:       43,
-		FavoriteCategory: "Электроника",
-		Metrics: domain.ProfileMetrics{
-			ActiveDays:       163,
-			City:             "Москва",
-			CreatedListings:  25,
-			FavoriteListings: 32,
-			Likes:            148,
-			Rating:           4.9,
-			Reviews:          17,
+		ID:           testUserID,
+		Name:         "Анна Смирнова",
+		Avatar:       "https://example.com/anna.jpg",
+		ProfileType:  "mixed",
+		RegisteredAt: time.Date(2018, time.April, 14, 0, 0, 0, 0, time.UTC),
+		Likes:        148,
+		ChatsCount:   43,
+		Views: []domain.ViewedAd{
+			{
+				Ad:           domain.Ad{Title: "Смартфон", Category: "Электроника", Price: 118000, ViewCount: 7},
+				LastViewedAt: time.Date(2026, time.March, 12, 14, 10, 0, 0, time.UTC),
+				IsPurchased:  true,
+				PurchasedAt:  timePointer(time.Date(2026, time.March, 12, 14, 10, 0, 0, time.UTC)),
+			},
+			{
+				Ad:           domain.Ad{Title: "Наушники", Category: "Электроника", Price: 12990, ViewCount: 3},
+				LastViewedAt: time.Date(2026, time.May, 4, 16, 45, 0, 0, time.UTC),
+				IsPurchased:  true,
+				PurchasedAt:  timePointer(time.Date(2026, time.May, 4, 16, 45, 0, 0, time.UTC)),
+			},
+			{
+				Ad:           domain.Ad{Title: "Чехол", Category: "Аксессуары", Price: 490, ViewCount: 2},
+				LastViewedAt: time.Date(2026, time.January, 17, 13, 30, 0, 0, time.UTC),
+				IsPurchased:  true,
+				PurchasedAt:  timePointer(time.Date(2026, time.January, 17, 13, 30, 0, 0, time.UTC)),
+			},
 		},
-		Purchases: []domain.PurchaseRecord{
-			{Title: "Смартфон", Category: "Электроника", Price: 118000, Date: time.Date(2026, time.March, 12, 0, 0, 0, 0, time.UTC)},
-			{Title: "Наушники", Category: "Аудио", Price: 12990, Date: time.Date(2026, time.May, 4, 0, 0, 0, 0, time.UTC)},
-			{Title: "Чехол для телефона", Category: "Аксессуары", Price: 490, Date: time.Date(2026, time.January, 17, 0, 0, 0, 0, time.UTC)},
-		},
-		Sales: []domain.SaleRecord{
-			{Title: "Планшет", Category: "Электроника", Price: 28500, Date: time.Date(2026, time.February, 20, 0, 0, 0, 0, time.UTC), InquiriesCount: 14},
-			{Title: "Кресло", Category: "Для дома", Price: 7500, Date: time.Date(2026, time.June, 18, 0, 0, 0, 0, time.UTC), InquiriesCount: 9},
-		},
-		ListingViews: []domain.ListingViewRecord{
-			{Title: "Ноутбук для работы", Category: "Ноутбуки", Likes: 12, ViewedAt: time.Date(2026, time.July, 10, 20, 15, 0, 0, time.UTC), ViewCount: 7},
-			{Title: "Фотоаппарат", Category: "Фототехника", Likes: 8, ViewedAt: time.Date(2026, time.June, 29, 13, 40, 0, 0, time.UTC), ViewCount: 3},
+		OwnAds: []domain.OwnAd{
+			{
+				Ad:     domain.Ad{Title: "Планшет", Category: "Электроника", Price: 28500, ViewCount: 214},
+				IsSold: true,
+				SoldAt: timePointer(time.Date(2026, time.February, 20, 0, 0, 0, 0, time.UTC)),
+				Review: &domain.Review{Comment: "Всё отлично", Rating: 5, CreatedAt: time.Date(2026, time.February, 21, 0, 0, 0, 0, time.UTC)},
+			},
+			{
+				Ad:     domain.Ad{Title: "Кресло", Category: "Для дома", Price: 7500, ViewCount: 86},
+				IsSold: true,
+				SoldAt: timePointer(time.Date(2026, time.June, 18, 0, 0, 0, 0, time.UTC)),
+			},
 		},
 	}
 	recap := domain.Recap{
@@ -132,6 +141,59 @@ func (f *fakeApplication) ListProfiles(_ context.Context, accountID uuid.UUID) (
 		return []domain.User{}, nil
 	}
 	return append([]domain.User(nil), f.users...), nil
+}
+
+func (f *fakeApplication) Create(_ context.Context, accountID uuid.UUID, user *domain.User) (*domain.User, error) {
+	if f.profileErr != nil {
+		return nil, f.profileErr
+	}
+	if accountID != testAccountID {
+		return nil, apperrors.ErrNotFound
+	}
+	created := *user
+	if created.ID == uuid.Nil {
+		created.ID = uuid.New()
+	}
+	f.users = append(f.users, created)
+	return &created, nil
+}
+
+func (f *fakeApplication) Update(
+	_ context.Context,
+	accountID, id uuid.UUID,
+	user *domain.User,
+) (*domain.User, error) {
+	if f.profileErr != nil {
+		return nil, f.profileErr
+	}
+	if accountID != testAccountID {
+		return nil, apperrors.ErrNotFound
+	}
+	for i := range f.users {
+		if f.users[i].ID == id {
+			updated := *user
+			updated.ID = id
+			f.users[i] = updated
+			return &updated, nil
+		}
+	}
+	return nil, apperrors.ErrNotFound
+}
+
+func (f *fakeApplication) Delete(_ context.Context, accountID, id uuid.UUID) error {
+	if f.profileErr != nil {
+		return f.profileErr
+	}
+	if accountID != testAccountID {
+		return apperrors.ErrNotFound
+	}
+	for i := range f.users {
+		if f.users[i].ID == id {
+			f.users = append(f.users[:i], f.users[i+1:]...)
+			return nil
+		}
+	}
+	return apperrors.ErrNotFound
 }
 
 func (f *fakeApplication) Execute(_ context.Context, accountID, userID uuid.UUID, year int) (*domain.Recap, error) {
@@ -256,4 +318,8 @@ func performRequest(
 
 func recapKey(userID uuid.UUID, year int) string {
 	return fmt.Sprintf("%s:%d", userID, year)
+}
+
+func timePointer(value time.Time) *time.Time {
+	return &value
 }

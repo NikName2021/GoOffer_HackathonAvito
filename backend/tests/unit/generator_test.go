@@ -34,6 +34,21 @@ func (m *mockUserRepo) ListProfiles(ctx context.Context, _ uuid.UUID) ([]domain.
 	return list, nil
 }
 
+func (m *mockUserRepo) Create(_ context.Context, _ uuid.UUID, user *domain.User) error {
+	m.users[user.ID] = *user
+	return m.err
+}
+
+func (m *mockUserRepo) Update(_ context.Context, _ uuid.UUID, user *domain.User) error {
+	m.users[user.ID] = *user
+	return m.err
+}
+
+func (m *mockUserRepo) Delete(_ context.Context, _, id uuid.UUID) error {
+	delete(m.users, id)
+	return m.err
+}
+
 type mockActionRepo struct {
 	actions map[string][]domain.Action
 	err     error
