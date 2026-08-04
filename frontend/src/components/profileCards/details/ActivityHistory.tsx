@@ -3,23 +3,19 @@ import { ChevronDown, ShoppingBag, Tag } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import type { TestProfile } from '@/types/profile.type'
+import type { GetProfileResponse } from '@/types/profileResponse.type'
 import { formatDate } from '@/utils/formatterDate'
 import { formatCurrency } from '@/utils/formatterNumber'
-import { getPurchasedAds, getSoldAds } from '@/utils/profileAnalytics'
 
 interface ActivityHistoryProps {
-  profile: TestProfile
+  profile: GetProfileResponse
 }
 
 export function ActivityHistory({ profile }: ActivityHistoryProps) {
-  const purchases = getPurchasedAds(profile.views)
-  const sales = getSoldAds(profile.ownAds)
-
   return (
     <div className="space-y-6">
-      <ActivitySection icon={ShoppingBag} title="Все покупки" count={purchases.length}>
-        {purchases.map((purchase) => (
+      <ActivitySection icon={ShoppingBag} title="Все покупки" count={profile.purchases.length}>
+        {profile.purchases.map((purchase) => (
           <ActivityRow
             key={`${purchase.title}-${purchase.purchasedAt}`}
             meta={`${purchase.category} · ${formatDate(purchase.purchasedAt)}`}
@@ -29,8 +25,8 @@ export function ActivityHistory({ profile }: ActivityHistoryProps) {
         ))}
       </ActivitySection>
 
-      <ActivitySection icon={Tag} title="Все продажи" count={sales.length}>
-        {sales.map((sale) => (
+      <ActivitySection icon={Tag} title="Все продажи" count={profile.sales.length}>
+        {profile.sales.map((sale) => (
           <ActivityRow
             key={`${sale.title}-${sale.soldAt}`}
             meta={`${sale.category} · ${formatDate(sale.soldAt)} · ${sale.viewCount} просмотров`}

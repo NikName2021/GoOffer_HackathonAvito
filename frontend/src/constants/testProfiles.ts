@@ -1,6 +1,8 @@
-import type { TestProfile } from '@/types/profile.type'
+import { createMockProfileResponse } from '@/constants/createMockProfileResponse'
+import type { CreateProfileRequest } from '@/types/profileRequest.type'
+import type { GetProfilesResponse } from '@/types/profileResponse.type'
 
-export const TEST_PROFILES: TestProfile[] = [
+export const TEST_PROFILE_CREATE_REQUESTS: CreateProfileRequest[] = [
   {
     name: 'Анна Смирнова',
     joinedAt: '2018-04-14',
@@ -268,3 +270,5 @@ export const TEST_PROFILES: TestProfile[] = [
     ],
   },
 ]
+
+export const TEST_PROFILES: GetProfilesResponse = TEST_PROFILE_CREATE_REQUESTS.map(createMockProfileResponse)

@@ -1,10 +1,4 @@
-export interface Review {
-  comment: string
-  createdAt: string
-  rating: number
-}
-
-export interface AdBase {
+interface CreateAdRequestBase {
   title: string
   category: string
   subcategory?: string
@@ -13,7 +7,13 @@ export interface AdBase {
   viewCount: number
 }
 
-type SaleState =
+export interface CreateReviewRequest {
+  comment: string
+  rating: number
+  createdAt: string
+}
+
+type SaleRequestState =
   | {
       isSold: false
       soldAt?: never
@@ -22,10 +22,10 @@ type SaleState =
   | {
       isSold: true
       soldAt: string
-      review?: Review
+      review?: CreateReviewRequest
     }
 
-type FavoriteState =
+type FavoriteRequestState =
   | {
       isFavorite: false
       favoritedAt?: never
@@ -35,7 +35,7 @@ type FavoriteState =
       favoritedAt: string
     }
 
-type PurchaseState =
+type PurchaseRequestState =
   | {
       isPurchased: false
       purchasedAt?: never
@@ -45,33 +45,24 @@ type PurchaseState =
       purchasedAt: string
     }
 
-export type OwnAd = AdBase &
-  SaleState & {
+export type CreateOwnAdRequest = CreateAdRequestBase &
+  SaleRequestState & {
     isArchived: boolean
   }
 
-export type ViewedAd = AdBase &
-  FavoriteState &
-  PurchaseState & {
+export type CreateViewedAdRequest = CreateAdRequestBase &
+  FavoriteRequestState &
+  PurchaseRequestState & {
     lastViewedAt: string
   }
 
-export type SoldOwnAd = OwnAd & {
-  isSold: true
-  soldAt: string
-}
-
-export type PurchasedViewedAd = ViewedAd & {
-  isPurchased: true
-  purchasedAt: string
-}
-
-export interface TestProfile {
+/** Тело POST-запроса создания тестового профиля. */
+export interface CreateProfileRequest {
   name: string
   joinedAt: string
   avatarUrl?: string
   likes: number
   chatsCount: number
-  views: ViewedAd[]
-  ownAds: OwnAd[]
+  views: CreateViewedAdRequest[]
+  ownAds: CreateOwnAdRequest[]
 }

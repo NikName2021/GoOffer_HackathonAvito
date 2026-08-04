@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { CalendarDays } from 'lucide-react'
 
 import { ActivityHistory } from './details/ActivityHistory'
+import { ProfileYearSummary } from './details/ProfileYearSummary'
 import { ProfileImage } from './ProfileImage'
 import {
   Dialog,
@@ -10,12 +11,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import type { TestProfile } from '@/types/profile.type'
+import type { GetProfileResponse } from '@/types/profileResponse.type'
 import { formatDate } from '@/utils/formatterDate'
 
 interface ProfileDetailsDialogProps {
   children: ReactNode
-  profile: TestProfile
+  profile: GetProfileResponse
 }
 
 export function ProfileDetailsDialog({ children, profile }: ProfileDetailsDialogProps) {
@@ -36,6 +37,7 @@ export function ProfileDetailsDialog({ children, profile }: ProfileDetailsDialog
           </div>
         </DialogHeader>
 
+        <ProfileYearSummary profile={profile} />
         <ActivityHistory profile={profile} />
       </DialogContent>
     </Dialog>

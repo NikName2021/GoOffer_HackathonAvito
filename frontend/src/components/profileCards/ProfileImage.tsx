@@ -1,8 +1,8 @@
-import type { TestProfile } from '@/types/profile.type'
+import type { GetProfileResponse } from '@/types/profileResponse.type'
 import { getProfileAccent, getProfileInitials } from '@/utils/profileAppearance'
 
 interface ProfileImageProps {
-  profile: TestProfile
+  profile: GetProfileResponse
   size?: 'default' | 'large'
 }
 
