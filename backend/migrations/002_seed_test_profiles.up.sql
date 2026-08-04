@@ -1,6 +1,7 @@
 -- 002_seed_test_profiles.up.sql
 -- Тестовые профили и их действия за 2025 год.
 -- Каждый профиль заточен под разные ачивки (см. achievements.go).
+-- Перед вставкой actions очищаем seed-данные — безопасно при повторном psql -f.
 
 -- Категории
 INSERT INTO categories (id, name) VALUES
@@ -43,6 +44,20 @@ INSERT INTO users (id, name, avatar, registered_at, profile_type) VALUES
     )
 ON CONFLICT (id) DO NOTHING;
 
+-- Идемпотентность: убираем старые seed-actions/recaps перед вставкой
+DELETE FROM recaps WHERE user_id IN (
+    'a0000001-0000-4000-8000-000000000001',
+    'a0000002-0000-4000-8000-000000000002',
+    'a0000003-0000-4000-8000-000000000003',
+    'a0000004-0000-4000-8000-000000000004'
+);
+DELETE FROM actions WHERE user_id IN (
+    'a0000001-0000-4000-8000-000000000001',
+    'a0000002-0000-4000-8000-000000000002',
+    'a0000003-0000-4000-8000-000000000003',
+    'a0000004-0000-4000-8000-000000000004'
+);
+
 -- Анна: 12 покупок (shopaholic) + 120 активных дней (enthusiast)
 INSERT INTO actions (id, user_id, type, category_id, created_at)
 SELECT
@@ -81,24 +96,26 @@ SELECT
     TIMESTAMPTZ '2025-01-01' + (n || ' days')::interval
 FROM generate_series(1, 55) AS n;
 
--- Елена: 550 просмотров (curious) + 310 активных дней (veteran)
+-- Елена: 520 просмотров в пределах 2025 (curious) + 300+ дней (veteran)
+-- 2 просмотра в день × 260 дней = 520; дни не выходят за 2025.
 INSERT INTO actions (id, user_id, type, category_id, created_at)
 SELECT
     gen_random_uuid(),
     'a0000003-0000-4000-8000-000000000003',
     'view',
     'b0000003-0000-4000-8000-000000000003',
-    TIMESTAMPTZ '2025-01-01' + ((n - 1) || ' days')::interval
-FROM generate_series(1, 550) AS n;
+    TIMESTAMPTZ '2025-01-01'
+        + (((n - 1) % 260) || ' days')::interval
+        + (((n - 1) / 260) || ' hours')::interval
+FROM generate_series(1, 520) AS n;
 
--- Дополнительные дни активности для Елены (favorite на других днях)
 INSERT INTO actions (id, user_id, type, category_id, created_at)
 SELECT
     gen_random_uuid(),
     'a0000003-0000-4000-8000-000000000003',
     'favorite',
     'b0000001-0000-4000-8000-000000000001',
-    TIMESTAMPTZ '2025-07-01' + (n || ' days')::interval
+    TIMESTAMPTZ '2025-01-01' + ((260 + n) || ' days')::interval
 FROM generate_series(1, 50) AS n;
 
 -- Даниил: 1050 просмотров (explorer)

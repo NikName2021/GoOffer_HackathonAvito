@@ -130,9 +130,16 @@ UUID тестовых профилей:
   a0000004-0000-4000-8000-000000000004 — Даниил (explorer)
 
 Запуск миграций:
+  Автоматически при старте backend-контейнера (Dockerfile entrypoint + golang-migrate).
+  Флаг: RUN_MIGRATIONS=true|false (по умолчанию true).
+
+  Вручную (локально без Docker backend):
   docker compose --env-file .env up -d postgres redis
   PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/001_init.up.sql
   PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/002_seed_test_profiles.up.sql
+
+  Полный стек:
+  docker compose --env-file .env up --build
 
 Интеграционный тест:
   DB_PORT=5446 go test ./tests/integration/... -v
@@ -143,6 +150,11 @@ UUID тестовых профилей:
   actionRepo := postgres.NewActionRepository(pool)
   recapRepo := postgres.NewRecapRepository(pool)
   cache, _ := redisrepo.NewCache(cfg.Redis.URL)
+
+Docker (Backend 2):
+  - backend/Dockerfile — multi-stage: server + migrate binary + entrypoint
+  - backend/scripts/entrypoint.sh — migrate up, затем /server
+  - миграции копируются в образ в /migrations
 
 ============================================================================================================
 

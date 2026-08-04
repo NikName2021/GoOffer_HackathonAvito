@@ -46,6 +46,7 @@ services:
     environment:
       PORT: 8000
       GIN_MODE: release
+      RUN_MIGRATIONS: ${RUN_MIGRATIONS:-true}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${POSTGRES_USER}
@@ -71,7 +72,6 @@ services:
       - "80:80"
     environment:
       NGINX_NAME: ${NGINX_FILE}
-      RUN_MIGRATIONS: "false"
       TZ: Europe/Moscow
     depends_on:
       - backend
