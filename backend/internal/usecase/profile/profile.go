@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/usecase/ports"
 	"github.com/google/uuid"
+	"gooffer/backend/internal/domain"
+	"gooffer/backend/internal/usecase/ports"
 )
 
 type Service struct {
@@ -22,16 +22,16 @@ func New(logger *slog.Logger, userRepo ports.UserRepository) *Service {
 	}
 }
 
-func (s *Service) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
-	user, err := s.userRepo.GetByID(ctx, id)
+func (s *Service) GetByID(ctx context.Context, accountID, id uuid.UUID) (*domain.User, error) {
+	user, err := s.userRepo.GetByID(ctx, accountID, id)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 	return user, nil
 }
 
-func (s *Service) ListProfiles(ctx context.Context) ([]domain.User, error) {
-	users, err := s.userRepo.ListProfiles(ctx)
+func (s *Service) ListProfiles(ctx context.Context, accountID uuid.UUID) ([]domain.User, error) {
+	users, err := s.userRepo.ListProfiles(ctx, accountID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list profiles: %w", err)
 	}

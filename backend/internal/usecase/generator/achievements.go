@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/NikName2021/GoOffer_HackathonAvito/backend/internal/domain"
+	"gooffer/backend/internal/domain"
 )
 
 func assignAchievements(metrics *UserMetrics) []domain.Achievement {
