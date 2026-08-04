@@ -6,51 +6,48 @@ import (
 	"github.com/google/uuid"
 )
 
+// User is a profile owned by an authenticated account. OwnAds and Views are
+// the source data; every aggregate returned by the API is calculated from them.
 type User struct {
-	ID               uuid.UUID
-	Name             string
-	Avatar           string
-	AvatarFallback   string
-	AccentColor      string
-	RegisteredAt     time.Time
-	ProfileType      string
-	ChatsCount       int
-	FavoriteCategory string
-	Metrics          ProfileMetrics
-	Purchases        []PurchaseRecord
-	Sales            []SaleRecord
-	ListingViews     []ListingViewRecord
+	ID           uuid.UUID
+	Name         string
+	Avatar       string
+	RegisteredAt time.Time
+	ProfileType  string
+	Likes        int
+	ChatsCount   int
+	OwnAds       []OwnAd
+	Views        []ViewedAd
 }
 
-type PurchaseRecord struct {
-	Title    string    `json:"title"`
-	Category string    `json:"category"`
-	Price    int64     `json:"price"`
-	Date     time.Time `json:"date"`
+type Ad struct {
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Subcategory string `json:"subcategory,omitempty"`
+	ImageURL    string `json:"imageUrl,omitempty"`
+	Price       int64  `json:"price"`
+	ViewCount   int    `json:"viewCount"`
 }
 
-type SaleRecord struct {
-	Title          string    `json:"title"`
-	Category       string    `json:"category"`
-	Price          int64     `json:"price"`
-	Date           time.Time `json:"date"`
-	InquiriesCount int       `json:"inquiriesCount"`
+type Review struct {
+	Comment   string    `json:"comment"`
+	Rating    int       `json:"rating"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
-type ListingViewRecord struct {
-	Title     string    `json:"title"`
-	Category  string    `json:"category"`
-	Likes     int       `json:"likes"`
-	ViewedAt  time.Time `json:"viewedAt"`
-	ViewCount int       `json:"viewCount"`
+type OwnAd struct {
+	Ad
+	IsArchived bool       `json:"isArchived"`
+	IsSold     bool       `json:"isSold"`
+	SoldAt     *time.Time `json:"soldAt,omitempty"`
+	Review     *Review    `json:"review,omitempty"`
 }
 
-type ProfileMetrics struct {
-	ActiveDays       int     `json:"activeDays"`
-	City             string  `json:"city"`
-	CreatedListings  int     `json:"createdListings"`
-	FavoriteListings int     `json:"favoriteListings"`
-	Likes            int     `json:"likes"`
-	Rating           float64 `json:"rating"`
-	Reviews          int     `json:"reviews"`
+type ViewedAd struct {
+	Ad
+	LastViewedAt time.Time  `json:"lastViewedAt"`
+	IsFavorite   bool       `json:"isFavorite"`
+	FavoritedAt  *time.Time `json:"favoritedAt,omitempty"`
+	IsPurchased  bool       `json:"isPurchased"`
+	PurchasedAt  *time.Time `json:"purchasedAt,omitempty"`
 }

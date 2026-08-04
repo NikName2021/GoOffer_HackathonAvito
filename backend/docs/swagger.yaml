@@ -132,10 +132,39 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Profiles]
+      summary: Создать профиль и рассчитать его аналитику
+      operationId: createProfile
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileWrite"
+      responses:
+        "201":
+          description: Профиль создан; вычисляемые поля возвращены в ответе
+          headers:
+            Location:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/profiles/{id}:
     get:
       tags: [Profiles]
-      summary: Получить тестовый профиль по ID
+      summary: Получить профиль с рассчитанной аналитикой
       operationId: getProfile
       security:
         - cookieAuth: []
@@ -154,6 +183,54 @@ paths:
           $ref: "#/components/responses/NotFound"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Profiles]
+      summary: Полностью изменить профиль и пересчитать аналитику
+      operationId: updateProfile
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProfileID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileWrite"
+      responses:
+        "200":
+          description: Профиль и вычисляемые итоги обновлены
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Profiles]
+      summary: Удалить профиль
+      operationId: deleteProfile
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProfileID"
+      responses:
+        "204":
+          description: Профиль удалён
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
   /api/recap/generate:
@@ -296,28 +373,15 @@ components:
         createdAt:
           type: string
           format: date-time
-    Profile:
+    ProfileWrite:
       type: object
-      required:
-        - id
-        - name
-        - joinedAt
-        - avatarUrl
-        - avatarFallback
-        - accentColor
-        - profileType
-        - chatsCount
-        - favoriteCategory
-        - metrics
-        - purchases
-        - sales
-        - listingViews
+      additionalProperties: false
+      required: [name, joinedAt, likes, chatsCount, views, ownAds]
       properties:
-        id:
-          type: string
-          format: uuid
         name:
           type: string
+          minLength: 1
+          maxLength: 100
           example: Анна Смирнова
         joinedAt:
           type: string
@@ -325,123 +389,148 @@ components:
           example: "2018-04-14"
         avatarUrl:
           type: string
-          format: uri
-          example: https://example.com/avatar.jpg
-        avatarFallback:
-          type: string
-          example: АС
-        accentColor:
-          type: string
-          example: "#00aaff"
-        profileType:
-          type: string
-          example: mixed
-        chatsCount:
-          type: integer
-          minimum: 0
-          example: 43
-        favoriteCategory:
-          type: string
-          example: Электроника
-        metrics:
-          $ref: "#/components/schemas/ProfileMetrics"
-        purchases:
-          type: array
-          items:
-            $ref: "#/components/schemas/PurchaseRecord"
-        sales:
-          type: array
-          items:
-            $ref: "#/components/schemas/SaleRecord"
-        listingViews:
-          type: array
-          items:
-            $ref: "#/components/schemas/ListingViewRecord"
-    ProfileMetrics:
-      type: object
-      required: [activeDays, city, createdListings, favoriteListings, likes, rating, reviews]
-      properties:
-        activeDays:
-          type: integer
-          minimum: 0
-          maximum: 366
-          example: 163
-        city:
-          type: string
-          example: Москва
-        createdListings:
-          type: integer
-          minimum: 0
-          example: 25
-        favoriteListings:
-          type: integer
-          minimum: 0
-          example: 32
+          description: HTTP(S) URL или data URL изображения PNG/JPG/WEBP.
         likes:
           type: integer
           minimum: 0
           example: 148
-        rating:
-          type: number
-          format: double
-          minimum: 0
-          maximum: 5
-          example: 4.9
-        reviews:
+        chatsCount:
           type: integer
           minimum: 0
-          example: 17
-    PurchaseRecord:
+          example: 43
+        views:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/ViewedAdWrite"
+        ownAds:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/OwnAdWrite"
+    AdWriteBase:
       type: object
-      required: [title, category, price, date]
+      required: [title, category, price, viewCount]
       properties:
-        title:
-          type: string
-          example: Смартфон
-        category:
-          type: string
-          example: Электроника
-        price:
-          type: integer
-          format: int64
-          minimum: 0
-          example: 118000
-        date:
-          type: string
-          format: date
-          example: "2026-03-12"
-    SaleRecord:
+        title: {type: string, minLength: 1, maxLength: 200}
+        category: {type: string, minLength: 1, maxLength: 100}
+        subcategory: {type: string}
+        imageUrl: {type: string}
+        price: {type: integer, format: int64, minimum: 0}
+        viewCount: {type: integer, minimum: 0}
+    ViewedAdWrite:
       allOf:
-        - $ref: "#/components/schemas/PurchaseRecord"
+        - $ref: "#/components/schemas/AdWriteBase"
         - type: object
-          required: [inquiriesCount]
+          required: [lastViewedAt, isFavorite, isPurchased]
           properties:
-            inquiriesCount:
-              type: integer
-              minimum: 0
-              example: 14
-    ListingViewRecord:
+            lastViewedAt: {type: string, format: date-time}
+            isFavorite: {type: boolean}
+            favoritedAt:
+              type: string
+              format: date-time
+              description: Обязательно, когда isFavorite=true.
+            isPurchased: {type: boolean}
+            purchasedAt:
+              type: string
+              format: date-time
+              description: Обязательно, когда isPurchased=true.
+    OwnAdWrite:
+      allOf:
+        - $ref: "#/components/schemas/AdWriteBase"
+        - type: object
+          required: [isArchived, isSold]
+          properties:
+            isArchived: {type: boolean}
+            isSold: {type: boolean}
+            soldAt:
+              type: string
+              format: date
+              description: Обязательно, когда isSold=true.
+            review:
+              $ref: "#/components/schemas/ProfileReview"
+    ProfileReview:
       type: object
-      required: [title, category, likes, viewedAt, viewCount]
+      required: [comment, rating, createdAt]
       properties:
-        title:
-          type: string
-          example: Ноутбук для работы
-        category:
-          type: string
-          example: Ноутбуки
-        likes:
-          type: integer
-          minimum: 0
-          example: 12
-        viewedAt:
-          type: string
-          format: date-time
-          example: "2026-07-10T20:15"
-        viewCount:
-          type: integer
-          minimum: 0
-          example: 7
+        comment: {type: string, minLength: 1, maxLength: 2000}
+        rating: {type: integer, minimum: 1, maximum: 5}
+        createdAt: {type: string, format: date}
+    Profile:
+      type: object
+      description: Статистика и highlights всегда рассчитываются сервером из views и ownAds.
+      required: [id, name, joinedAt, stats, highlights, purchases, sales]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        joinedAt: {type: string, format: date}
+        avatarUrl: {type: string}
+        stats:
+          $ref: "#/components/schemas/ProfileStats"
+        highlights:
+          $ref: "#/components/schemas/ProfileHighlights"
+        purchases:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfilePurchase"
+        sales:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProfileSale"
+    ProfileStats:
+      type: object
+      required: [likes, chatsCount, purchasesCount, salesCount, totalViewCount, totalSpent, totalEarned, reviewsCount, averageRating]
+      properties:
+        likes: {type: integer, minimum: 0}
+        chatsCount: {type: integer, minimum: 0}
+        purchasesCount: {type: integer, minimum: 0}
+        salesCount: {type: integer, minimum: 0}
+        totalViewCount: {type: integer, minimum: 0}
+        totalSpent: {type: integer, format: int64, minimum: 0}
+        totalEarned: {type: integer, format: int64, minimum: 0}
+        reviewsCount: {type: integer, minimum: 0}
+        averageRating: {type: number, format: double, nullable: true, minimum: 1, maximum: 5}
+    ProfileHighlights:
+      type: object
+      required: [favoriteCategory, mostExpensivePurchase, leastExpensivePurchase, mostExpensiveSale, leastExpensiveSale]
+      properties:
+        favoriteCategory: {type: string, nullable: true}
+        mostExpensivePurchase:
+          allOf: [{$ref: "#/components/schemas/ProfilePurchase"}]
+          nullable: true
+        leastExpensivePurchase:
+          allOf: [{$ref: "#/components/schemas/ProfilePurchase"}]
+          nullable: true
+        mostExpensiveSale:
+          allOf: [{$ref: "#/components/schemas/ProfileSale"}]
+          nullable: true
+        leastExpensiveSale:
+          allOf: [{$ref: "#/components/schemas/ProfileSale"}]
+          nullable: true
+    ProfilePurchase:
+      type: object
+      required: [title, category, price, purchasedAt]
+      properties:
+        title: {type: string}
+        category: {type: string}
+        subcategory: {type: string}
+        imageUrl: {type: string}
+        price: {type: integer, format: int64, minimum: 0}
+        purchasedAt: {type: string, format: date-time}
+    ProfileSale:
+      type: object
+      required: [title, category, price, soldAt, viewCount, review]
+      properties:
+        title: {type: string}
+        category: {type: string}
+        subcategory: {type: string}
+        imageUrl: {type: string}
+        price: {type: integer, format: int64, minimum: 0}
+        soldAt: {type: string, format: date}
+        viewCount: {type: integer, minimum: 0}
+        review:
+          allOf: [{$ref: "#/components/schemas/ProfileReview"}]
+          nullable: true
     GenerateRecapRequest:
       type: object
       additionalProperties: false

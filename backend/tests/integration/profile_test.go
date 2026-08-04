@@ -1,6 +1,7 @@
 package integration
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -30,7 +31,7 @@ func TestProfilesAPI(t *testing.T) {
 		if err := json.NewDecoder(response.Body).Decode(&profiles); err != nil {
 			t.Fatalf("decode profiles: %v", err)
 		}
-		if len(profiles) != 1 || profiles[0].ID != testUserID {
+		if len(profiles) != 1 || profiles[0].ID != testUserID.String() {
 			t.Fatalf("profiles = %#v, want test profile", profiles)
 		}
 	})
@@ -48,24 +49,26 @@ func TestProfilesAPI(t *testing.T) {
 		if profile.Name != "Анна Смирнова" {
 			t.Fatalf("name = %q, want Анна Смирнова", profile.Name)
 		}
-		if profile.JoinedAt != "2018-04-14" || profile.ChatsCount != 43 {
+		if profile.JoinedAt != "2018-04-14" || profile.Stats.ChatsCount != 43 {
 			t.Fatalf("profile summary = %#v, want frontend card values", profile)
 		}
-		if profile.Metrics.City != "Москва" || profile.Metrics.ActiveDays != 163 {
-			t.Fatalf("metrics = %#v, want Moscow/163", profile.Metrics)
+		if profile.Stats.PurchasesCount != 3 || profile.Stats.SalesCount != 2 {
+			t.Fatalf("deal counts = %#v, want 3 purchases and 2 sales", profile.Stats)
 		}
-		if len(profile.Purchases) != 3 || profile.Purchases[0].Price != 118000 {
-			t.Fatalf("purchases = %#v, want three detailed purchases", profile.Purchases)
+		if profile.Stats.TotalSpent != 131480 || profile.Stats.TotalEarned != 36000 {
+			t.Fatalf("money stats = %#v, want spent=131480 earned=36000", profile.Stats)
 		}
-		var annualSpending int64
-		for _, purchase := range profile.Purchases {
-			annualSpending += purchase.Price
+		if profile.Stats.TotalViewCount != 12 || profile.Stats.ReviewsCount != 1 {
+			t.Fatalf("activity stats = %#v, want views=12 reviews=1", profile.Stats)
 		}
-		if annualSpending != 131480 {
-			t.Fatalf("annual spending = %d, want 131480", annualSpending)
+		if profile.Stats.AverageRating == nil || *profile.Stats.AverageRating != 5 {
+			t.Fatalf("average rating = %#v, want 5", profile.Stats.AverageRating)
 		}
-		if len(profile.Sales) != 2 || len(profile.ListingViews) != 2 {
-			t.Fatalf("sales/views are incomplete: sales=%d views=%d", len(profile.Sales), len(profile.ListingViews))
+		if profile.Highlights.FavoriteCategory == nil || *profile.Highlights.FavoriteCategory != "Электроника" {
+			t.Fatalf("favorite category = %#v, want Электроника", profile.Highlights.FavoriteCategory)
+		}
+		if profile.Highlights.MostExpensivePurchase == nil || profile.Highlights.MostExpensivePurchase.Title != "Смартфон" {
+			t.Fatalf("most expensive purchase = %#v", profile.Highlights.MostExpensivePurchase)
 		}
 	})
 
@@ -75,6 +78,90 @@ func TestProfilesAPI(t *testing.T) {
 			t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
 		}
 	})
+}
+
+func TestProfileCRUDAndCalculatedAnalytics(t *testing.T) {
+	application := newFakeApplication()
+	handler := newTestHandler(t, application)
+
+	createBody := `{
+		"name":"Тестовый профиль",
+		"joinedAt":"2024-08-01",
+		"likes":12,
+		"chatsCount":8,
+		"views":[
+			{"title":"Телефон","category":"Электроника","price":118000,"viewCount":7,"lastViewedAt":"2026-03-12T14:10","isFavorite":true,"favoritedAt":"2026-03-10T18:20","isPurchased":true,"purchasedAt":"2026-03-12T14:10"},
+			{"title":"Наушники","category":"Электроника","price":12990,"viewCount":3,"lastViewedAt":"2026-05-04T16:45","isFavorite":false,"isPurchased":true,"purchasedAt":"2026-05-04T16:45"},
+			{"title":"Ноутбук","category":"Электроника","price":90000,"viewCount":2,"lastViewedAt":"2026-06-01T10:00","isFavorite":false,"isPurchased":false}
+		],
+		"ownAds":[
+			{"title":"Планшет","category":"Электроника","price":28500,"viewCount":214,"isArchived":true,"isSold":true,"soldAt":"2026-02-20","review":{"comment":"Всё отлично","rating":5,"createdAt":"2026-02-21"}},
+			{"title":"Кресло","category":"Для дома","price":7500,"viewCount":86,"isArchived":true,"isSold":true,"soldAt":"2026-06-18"}
+		]
+	}`
+	createdResponse := performRequest(t, handler, http.MethodPost, "/api/profiles", bytes.NewBufferString(createBody), map[string]string{
+		"Content-Type": "application/json",
+	})
+	if createdResponse.Code != http.StatusCreated {
+		t.Fatalf("create status = %d, want %d: %s", createdResponse.Code, http.StatusCreated, createdResponse.Body.String())
+	}
+	var created dto.ProfileResponse
+	if err := json.NewDecoder(createdResponse.Body).Decode(&created); err != nil {
+		t.Fatalf("decode created profile: %v", err)
+	}
+	if created.ID == "" || createdResponse.Header().Get("Location") != "/api/profiles/"+created.ID {
+		t.Fatalf("created id/location = %q/%q", created.ID, createdResponse.Header().Get("Location"))
+	}
+	if created.Stats.PurchasesCount != 2 || created.Stats.SalesCount != 2 || created.Stats.TotalViewCount != 12 {
+		t.Fatalf("calculated counts = %#v", created.Stats)
+	}
+	if created.Stats.TotalSpent != 130990 || created.Stats.TotalEarned != 36000 {
+		t.Fatalf("calculated amounts = %#v", created.Stats)
+	}
+	if created.Stats.AverageRating == nil || *created.Stats.AverageRating != 5 {
+		t.Fatalf("calculated rating = %#v", created.Stats.AverageRating)
+	}
+	if created.Highlights.MostExpensivePurchase == nil || created.Highlights.MostExpensivePurchase.Title != "Телефон" {
+		t.Fatalf("purchase highlight = %#v", created.Highlights.MostExpensivePurchase)
+	}
+
+	updateBody := `{
+		"name":"Обновлённый профиль",
+		"joinedAt":"2024-08-01",
+		"likes":20,
+		"chatsCount":9,
+		"views":[{"title":"Книга","category":"Книги","price":900,"viewCount":4,"lastViewedAt":"2026-07-01T12:00","isFavorite":false,"isPurchased":true,"purchasedAt":"2026-07-01T12:00"}],
+		"ownAds":[]
+	}`
+	updatedResponse := performRequest(t, handler, http.MethodPut, "/api/profiles/"+created.ID, bytes.NewBufferString(updateBody), map[string]string{
+		"Content-Type": "application/json",
+	})
+	if updatedResponse.Code != http.StatusOK {
+		t.Fatalf("update status = %d, want %d: %s", updatedResponse.Code, http.StatusOK, updatedResponse.Body.String())
+	}
+	var updated dto.ProfileResponse
+	if err := json.NewDecoder(updatedResponse.Body).Decode(&updated); err != nil {
+		t.Fatalf("decode updated profile: %v", err)
+	}
+	if updated.ID != created.ID || updated.Name != "Обновлённый профиль" || updated.Stats.TotalSpent != 900 || updated.Stats.SalesCount != 0 {
+		t.Fatalf("updated profile = %#v", updated)
+	}
+
+	invalidResponse := performRequest(t, handler, http.MethodPost, "/api/profiles", bytes.NewBufferString(
+		`{"name":"Ошибка","joinedAt":"2024-01-01","likes":0,"chatsCount":0,"views":[{"title":"Товар","category":"Категория","price":1,"viewCount":1,"lastViewedAt":"2026-01-01T10:00","isFavorite":false,"isPurchased":true}],"ownAds":[]}`,
+	), map[string]string{"Content-Type": "application/json"})
+	if invalidResponse.Code != http.StatusBadRequest {
+		t.Fatalf("invalid profile status = %d, want %d", invalidResponse.Code, http.StatusBadRequest)
+	}
+
+	deletedResponse := performRequest(t, handler, http.MethodDelete, "/api/profiles/"+created.ID, nil, nil)
+	if deletedResponse.Code != http.StatusNoContent {
+		t.Fatalf("delete status = %d, want %d", deletedResponse.Code, http.StatusNoContent)
+	}
+	missingResponse := performRequest(t, handler, http.MethodGet, "/api/profiles/"+created.ID, nil, nil)
+	if missingResponse.Code != http.StatusNotFound {
+		t.Fatalf("deleted profile get status = %d, want %d", missingResponse.Code, http.StatusNotFound)
+	}
 }
 
 func TestSystemMiddlewareAndDocs(t *testing.T) {
@@ -90,6 +177,9 @@ func TestSystemMiddlewareAndDocs(t *testing.T) {
 		}
 		if got := response.Header().Get("Access-Control-Allow-Origin"); got != "http://localhost:5173" {
 			t.Fatalf("Access-Control-Allow-Origin = %q", got)
+		}
+		if methods := response.Header().Get("Access-Control-Allow-Methods"); !strings.Contains(methods, "PUT") || !strings.Contains(methods, "DELETE") {
+			t.Fatalf("Access-Control-Allow-Methods = %q, want PUT and DELETE", methods)
 		}
 	})
 

@@ -2,8 +2,6 @@ package dto
 
 import (
 	"gooffer/backend/internal/domain"
-
-	"github.com/google/uuid"
 )
 
 const (
@@ -12,109 +10,98 @@ const (
 )
 
 type ProfileResponse struct {
-	ID               uuid.UUID              `json:"id"`
-	Name             string                 `json:"name"`
-	JoinedAt         string                 `json:"joinedAt"`
-	AvatarURL        string                 `json:"avatarUrl"`
-	AvatarFallback   string                 `json:"avatarFallback"`
-	AccentColor      string                 `json:"accentColor"`
-	ProfileType      string                 `json:"profileType"`
-	ChatsCount       int                    `json:"chatsCount"`
-	FavoriteCategory string                 `json:"favoriteCategory"`
-	Metrics          ProfileMetricsDTO      `json:"metrics"`
-	Purchases        []PurchaseRecordDTO    `json:"purchases"`
-	Sales            []SaleRecordDTO        `json:"sales"`
-	ListingViews     []ListingViewRecordDTO `json:"listingViews"`
+	ID         string                    `json:"id"`
+	Name       string                    `json:"name"`
+	JoinedAt   string                    `json:"joinedAt"`
+	AvatarURL  string                    `json:"avatarUrl,omitempty"`
+	Stats      ProfileStatsResponse      `json:"stats"`
+	Highlights ProfileHighlightsResponse `json:"highlights"`
+	Purchases  []ProfilePurchaseResponse `json:"purchases"`
+	Sales      []ProfileSaleResponse     `json:"sales"`
 }
 
-type PurchaseRecordDTO struct {
-	Title    string `json:"title"`
-	Category string `json:"category"`
-	Price    int64  `json:"price"`
-	Date     string `json:"date"`
+type ProfileStatsResponse struct {
+	Likes          int      `json:"likes"`
+	ChatsCount     int      `json:"chatsCount"`
+	PurchasesCount int      `json:"purchasesCount"`
+	SalesCount     int      `json:"salesCount"`
+	TotalViewCount int      `json:"totalViewCount"`
+	TotalSpent     int64    `json:"totalSpent"`
+	TotalEarned    int64    `json:"totalEarned"`
+	ReviewsCount   int      `json:"reviewsCount"`
+	AverageRating  *float64 `json:"averageRating"`
 }
 
-type SaleRecordDTO struct {
-	Title          string `json:"title"`
-	Category       string `json:"category"`
-	Price          int64  `json:"price"`
-	Date           string `json:"date"`
-	InquiriesCount int    `json:"inquiriesCount"`
+type ProfileHighlightsResponse struct {
+	FavoriteCategory       *string                  `json:"favoriteCategory"`
+	MostExpensivePurchase  *ProfilePurchaseResponse `json:"mostExpensivePurchase"`
+	LeastExpensivePurchase *ProfilePurchaseResponse `json:"leastExpensivePurchase"`
+	MostExpensiveSale      *ProfileSaleResponse     `json:"mostExpensiveSale"`
+	LeastExpensiveSale     *ProfileSaleResponse     `json:"leastExpensiveSale"`
 }
 
-type ListingViewRecordDTO struct {
-	Title     string `json:"title"`
-	Category  string `json:"category"`
-	Likes     int    `json:"likes"`
-	ViewedAt  string `json:"viewedAt"`
-	ViewCount int    `json:"viewCount"`
+type ProfilePurchaseResponse struct {
+	Title       string `json:"title"`
+	Category    string `json:"category"`
+	Subcategory string `json:"subcategory,omitempty"`
+	ImageURL    string `json:"imageUrl,omitempty"`
+	Price       int64  `json:"price"`
+	PurchasedAt string `json:"purchasedAt"`
 }
 
-type ProfileMetricsDTO struct {
-	ActiveDays       int     `json:"activeDays"`
-	City             string  `json:"city"`
-	CreatedListings  int     `json:"createdListings"`
-	FavoriteListings int     `json:"favoriteListings"`
-	Likes            int     `json:"likes"`
-	Rating           float64 `json:"rating"`
-	Reviews          int     `json:"reviews"`
+type ProfileSaleResponse struct {
+	Title       string                 `json:"title"`
+	Category    string                 `json:"category"`
+	Subcategory string                 `json:"subcategory,omitempty"`
+	ImageURL    string                 `json:"imageUrl,omitempty"`
+	Price       int64                  `json:"price"`
+	SoldAt      string                 `json:"soldAt"`
+	ViewCount   int                    `json:"viewCount"`
+	Review      *ProfileReviewResponse `json:"review"`
+}
+
+type ProfileReviewResponse struct {
+	Comment   string `json:"comment"`
+	Rating    int    `json:"rating"`
+	CreatedAt string `json:"createdAt"`
 }
 
 func ToProfileResponse(user *domain.User) ProfileResponse {
-	purchases := make([]PurchaseRecordDTO, len(user.Purchases))
-	for i, purchase := range user.Purchases {
-		purchases[i] = PurchaseRecordDTO{
-			Title:    purchase.Title,
-			Category: purchase.Category,
-			Price:    purchase.Price,
-			Date:     purchase.Date.Format(dateLayout),
-		}
+	summary := domain.SummarizeProfile(user)
+	purchases := make([]ProfilePurchaseResponse, len(summary.Purchases))
+	for i := range summary.Purchases {
+		purchases[i] = toPurchaseResponse(&summary.Purchases[i])
 	}
-
-	sales := make([]SaleRecordDTO, len(user.Sales))
-	for i, sale := range user.Sales {
-		sales[i] = SaleRecordDTO{
-			Title:          sale.Title,
-			Category:       sale.Category,
-			Price:          sale.Price,
-			Date:           sale.Date.Format(dateLayout),
-			InquiriesCount: sale.InquiriesCount,
-		}
-	}
-
-	listingViews := make([]ListingViewRecordDTO, len(user.ListingViews))
-	for i, view := range user.ListingViews {
-		listingViews[i] = ListingViewRecordDTO{
-			Title:     view.Title,
-			Category:  view.Category,
-			Likes:     view.Likes,
-			ViewedAt:  view.ViewedAt.Format(dateTimeLayout),
-			ViewCount: view.ViewCount,
-		}
+	sales := make([]ProfileSaleResponse, len(summary.Sales))
+	for i := range summary.Sales {
+		sales[i] = toSaleResponse(&summary.Sales[i])
 	}
 
 	return ProfileResponse{
-		ID:               user.ID,
-		Name:             user.Name,
-		JoinedAt:         user.RegisteredAt.Format(dateLayout),
-		AvatarURL:        user.Avatar,
-		AvatarFallback:   user.AvatarFallback,
-		AccentColor:      user.AccentColor,
-		ProfileType:      user.ProfileType,
-		ChatsCount:       user.ChatsCount,
-		FavoriteCategory: user.FavoriteCategory,
-		Metrics: ProfileMetricsDTO{
-			ActiveDays:       user.Metrics.ActiveDays,
-			City:             user.Metrics.City,
-			CreatedListings:  user.Metrics.CreatedListings,
-			FavoriteListings: user.Metrics.FavoriteListings,
-			Likes:            user.Metrics.Likes,
-			Rating:           user.Metrics.Rating,
-			Reviews:          user.Metrics.Reviews,
+		ID:        summary.ID,
+		Name:      summary.Name,
+		JoinedAt:  summary.JoinedAt.Format(dateLayout),
+		AvatarURL: summary.AvatarURL,
+		Stats: ProfileStatsResponse{
+			Likes:          summary.Stats.Likes,
+			ChatsCount:     summary.Stats.ChatsCount,
+			PurchasesCount: summary.Stats.PurchasesCount,
+			SalesCount:     summary.Stats.SalesCount,
+			TotalViewCount: summary.Stats.TotalViewCount,
+			TotalSpent:     summary.Stats.TotalSpent,
+			TotalEarned:    summary.Stats.TotalEarned,
+			ReviewsCount:   summary.Stats.ReviewsCount,
+			AverageRating:  summary.Stats.AverageRating,
 		},
-		Purchases:    purchases,
-		Sales:        sales,
-		ListingViews: listingViews,
+		Highlights: ProfileHighlightsResponse{
+			FavoriteCategory:       summary.Highlights.FavoriteCategory,
+			MostExpensivePurchase:  optionalPurchaseResponse(summary.Highlights.MostExpensivePurchase),
+			LeastExpensivePurchase: optionalPurchaseResponse(summary.Highlights.LeastExpensivePurchase),
+			MostExpensiveSale:      optionalSaleResponse(summary.Highlights.MostExpensiveSale),
+			LeastExpensiveSale:     optionalSaleResponse(summary.Highlights.LeastExpensiveSale),
+		},
+		Purchases: purchases,
+		Sales:     sales,
 	}
 }
 
@@ -124,4 +111,51 @@ func ToProfileResponseList(users []domain.User) []ProfileResponse {
 		result[i] = ToProfileResponse(&users[i])
 	}
 	return result
+}
+
+func toPurchaseResponse(purchase *domain.ProfilePurchase) ProfilePurchaseResponse {
+	return ProfilePurchaseResponse{
+		Title:       purchase.Title,
+		Category:    purchase.Category,
+		Subcategory: purchase.Subcategory,
+		ImageURL:    purchase.ImageURL,
+		Price:       purchase.Price,
+		PurchasedAt: purchase.PurchasedAt.Format(dateTimeLayout),
+	}
+}
+
+func toSaleResponse(sale *domain.ProfileSale) ProfileSaleResponse {
+	response := ProfileSaleResponse{
+		Title:       sale.Title,
+		Category:    sale.Category,
+		Subcategory: sale.Subcategory,
+		ImageURL:    sale.ImageURL,
+		Price:       sale.Price,
+		SoldAt:      sale.SoldAt.Format(dateLayout),
+		ViewCount:   sale.ViewCount,
+	}
+	if sale.Review != nil {
+		response.Review = &ProfileReviewResponse{
+			Comment:   sale.Review.Comment,
+			Rating:    sale.Review.Rating,
+			CreatedAt: sale.Review.CreatedAt.Format(dateLayout),
+		}
+	}
+	return response
+}
+
+func optionalPurchaseResponse(purchase *domain.ProfilePurchase) *ProfilePurchaseResponse {
+	if purchase == nil {
+		return nil
+	}
+	response := toPurchaseResponse(purchase)
+	return &response
+}
+
+func optionalSaleResponse(sale *domain.ProfileSale) *ProfileSaleResponse {
+	if sale == nil {
+		return nil
+	}
+	response := toSaleResponse(sale)
+	return &response
 }
