@@ -5,7 +5,9 @@ const dateFormatter = new Intl.DateTimeFormat('ru-RU', {
 })
 
 export function formatDate(value: string) {
-  return dateFormatter.format(new Date(`${value}T00:00:00`))
+  const dateValue = value.includes('T') ? value : `${value}T00:00:00`
+
+  return dateFormatter.format(new Date(dateValue))
 }
 
 const dateTimeFormatter = new Intl.DateTimeFormat('ru-RU', {
