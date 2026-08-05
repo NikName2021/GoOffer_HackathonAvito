@@ -7,6 +7,9 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.tsx'
 import { store } from './store'
+import { restoreSession } from './store/auth'
+
+void store.dispatch(restoreSession())
 
 const queryClient = new QueryClient({
   defaultOptions: {
