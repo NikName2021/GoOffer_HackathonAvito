@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
-import { CalendarDays } from 'lucide-react'
+import { CalendarDays, ExternalLink } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { ActivityHistory } from './details/ActivityHistory'
 import { ProfileYearSummary } from './details/ProfileYearSummary'
@@ -12,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
+import { PATHS } from '@/config/paths'
 import { formatDate } from '@/utils/formatterDate'
 
 interface ProfileDetailsDialogProps {
@@ -39,6 +41,13 @@ export function ProfileDetailsDialog({ children, profile }: ProfileDetailsDialog
 
         <ProfileYearSummary profile={profile} />
         <ActivityHistory profile={profile} />
+        <Link
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#00aaff] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0099e6]"
+          to={PATHS.AVITO}
+        >
+          Перейти на симуляцию
+          <ExternalLink aria-hidden="true" className="size-4" />
+        </Link>
       </DialogContent>
     </Dialog>
   )
