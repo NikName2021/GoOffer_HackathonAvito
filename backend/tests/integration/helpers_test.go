@@ -97,7 +97,18 @@ func newFakeApplication() *fakeApplication {
 			{Slug: "curious", Title: "Любопытный", Description: "500 просмотров", Icon: "👀", Category: "views"},
 		},
 		ActivityDays: 300,
-		GeneratedAt:  time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
+		Summary: domain.RecapSummary{
+			Headline:    "Вы были по обе стороны Авито",
+			Description: "Покупки и продажи в одном году.",
+			Buyer:       domain.BuyerRecapSummary{HasData: true, PurchasesCount: 10},
+			Seller:      domain.SellerRecapSummary{HasData: true, SalesCount: 5},
+			Combined:    domain.CombinedRecapSummary{HasBuyerData: true, HasSellerData: true, Deals: 15},
+		},
+		Cards: []domain.RecapCard{
+			{ID: "year_overview", Kind: "overview", Title: "Итоги", Shareable: true},
+			{ID: "largest_purchase", Kind: "buyer", Title: "Крупная покупка", Shareable: false},
+		},
+		GeneratedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
 	}
 	account := domain.Account{
 		ID:        testAccountID,

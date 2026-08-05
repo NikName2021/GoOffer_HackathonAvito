@@ -29,6 +29,9 @@ func TestRecapAPI(t *testing.T) {
 		if recap.UserID != testUserID || recap.TotalViews != 1500 {
 			t.Fatalf("recap = %#v, want test recap", recap)
 		}
+		if recap.Summary.Headline == "" || len(recap.Cards) != 2 {
+			t.Fatalf("recap summary/cards = %#v/%#v", recap.Summary, recap.Cards)
+		}
 	})
 
 	t.Run("reject unknown request fields", func(t *testing.T) {
@@ -63,6 +66,14 @@ func TestRecapAPI(t *testing.T) {
 		}
 		if _, exists := payload["user_id"]; exists {
 			t.Fatal("share response contains user_id")
+		}
+		cards, ok := payload["cards"].([]any)
+		if !ok || len(cards) != 1 {
+			t.Fatalf("share cards = %#v, want one public card", payload["cards"])
+		}
+		card, ok := cards[0].(map[string]any)
+		if !ok || card["id"] != "year_overview" {
+			t.Fatalf("share card = %#v, want year_overview", cards[0])
 		}
 	})
 

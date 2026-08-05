@@ -6,7 +6,7 @@ import (
 
 // AssignAchievements назначает ачивки на основе метрик
 func AssignAchievements(metrics *UserMetrics) []domain.Achievement {
-	var result []domain.Achievement
+	result := make([]domain.Achievement, 0)
 
 	for _, ach := range domain.DefaultAchievements {
 		if checkCondition(ach, metrics) {

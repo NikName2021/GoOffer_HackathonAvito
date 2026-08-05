@@ -96,22 +96,42 @@ var generatorAccountID = uuid.MustParse("99999999-9999-4999-8999-999999999999")
 
 func TestGenerator_Execute_Success(t *testing.T) {
 	userID := uuid.New()
-	year := 2025
+	year := 2026
+	purchasedAt := time.Date(year, time.March, 12, 14, 10, 0, 0, time.UTC)
+	favoritedAt := time.Date(year, time.March, 10, 18, 20, 0, 0, time.UTC)
+	soldAt := time.Date(year, time.June, 18, 0, 0, 0, 0, time.UTC)
 
 	userRepo := &mockUserRepo{
 		users: map[uuid.UUID]domain.User{
-			userID: {ID: userID, Name: "Test User"},
+			userID: {
+				ID:           userID,
+				Name:         "Test User",
+				RegisteredAt: time.Date(2020, time.January, 1, 0, 0, 0, 0, time.UTC),
+				Likes:        12,
+				ChatsCount:   1,
+				Views: []domain.ViewedAd{
+					{
+						Ad:           domain.Ad{Title: "Phone", Category: "Electronics", Price: 100000, ViewCount: 2},
+						LastViewedAt: purchasedAt,
+						IsFavorite:   true,
+						FavoritedAt:  &favoritedAt,
+						IsPurchased:  true,
+						PurchasedAt:  &purchasedAt,
+					},
+				},
+				OwnAds: []domain.OwnAd{
+					{
+						Ad:     domain.Ad{Title: "Chair", Category: "Home", Price: 7000, ViewCount: 86},
+						IsSold: true,
+						SoldAt: &soldAt,
+					},
+				},
+			},
 		},
 	}
 
 	actionRepo := &mockActionRepo{
-		actions: map[string][]domain.Action{
-			userID.String() + ":" + string(rune(year)): {
-				{ID: uuid.New(), UserID: userID, Type: domain.ActionView, Category: "Electronics", CreatedAt: time.Now()},
-				{ID: uuid.New(), UserID: userID, Type: domain.ActionView, Category: "Electronics", CreatedAt: time.Now()},
-				{ID: uuid.New(), UserID: userID, Type: domain.ActionMessage, Category: "Auto", CreatedAt: time.Now()},
-			},
-		},
+		err: errors.New("actions must not be requested"),
 	}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
@@ -132,9 +152,30 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	if recap.TotalMessages != 1 {
 		t.Errorf("expected 1 message, got %d", recap.TotalMessages)
 	}
+	if recap.TotalPurchases != 1 || recap.TotalSales != 1 {
+		t.Fatalf("purchases/sales = %d/%d, want 1/1", recap.TotalPurchases, recap.TotalSales)
+	}
+	if !recap.Summary.Combined.HasBuyerData || !recap.Summary.Combined.HasSellerData {
+		t.Fatalf("combined summary = %#v, want both sides", recap.Summary.Combined)
+	}
+	if recap.Summary.Headline != "Вы были по обе стороны Авито" {
+		t.Fatalf("headline = %q", recap.Summary.Headline)
+	}
+	buyerCards, sellerCards := 0, 0
+	for _, card := range recap.Cards {
+		switch card.Kind {
+		case "buyer":
+			buyerCards++
+		case "seller":
+			sellerCards++
+		}
+	}
+	if buyerCards < 2 || sellerCards < 2 {
+		t.Fatalf("buyer/seller cards = %d/%d, want at least 2/2", buyerCards, sellerCards)
+	}
 }
 
-func TestGenerator_Execute_NoActions(t *testing.T) {
+func TestGenerator_Execute_EmptyProfile(t *testing.T) {
 	userID := uuid.New()
 	year := 2025
 
@@ -163,6 +204,9 @@ func TestGenerator_Execute_NoActions(t *testing.T) {
 	if len(recap.Achievements) != 0 {
 		t.Errorf("expected 0 achievements, got %d", len(recap.Achievements))
 	}
+	if len(recap.Cards) != 2 || recap.Cards[0].ID != "year_overview" || recap.Cards[1].ID != "next_step" {
+		t.Fatalf("cards = %#v, want overview and next step", recap.Cards)
+	}
 }
 
 func TestGenerator_UserNotFound(t *testing.T) {
@@ -188,31 +232,50 @@ func TestGenerator_UserNotFound(t *testing.T) {
 
 func TestCalculateMetrics(t *testing.T) {
 	userID := uuid.New()
-	actions := []domain.Action{
-		{UserID: userID, Type: domain.ActionView, Category: "Electronics", CreatedAt: time.Now()},
-		{UserID: userID, Type: domain.ActionView, Category: "Electronics", CreatedAt: time.Now()},
-		{UserID: userID, Type: domain.ActionMessage, Category: "Auto", CreatedAt: time.Now()},
-		{UserID: userID, Type: domain.ActionPurchase, Category: "Auto", CreatedAt: time.Now()},
-		{UserID: userID, Type: domain.ActionFavorite, Category: "Books", CreatedAt: time.Now()},
-	}
+	year := 2025
+	firstDay := time.Date(year, time.February, 1, 10, 0, 0, 0, time.UTC)
+	secondDay := time.Date(year, time.February, 2, 10, 0, 0, 0, time.UTC)
+	previousYear := time.Date(year-1, time.December, 1, 10, 0, 0, 0, time.UTC)
 
 	userRepo := &mockUserRepo{
 		users: map[uuid.UUID]domain.User{
-			userID: {ID: userID, Name: "Test User"},
+			userID: {
+				ID:         userID,
+				Name:       "Test User",
+				ChatsCount: 1,
+				Views: []domain.ViewedAd{
+					{
+						Ad:           domain.Ad{Title: "Camera", Category: "Electronics", ViewCount: 1},
+						LastViewedAt: firstDay,
+						IsFavorite:   true,
+						FavoritedAt:  &firstDay,
+					},
+					{
+						Ad:           domain.Ad{Title: "Book", Category: "Books", ViewCount: 1},
+						LastViewedAt: secondDay,
+						IsPurchased:  true,
+						PurchasedAt:  &secondDay,
+					},
+					{
+						Ad:           domain.Ad{Title: "Old car", Category: "Transport", ViewCount: 500},
+						LastViewedAt: previousYear,
+						IsFavorite:   true,
+						FavoritedAt:  &previousYear,
+						IsPurchased:  true,
+						PurchasedAt:  &previousYear,
+					},
+				},
+			},
 		},
 	}
 
-	actionRepo := &mockActionRepo{
-		actions: map[string][]domain.Action{
-			userID.String() + ":" + string(rune(2025)): actions,
-		},
-	}
+	actionRepo := &mockActionRepo{actions: map[string][]domain.Action{}}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
 	gen := generator.New(userRepo, actionRepo, recapRepo)
 
-	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, 2025)
+	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -229,53 +292,44 @@ func TestCalculateMetrics(t *testing.T) {
 	if recap.TotalFavorites != 1 {
 		t.Errorf("expected 1 favorite, got %d", recap.TotalFavorites)
 	}
+	if recap.ActivityDays != 2 {
+		t.Errorf("expected 2 activity days, got %d", recap.ActivityDays)
+	}
+	if recap.Summary.Buyer.MainCategory != "Books" {
+		t.Errorf("main buyer category = %q, want Books because purchases take priority", recap.Summary.Buyer.MainCategory)
+	}
 }
 
 func TestAssignAchievements(t *testing.T) {
 	userID := uuid.New()
 	year := 2025
-
-	var actions []domain.Action
-	for i := 0; i < 1500; i++ {
-		actions = append(actions, domain.Action{
-			ID: uuid.New(), UserID: userID,
-			Type: domain.ActionView, Category: "Electronics",
-			CreatedAt: time.Now().AddDate(0, 0, -i),
-		})
-	}
-	for i := 0; i < 100; i++ {
-		actions = append(actions, domain.Action{
-			ID: uuid.New(), UserID: userID,
-			Type: domain.ActionMessage, Category: "Auto",
-			CreatedAt: time.Now().AddDate(0, 0, -i),
-		})
-	}
+	views := make([]domain.ViewedAd, 0, 15)
 	for i := 0; i < 15; i++ {
-		actions = append(actions, domain.Action{
-			ID: uuid.New(), UserID: userID,
-			Type: domain.ActionPurchase, Category: "Books",
-			CreatedAt: time.Now(),
+		date := time.Date(year, time.January, i+1, 10, 0, 0, 0, time.UTC)
+		views = append(views, domain.ViewedAd{
+			Ad:           domain.Ad{Title: "Item", Category: "Books", ViewCount: 100},
+			LastViewedAt: date,
+			IsPurchased:  true,
+			PurchasedAt:  &date,
 		})
 	}
+	ownAds := make([]domain.OwnAd, 0, 10)
 	for i := 0; i < 10; i++ {
-		actions = append(actions, domain.Action{
-			ID: uuid.New(), UserID: userID,
-			Type: domain.ActionSale, Category: "Electronics",
-			CreatedAt: time.Now(),
+		date := time.Date(year, time.February, i+1, 10, 0, 0, 0, time.UTC)
+		ownAds = append(ownAds, domain.OwnAd{
+			Ad:     domain.Ad{Title: "Listing", Category: "Electronics", ViewCount: 10},
+			IsSold: true,
+			SoldAt: &date,
 		})
 	}
 
 	userRepo := &mockUserRepo{
 		users: map[uuid.UUID]domain.User{
-			userID: {ID: userID, Name: "Test User"},
+			userID: {ID: userID, Name: "Test User", ChatsCount: 100, Views: views, OwnAds: ownAds},
 		},
 	}
 
-	actionRepo := &mockActionRepo{
-		actions: map[string][]domain.Action{
-			userID.String() + ":" + string(rune(year)): actions,
-		},
-	}
+	actionRepo := &mockActionRepo{actions: map[string][]domain.Action{}}
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
