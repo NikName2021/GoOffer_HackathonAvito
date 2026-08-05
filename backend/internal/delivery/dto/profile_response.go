@@ -14,6 +14,8 @@ type ProfileResponse struct {
 	Name       string                    `json:"name"`
 	JoinedAt   string                    `json:"joinedAt"`
 	AvatarURL  string                    `json:"avatarUrl,omitempty"`
+	Views      []ViewedAdRequest         `json:"views"`
+	OwnAds     []OwnAdRequest            `json:"ownAds"`
 	Stats      ProfileStatsResponse      `json:"stats"`
 	Highlights ProfileHighlightsResponse `json:"highlights"`
 	Purchases  []ProfilePurchaseResponse `json:"purchases"`
@@ -76,12 +78,22 @@ func ToProfileResponse(user *domain.User) ProfileResponse {
 	for i := range summary.Sales {
 		sales[i] = toSaleResponse(&summary.Sales[i])
 	}
+	views := make([]ViewedAdRequest, len(user.Views))
+	for i := range user.Views {
+		views[i] = toViewedAdWriteModel(&user.Views[i])
+	}
+	ownAds := make([]OwnAdRequest, len(user.OwnAds))
+	for i := range user.OwnAds {
+		ownAds[i] = toOwnAdWriteModel(&user.OwnAds[i])
+	}
 
 	return ProfileResponse{
 		ID:        summary.ID,
 		Name:      summary.Name,
 		JoinedAt:  summary.JoinedAt.Format(dateLayout),
 		AvatarURL: summary.AvatarURL,
+		Views:     views,
+		OwnAds:    ownAds,
 		Stats: ProfileStatsResponse{
 			Likes:          summary.Stats.Likes,
 			ChatsCount:     summary.Stats.ChatsCount,
@@ -102,6 +114,52 @@ func ToProfileResponse(user *domain.User) ProfileResponse {
 		},
 		Purchases: purchases,
 		Sales:     sales,
+	}
+}
+
+func toViewedAdWriteModel(view *domain.ViewedAd) ViewedAdRequest {
+	response := ViewedAdRequest{
+		AdRequest:    toAdWriteModel(&view.Ad),
+		LastViewedAt: view.LastViewedAt.Format(dateTimeLayout),
+		IsFavorite:   view.IsFavorite,
+		IsPurchased:  view.IsPurchased,
+	}
+	if view.FavoritedAt != nil {
+		response.FavoritedAt = view.FavoritedAt.Format(dateTimeLayout)
+	}
+	if view.PurchasedAt != nil {
+		response.PurchasedAt = view.PurchasedAt.Format(dateTimeLayout)
+	}
+	return response
+}
+
+func toOwnAdWriteModel(ad *domain.OwnAd) OwnAdRequest {
+	response := OwnAdRequest{
+		AdRequest:  toAdWriteModel(&ad.Ad),
+		IsArchived: ad.IsArchived,
+		IsSold:     ad.IsSold,
+	}
+	if ad.SoldAt != nil {
+		response.SoldAt = ad.SoldAt.Format(dateLayout)
+	}
+	if ad.Review != nil {
+		response.Review = &ReviewRequest{
+			Comment:   ad.Review.Comment,
+			Rating:    ad.Review.Rating,
+			CreatedAt: ad.Review.CreatedAt.Format(dateLayout),
+		}
+	}
+	return response
+}
+
+func toAdWriteModel(ad *domain.Ad) AdRequest {
+	return AdRequest{
+		Title:       ad.Title,
+		Category:    ad.Category,
+		Subcategory: ad.Subcategory,
+		ImageURL:    ad.ImageURL,
+		Price:       ad.Price,
+		ViewCount:   ad.ViewCount,
 	}
 }
 
