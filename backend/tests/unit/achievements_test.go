@@ -3,7 +3,6 @@ package unit
 import (
 	"testing"
 
-	"gooffer/backend/internal/domain"
 	"gooffer/backend/internal/usecase/generator"
 )
 
@@ -12,7 +11,7 @@ func TestAssignAchievements_Curious(t *testing.T) {
 		TotalViews: 600,
 	}
 
-	achievements := assignAchievementsForTest(metrics)
+	achievements := generator.AssignAchievements(metrics)
 
 	if len(achievements) == 0 {
 		t.Error("expected curious achievement, got none")
@@ -39,7 +38,7 @@ func TestAssignAchievements_NoAchievements(t *testing.T) {
 		ActivityDays:   50,
 	}
 
-	achievements := assignAchievementsForTest(metrics)
+	achievements := generator.AssignAchievements(metrics)
 
 	if len(achievements) != 0 {
 		t.Errorf("expected 0 achievements, got %d", len(achievements))
@@ -55,13 +54,16 @@ func TestAssignAchievements_AllAchievements(t *testing.T) {
 		ActivityDays:   350,
 	}
 
-	achievements := assignAchievementsForTest(metrics)
+	achievements := generator.AssignAchievements(metrics)
 
-	// Должно быть 7 ачивок
-	expectedSlugs := map[string]bool{
-		"curious": true, "explorer": true,
-		"social_butterfly": true, "seller_master": true,
-		"shopaholic": true, "veteran": true, "enthusiast": true,
+	expectedSlugs := map[string]struct{}{
+		"curious":          {},
+		"explorer":         {},
+		"social_butterfly": {},
+		"seller_master":    {},
+		"shopaholic":       {},
+		"veteran":          {},
+		"enthusiast":       {},
 	}
 
 	if len(achievements) != 7 {
@@ -69,41 +71,8 @@ func TestAssignAchievements_AllAchievements(t *testing.T) {
 	}
 
 	for _, ach := range achievements {
-		if !expectedSlugs[ach.Slug] {
+		if _, ok := expectedSlugs[ach.Slug]; !ok {
 			t.Errorf("unexpected achievement: %s", ach.Slug)
 		}
-	}
-}
-
-func assignAchievementsForTest(metrics *generator.UserMetrics) []domain.Achievement {
-	var result []domain.Achievement
-
-	for _, ach := range domain.DefaultAchievements {
-		if checkConditionForTest(ach, metrics) {
-			result = append(result, ach)
-		}
-	}
-
-	return result
-}
-
-func checkConditionForTest(ach domain.Achievement, metrics *generator.UserMetrics) bool {
-	switch ach.Slug {
-	case "curious":
-		return metrics.TotalViews >= 500
-	case "explorer":
-		return metrics.TotalViews >= 1000
-	case "social_butterfly":
-		return metrics.TotalMessages >= 50
-	case "seller_master":
-		return metrics.TotalSales >= 5
-	case "shopaholic":
-		return metrics.TotalPurchases >= 10
-	case "veteran":
-		return metrics.ActivityDays >= 300
-	case "enthusiast":
-		return metrics.ActivityDays >= 100
-	default:
-		return false
 	}
 }

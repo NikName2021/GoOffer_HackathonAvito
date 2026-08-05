@@ -27,7 +27,7 @@
 
 [ОЖИДАЕТСЯ] BACKEND 2
 -------------------------------------------------
-Зона ответственности: миграции, репозитории, тестовые профили
+Зона ответственности: PostgreSQL, миграции, репозитории, тестовые профили
 
 Что нужно сделать:
   - migrations/           - SQL миграции (up/down)
@@ -43,7 +43,7 @@
 
 [ОЖИДАЕТСЯ] BACKEND 3
 ---------------------------------------------------
-Зона ответственности: PostgreSQL, HTTP API, обработка ошибок, Docker, деплой
+Зона ответственности:HTTP API, обработка ошибок, Docker, деплой
 
 Что нужно сделать:
   - delivery/handlers/   - HTTP обработчики
@@ -110,13 +110,52 @@ API эндпоинты (уже спроектированы):
 ============================================================================================================
 Место для Backend-2:
 
+[ГОТОВО] BACKEND 2
+--------------------------------------------------------------------------
+Зона ответственности: миграции, PostgreSQL-репозитории, Redis-кэш
 
+Что сделано:
+  - migrations/001_init.*           — таблицы users, categories, actions, recaps
+  - migrations/002_seed_*           — 4 тестовых профиля с actions за 2025
+  - migrations/003-005              — детали профиля, авторизация и CRUD
+  - repository/postgres/            — UserRepository, ActionRepository, RecapRepository
+  - repository/redis/               — кэши recap и auth-сессий (JSON + TTL)
+  - internal/config/config.go       — загрузка настроек PostgreSQL
+  - pkg/errors/errors.go            — ErrNotFound и др.
+  - go.mod                          — зависимости pgx и redis
 
+UUID тестовых профилей:
+  11111111-1111-4111-8111-111111111111 — Анна
+  22222222-2222-4222-8222-222222222222 — Михаил
+  33333333-3333-4333-8333-333333333333 — Елена
+  44444444-4444-4444-8444-444444444444 — Даниил
 
+Запуск миграций:
+  Автоматически при старте backend через встроенный migrations.Apply.
+  Применённые файлы регистрируются в schema_migrations.
 
+  Вручную (локально без Docker backend):
+  docker compose --env-file .env up -d postgres redis
+  PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/001_init.up.sql
+  PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/002_seed_test_profiles.up.sql
 
+  Полный стек:
+  docker compose --env-file .env up --build
 
+Интеграционный тест:
+  DB_PORT=5446 go test ./tests/integration/... -v
 
+Для Backend 3 (подключение репозиториев):
+  pool, _ := postgres.NewPool(ctx, cfg.DatabaseURL())
+  userRepo := postgres.NewUserRepository(pool)
+  actionRepo := postgres.NewActionRepository(pool)
+  recapRepo := postgres.NewRecapRepository(pool)
+
+Docker (Backend 2):
+  - backend/Dockerfile — multi-stage сборка server
+  - миграции встраиваются в server через go:embed
+
+============================================================================================================
 
 
 
@@ -139,4 +178,3 @@ API эндпоинты (уже спроектированы):
 
 ============================================================================================================
 Место для Frontend:
-

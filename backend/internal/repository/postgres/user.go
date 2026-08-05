@@ -6,17 +6,16 @@ import (
 	"errors"
 	"fmt"
 
-	"gooffer/backend/internal/domain"
-	apperrors "gooffer/backend/pkg/errors"
-
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"gooffer/backend/internal/domain"
+	apperrors "gooffer/backend/pkg/errors"
 )
 
 const profileColumns = `
-	id, name, avatar, avatar_fallback, accent_color, registered_at, profile_type,
-	chats_count, favorite_category, metrics, purchases, sales, listing_views`
+	id, name, avatar, registered_at, profile_type, likes, chats_count,
+	own_ads, viewed_ads`
 
 type UserRepository struct {
 	pool *pgxpool.Pool
@@ -70,42 +69,122 @@ func (r *UserRepository) ListProfiles(ctx context.Context, accountID uuid.UUID) 
 	return users, nil
 }
 
+func (r *UserRepository) Create(ctx context.Context, accountID uuid.UUID, user *domain.User) error {
+	ownAds, viewedAds, err := marshalProfileActivity(user)
+	if err != nil {
+		return err
+	}
+	const query = `
+		INSERT INTO users (
+			id, account_id, name, avatar, registered_at, profile_type,
+			likes, chats_count, own_ads, viewed_ads
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	if _, err := r.pool.Exec(ctx, query,
+		user.ID,
+		accountID,
+		user.Name,
+		user.Avatar,
+		user.RegisteredAt,
+		user.ProfileType,
+		user.Likes,
+		user.ChatsCount,
+		ownAds,
+		viewedAds,
+	); err != nil {
+		return fmt.Errorf("insert user: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepository) Update(ctx context.Context, accountID uuid.UUID, user *domain.User) error {
+	ownAds, viewedAds, err := marshalProfileActivity(user)
+	if err != nil {
+		return err
+	}
+	const query = `
+		UPDATE users SET
+			name = $3,
+			avatar = $4,
+			registered_at = $5,
+			profile_type = $6,
+			likes = $7,
+			chats_count = $8,
+			own_ads = $9,
+			viewed_ads = $10,
+			updated_at = NOW()
+		WHERE account_id = $1 AND id = $2`
+	result, err := r.pool.Exec(ctx, query,
+		accountID,
+		user.ID,
+		user.Name,
+		user.Avatar,
+		user.RegisteredAt,
+		user.ProfileType,
+		user.Likes,
+		user.ChatsCount,
+		ownAds,
+		viewedAds,
+	)
+	if err != nil {
+		return fmt.Errorf("update user: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return apperrors.ErrNotFound
+	}
+	return nil
+}
+
+func (r *UserRepository) Delete(ctx context.Context, accountID, id uuid.UUID) error {
+	result, err := r.pool.Exec(ctx, `DELETE FROM users WHERE account_id = $1 AND id = $2`, accountID, id)
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+	if result.RowsAffected() == 0 {
+		return apperrors.ErrNotFound
+	}
+	return nil
+}
+
 func scanUser(scanner rowScanner) (domain.User, error) {
 	var user domain.User
-	var metricsJSON []byte
-	var purchasesJSON []byte
-	var salesJSON []byte
-	var listingViewsJSON []byte
-
+	var ownAdsJSON []byte
+	var viewedAdsJSON []byte
 	if err := scanner.Scan(
 		&user.ID,
 		&user.Name,
 		&user.Avatar,
-		&user.AvatarFallback,
-		&user.AccentColor,
 		&user.RegisteredAt,
 		&user.ProfileType,
+		&user.Likes,
 		&user.ChatsCount,
-		&user.FavoriteCategory,
-		&metricsJSON,
-		&purchasesJSON,
-		&salesJSON,
-		&listingViewsJSON,
+		&ownAdsJSON,
+		&viewedAdsJSON,
 	); err != nil {
 		return domain.User{}, err
 	}
-
-	if err := json.Unmarshal(metricsJSON, &user.Metrics); err != nil {
-		return domain.User{}, fmt.Errorf("decode profile metrics: %w", err)
+	if err := json.Unmarshal(ownAdsJSON, &user.OwnAds); err != nil {
+		return domain.User{}, fmt.Errorf("decode own ads: %w", err)
 	}
-	if err := json.Unmarshal(purchasesJSON, &user.Purchases); err != nil {
-		return domain.User{}, fmt.Errorf("decode purchases: %w", err)
+	if err := json.Unmarshal(viewedAdsJSON, &user.Views); err != nil {
+		return domain.User{}, fmt.Errorf("decode viewed ads: %w", err)
 	}
-	if err := json.Unmarshal(salesJSON, &user.Sales); err != nil {
-		return domain.User{}, fmt.Errorf("decode sales: %w", err)
+	if user.OwnAds == nil {
+		user.OwnAds = []domain.OwnAd{}
 	}
-	if err := json.Unmarshal(listingViewsJSON, &user.ListingViews); err != nil {
-		return domain.User{}, fmt.Errorf("decode listing views: %w", err)
+	if user.Views == nil {
+		user.Views = []domain.ViewedAd{}
 	}
 	return user, nil
+}
+
+func marshalProfileActivity(user *domain.User) ([]byte, []byte, error) {
+	ownAds, err := json.Marshal(user.OwnAds)
+	if err != nil {
+		return nil, nil, fmt.Errorf("encode own ads: %w", err)
+	}
+	viewedAds, err := json.Marshal(user.Views)
+	if err != nil {
+		return nil, nil, fmt.Errorf("encode viewed ads: %w", err)
+	}
+	return ownAds, viewedAds, nil
 }
