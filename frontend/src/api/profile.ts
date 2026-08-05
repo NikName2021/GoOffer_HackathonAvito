@@ -1,8 +1,12 @@
 import axios from 'axios'
 
 import { apiClient } from './api'
-import type { CreateProfileRequest } from '@/types/profileRequest.type'
-import type { GetProfileResponse, GetProfilesResponse } from '@/types/profileResponse.type'
+import type { CreateProfileRequest, UpdateProfileRequest } from '@/types/profileRequest.type'
+import type {
+  GetProfileDetailsResponse,
+  GetProfileResponse,
+  GetProfilesResponse,
+} from '@/types/profileResponse.type'
 
 interface ProfileErrorEnvelope {
   error?: {
@@ -44,5 +48,31 @@ export async function createProfile(profile: CreateProfileRequest): Promise<GetP
     return data
   } catch (error) {
     throwProfileError(error, 'Не удалось создать профиль.')
+  }
+}
+
+export async function getProfile(profileId: string): Promise<GetProfileDetailsResponse> {
+  try {
+    const { data } = await apiClient.get<GetProfileDetailsResponse>(`/profiles/${profileId}`)
+    return data
+  } catch (error) {
+    throwProfileError(error, 'Не удалось загрузить данные профиля.')
+  }
+}
+
+export async function updateProfile(profileId: string, profile: UpdateProfileRequest): Promise<GetProfileResponse> {
+  try {
+    const { data } = await apiClient.put<GetProfileResponse>(`/profiles/${profileId}`, profile)
+    return data
+  } catch (error) {
+    throwProfileError(error, 'Не удалось сохранить изменения профиля.')
+  }
+}
+
+export async function deleteProfile(profileId: string): Promise<void> {
+  try {
+    await apiClient.delete(`/profiles/${profileId}`)
+  } catch (error) {
+    throwProfileError(error, 'Не удалось удалить профиль.')
   }
 }

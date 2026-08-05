@@ -1,3 +1,5 @@
+import type { CreateOwnAdRequest, CreateViewedAdRequest } from './profileRequest.type'
+
 interface ProfileActivityResponseBase {
   title: string
   category: string
@@ -48,6 +50,8 @@ export interface GetProfileResponse {
   name: string
   joinedAt: string
   avatarUrl?: string
+  views: CreateViewedAdRequest[]
+  ownAds: CreateOwnAdRequest[]
   stats: ProfileStatsResponse
   highlights: ProfileHighlightsResponse
   purchases: ProfilePurchaseResponse[]
@@ -55,3 +59,6 @@ export interface GetProfileResponse {
 }
 
 export type GetProfilesResponse = GetProfileResponse[]
+
+/** Ответ GET /profiles/{id}: итоги для интерфейса и исходные данные для формы редактирования. */
+export type GetProfileDetailsResponse = GetProfileResponse

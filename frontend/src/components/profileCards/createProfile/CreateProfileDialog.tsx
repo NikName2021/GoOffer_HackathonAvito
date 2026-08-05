@@ -1,8 +1,8 @@
-import { Eye, Megaphone, UserRound } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 
 import { OwnAdsFormSection } from './OwnAdsFormSection'
 import { ProfileFormSection } from './ProfileFormSection'
+import { ProfileFormTabs } from './ProfileFormTabs'
 import { useCreateProfileForm } from './useCreateProfileForm'
 import { validateCreateProfile, type CreateProfileSection } from './validateCreateProfile'
 import { ViewsFormSection } from './ViewsFormSection'
@@ -18,22 +18,19 @@ import {
 import type { CreateProfileRequest } from '@/types/profileRequest.type'
 
 interface CreateProfileDialogProps {
-  onCreate: (profile: CreateProfileRequest) => Promise<void>
+  initialProfile?: CreateProfileRequest
+  mode?: 'create' | 'edit'
   onOpenChange: (open: boolean) => void
+  onSubmit: (profile: CreateProfileRequest) => Promise<void>
   open: boolean
 }
 
-const sections = [
-  { id: 'profile', icon: UserRound, label: 'Профиль' },
-  { id: 'ads', icon: Megaphone, label: 'Объявления' },
-  { id: 'views', icon: Eye, label: 'Просмотры' },
-] as const
-
-export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProfileDialogProps) {
+export function CreateProfileDialog({ initialProfile, mode = 'create', onOpenChange, onSubmit, open }: CreateProfileDialogProps) {
   const [activeSection, setActiveSection] = useState<CreateProfileSection>('profile')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const form = useCreateProfileForm()
+  const form = useCreateProfileForm(initialProfile)
+  const isEditing = mode === 'edit'
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -48,12 +45,12 @@ export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProf
     setError('')
     setIsSubmitting(true)
     try {
-      await onCreate(form.profile)
+      await onSubmit(form.profile)
       form.reset()
       setActiveSection('profile')
       onOpenChange(false)
     } catch (requestError) {
-      setError(requestError instanceof Error ? requestError.message : 'Не удалось создать профиль.')
+      setError(requestError instanceof Error ? requestError.message : 'Не удалось сохранить профиль.')
     } finally {
       setIsSubmitting(false)
     }
@@ -63,45 +60,26 @@ export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProf
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="grid max-h-[calc(100dvh-2rem)] grid-rows-[auto_auto_minmax(0,1fr)_auto] gap-4 overflow-hidden rounded-[28px] p-5 sm:max-w-4xl sm:p-6">
         <DialogHeader className="pr-10">
-          <DialogTitle className="text-xl font-bold text-[#1f1f1f]">Новый профиль</DialogTitle>
+          <DialogTitle className="text-xl font-bold text-[#1f1f1f]">
+            {isEditing ? 'Редактирование профиля' : 'Новый профиль'}
+          </DialogTitle>
           <DialogDescription className="text-xs text-[#8a8d91]">
-            Заполните данные для создания персональных итогов года.
+            Заполните данные профиля, объявлений и просмотров.
           </DialogDescription>
         </DialogHeader>
 
         <form className="contents" noValidate onSubmit={handleSubmit}>
-          <nav aria-label="Разделы формы" className="grid grid-cols-3 gap-1 rounded-2xl bg-[#f2f3f5] p-1">
-            {sections.map(({ id, icon: Icon, label }) => {
-              const count = id === 'ads' ? form.profile.ownAds.length : id === 'views' ? form.profile.views.length : null
-              const isActive = activeSection === id
-
-              return (
-                <button
-                  aria-current={isActive ? 'step' : undefined}
-                  className={`flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition ${
-                    isActive ? 'bg-white text-[#1f1f1f] shadow-sm' : 'text-[#6f7377] hover:text-[#1f1f1f]'
-                  }`}
-                  key={id}
-                  onClick={() => {
-                    setActiveSection(id)
-                    setError('')
-                  }}
-                  type="button"
-                >
-                  <Icon aria-hidden="true" className={`size-4 ${isActive ? 'text-[#00aaff]' : ''}`} />
-                  <span className="truncate">{label}</span>
-                  {count !== null && count > 0 && (
-                    <span className="rounded-full bg-[#e8f6ff] px-1.5 text-[10px] text-[#00aaff]">{count}</span>
-                  )}
-                </button>
-              )
-            })}
-          </nav>
+          <ProfileFormTabs
+            activeSection={activeSection}
+            onChange={(section) => {
+              setActiveSection(section)
+              setError('')
+            }}
+            profile={form.profile}
+          />
 
           <div className="min-h-0 overflow-y-auto px-1 py-1">
-            {activeSection === 'profile' && (
-              <ProfileFormSection onChange={form.updateProfile} profile={form.profile} />
-            )}
+            {activeSection === 'profile' && <ProfileFormSection onChange={form.updateProfile} profile={form.profile} />}
             {activeSection === 'ads' && (
               <OwnAdsFormSection
                 ads={form.profile.ownAds}
@@ -121,18 +99,10 @@ export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProf
           </div>
 
           <DialogFooter className="items-center border-t border-[#eceeef] pt-4 sm:justify-between">
-            <p aria-live="polite" className="mr-auto text-xs text-[#ff4053]">
-              {error}
-            </p>
-            <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} type="button" variant="ghost">
-              Отмена
-            </Button>
-            <Button
-              className="bg-[#00aaff] px-5 text-white hover:bg-[#0099e6]"
-              disabled={isSubmitting}
-              type="submit"
-            >
-              {isSubmitting ? 'Создаём…' : 'Создать карточку'}
+            <p aria-live="polite" className="mr-auto text-xs text-[#ff4053]">{error}</p>
+            <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} type="button" variant="ghost">Отмена</Button>
+            <Button className="bg-[#00aaff] px-5 text-white hover:bg-[#0099e6]" disabled={isSubmitting} type="submit">
+              {isSubmitting ? 'Сохраняем…' : isEditing ? 'Сохранить изменения' : 'Создать карточку'}
             </Button>
           </DialogFooter>
         </form>

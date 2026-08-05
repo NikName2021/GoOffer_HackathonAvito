@@ -69,6 +69,8 @@ export function createMockProfileResponse(profile: CreateProfileRequest, id: str
     name: profile.name,
     joinedAt: profile.joinedAt,
     avatarUrl: profile.avatarUrl,
+    views: profile.views,
+    ownAds: profile.ownAds,
     stats: {
       likes: profile.likes,
       chatsCount: profile.chatsCount,

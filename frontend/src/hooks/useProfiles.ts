@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-import { createProfile, getProfiles } from '@/api/profile'
-import type { CreateProfileRequest } from '@/types/profileRequest.type'
-import type { GetProfilesResponse } from '@/types/profileResponse.type'
+import { createProfile, deleteProfile, getProfile, getProfiles, updateProfile } from '@/api/profile'
+import type { CreateProfileRequest, UpdateProfileRequest } from '@/types/profileRequest.type'
+import type {
+  GetProfilesResponse,
+} from '@/types/profileResponse.type'
 
 const profileKeys = {
+	 detail: (profileId: string) => ['profile', profileId] as const,
   list: (accountId: string) => ['profiles', accountId] as const,
 }
 
@@ -28,6 +31,46 @@ export function useCreateProfile(accountId?: string) {
         ...profiles,
         createdProfile,
       ])
+    },
+  })
+}
+
+export function useProfileDetails(profileId?: string) {
+  return useQuery({
+    enabled: Boolean(profileId),
+    queryFn: () => getProfile(profileId ?? ''),
+    queryKey: profileKeys.detail(profileId ?? 'unknown'),
+  })
+}
+
+export function useUpdateProfile(accountId?: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ id, profile }: { id: string; profile: UpdateProfileRequest }) => updateProfile(id, profile),
+    onSuccess: (updatedProfile, { id }) => {
+      if (accountId) {
+        queryClient.setQueryData<GetProfilesResponse>(profileKeys.list(accountId), (profiles = []) =>
+          profiles.map((profile) => (profile.id === updatedProfile.id ? updatedProfile : profile)),
+        )
+      }
+      queryClient.removeQueries({ queryKey: profileKeys.detail(id) })
+    },
+  })
+}
+
+export function useDeleteProfile(accountId?: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteProfile,
+    onSuccess: (_, id) => {
+      if (accountId) {
+        queryClient.setQueryData<GetProfilesResponse>(profileKeys.list(accountId), (profiles = []) =>
+          profiles.filter((profile) => profile.id !== id),
+        )
+      }
+      queryClient.removeQueries({ queryKey: profileKeys.detail(id) })
     },
   })
 }

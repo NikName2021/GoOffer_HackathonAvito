@@ -2,21 +2,46 @@ import { useState } from 'react'
 
 import { AddProfileButton } from '@/components/profileCards/AddProfileButton'
 import { CreateProfileDialog } from '@/components/profileCards/createProfile/CreateProfileDialog'
+import { DeleteProfileDialog } from '@/components/profileCards/DeleteProfileDialog'
 import { ProfileCard } from '@/components/profileCards/ProfileCard'
 import { Sidebar } from '@/components/sidebar/Sidebar'
-import { useCreateProfile, useProfiles } from '@/hooks/useProfiles'
+import {
+  useCreateProfile,
+  useDeleteProfile,
+  useProfileDetails,
+  useProfiles,
+  useUpdateProfile,
+} from '@/hooks/useProfiles'
 import { useAppSelector } from '@/store/hooks'
 import type { CreateProfileRequest } from '@/types/profileRequest.type'
+import type { GetProfileDetailsResponse, GetProfileResponse } from '@/types/profileResponse.type'
 
 export function HomePage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null)
+  const [profileToDelete, setProfileToDelete] = useState<GetProfileResponse | null>(null)
   const account = useAppSelector((state) => state.auth.account)
   const profilesQuery = useProfiles(account?.id)
+  const editingProfileQuery = useProfileDetails(editingProfileId ?? undefined)
   const createProfileMutation = useCreateProfile(account?.id)
+  const updateProfileMutation = useUpdateProfile(account?.id)
+  const deleteProfileMutation = useDeleteProfile(account?.id)
   const profiles = profilesQuery.data ?? []
+  const editingProfile = editingProfileQuery.data
 
-  async function handleCreateProfile(profile: CreateProfileRequest) {
+  async function handleProfileSubmit(profile: CreateProfileRequest) {
+    if (editingProfileId) {
+      await updateProfileMutation.mutateAsync({ id: editingProfileId, profile })
+      return
+    }
     await createProfileMutation.mutateAsync(profile)
+  }
+
+  function closeProfileForm(open: boolean) {
+    if (!open) {
+      setIsCreateDialogOpen(false)
+      setEditingProfileId(null)
+    }
   }
 
   return (
@@ -27,9 +52,7 @@ export function HomePage() {
         <div className="mx-auto max-w-[1120px]">
           <header>
             <p className="text-sm font-semibold text-[#00aaff]">Авито · 2026</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-[#1f1f1f] sm:text-4xl">
-              Чьи итоги посмотрим?
-            </h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-[#1f1f1f] sm:text-4xl">Чьи итоги посмотрим?</h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#6f7377] sm:text-base">
               Выберите тестовый профиль, чтобы собрать персональную историю года на основе его активности.
             </p>
@@ -39,16 +62,15 @@ export function HomePage() {
             {!account && <ProfilesNotice text="Войдите в аккаунт через профиль в левом нижнем углу." />}
             {account && profilesQuery.isPending && <ProfilesNotice text="Загружаем профили…" />}
             {account && profilesQuery.isError && (
-              <ProfilesNotice
-                actionLabel="Повторить"
-                onAction={() => void profilesQuery.refetch()}
-                text={profilesQuery.error.message}
-              />
+              <ProfilesNotice actionLabel="Повторить" onAction={() => void profilesQuery.refetch()} text={profilesQuery.error.message} />
+            )}
+            {editingProfileQuery.isError && (
+              <ProfilesNotice actionLabel="Повторить" onAction={() => void editingProfileQuery.refetch()} text={editingProfileQuery.error.message} />
             )}
             {account && profilesQuery.isSuccess && (
               <>
                 {profiles.map((profile) => (
-                  <ProfileCard key={profile.id} profile={profile} />
+                  <ProfileCard key={profile.id} onDelete={setProfileToDelete} onEdit={setEditingProfileId} profile={profile} />
                 ))}
                 <AddProfileButton onClick={() => setIsCreateDialogOpen(true)} />
               </>
@@ -58,12 +80,36 @@ export function HomePage() {
       </main>
 
       <CreateProfileDialog
-        onCreate={handleCreateProfile}
-        onOpenChange={setIsCreateDialogOpen}
-        open={isCreateDialogOpen}
+        initialProfile={editingProfile ? toProfileRequest(editingProfile) : undefined}
+        key={editingProfile?.id ?? (isCreateDialogOpen ? 'create' : 'closed')}
+        mode={editingProfile ? 'edit' : 'create'}
+        onOpenChange={closeProfileForm}
+        onSubmit={handleProfileSubmit}
+        open={isCreateDialogOpen || Boolean(editingProfile)}
+      />
+      <DeleteProfileDialog
+        error={deleteProfileMutation.error instanceof Error ? deleteProfileMutation.error.message : undefined}
+        isDeleting={deleteProfileMutation.isPending}
+        onConfirm={async () => {
+          if (profileToDelete) await deleteProfileMutation.mutateAsync(profileToDelete.id)
+        }}
+        onOpenChange={(open) => !open && setProfileToDelete(null)}
+        profile={profileToDelete}
       />
     </div>
   )
+}
+
+function toProfileRequest(profile: GetProfileDetailsResponse): CreateProfileRequest {
+  return {
+    avatarUrl: profile.avatarUrl,
+    chatsCount: profile.stats.chatsCount,
+    joinedAt: profile.joinedAt,
+    likes: profile.stats.likes,
+    name: profile.name,
+    ownAds: profile.ownAds,
+    views: profile.views,
+  }
 }
 
 interface ProfilesNoticeProps {

@@ -40,8 +40,8 @@ function createEmptyView(): CreateViewedAdRequest {
   }
 }
 
-export function useCreateProfileForm() {
-  const [profile, setProfile] = useState<CreateProfileRequest>(createEmptyProfile)
+export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
+  const [profile, setProfile] = useState<CreateProfileRequest>(() => initialProfile ?? createEmptyProfile())
 
   function updateProfile(patch: Partial<CreateProfileRequest>) {
     setProfile((current) => ({ ...current, ...patch }))
