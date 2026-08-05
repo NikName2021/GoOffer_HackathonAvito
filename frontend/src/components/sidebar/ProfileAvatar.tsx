@@ -1,11 +1,13 @@
+import { UserIcon } from 'lucide-react'
+
 interface ProfileAvatarProps {
   name: string
   onClick: () => void
-  subtitle: string
+  isAuth: boolean
 }
 
-export function ProfileAvatar({ name, onClick, subtitle }: ProfileAvatarProps) {
-  const initial = name.slice(0, 1).toUpperCase() || '?'
+export function ProfileAvatar({ name, onClick, isAuth }: ProfileAvatarProps) {
+  const initial = isAuth ? name.slice(0, 1).toUpperCase() || '?' : <UserIcon aria-hidden="true" className="size-6" />
 
   return (
     <button
@@ -19,7 +21,7 @@ export function ProfileAvatar({ name, onClick, subtitle }: ProfileAvatarProps) {
       </span>
       <span className="hidden min-w-0 lg:block">
         <span className="block truncate text-sm font-semibold text-[#1f1f1f]">{name}</span>
-        <span className="block text-xs text-[#8a8d91]">{subtitle}</span>
+        <span className="block text-xs text-[#8a8d91]">{isAuth ? 'Аккаунт' : 'Авторизация'}</span>
       </span>
     </button>
   )

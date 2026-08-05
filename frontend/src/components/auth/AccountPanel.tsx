@@ -48,7 +48,7 @@ export function AccountPanel({ onLogout }: AccountPanelProps) {
         <div>
           <p className="text-xs font-semibold text-[#1f1f1f]">Безопасная сессия</p>
           <p className="mt-0.5 text-[11px] leading-4 text-[#8a8d91]">
-            Данные аккаунта восстановлены из Redux и проверены сервером.
+            Данные аккаунта проверены сервером.
           </p>
         </div>
       </div>

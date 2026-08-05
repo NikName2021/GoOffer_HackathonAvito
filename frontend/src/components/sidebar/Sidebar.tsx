@@ -42,7 +42,7 @@ export function Sidebar() {
           <ProfileAvatar
             name={displayName}
             onClick={() => setIsAuthOpen(true)}
-            subtitle={account ? 'Аккаунт' : 'Авторизация'}
+            isAuth={!!account}
           />
         </div>
       </aside>
