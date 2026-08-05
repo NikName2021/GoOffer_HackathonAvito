@@ -35,6 +35,30 @@ export function useCreateProfile(accountId?: string) {
   })
 }
 
+export function useCreateProfiles(accountId?: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (profiles: CreateProfileRequest[]) => {
+      const results = await Promise.allSettled(profiles.map((profile) => createProfile(profile)))
+      const created = results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []))
+      const errors = results.flatMap((result, index) =>
+        result.status === 'rejected'
+          ? [{ index, message: result.reason instanceof Error ? result.reason.message : 'Не удалось создать профиль.' }]
+          : [],
+      )
+      return { created, errors }
+    },
+    onSuccess: ({ created }) => {
+      if (!accountId || created.length === 0) return
+      queryClient.setQueryData<GetProfilesResponse>(profileKeys.list(accountId), (profiles = []) => [
+        ...profiles,
+        ...created,
+      ])
+    },
+  })
+}
+
 export function useProfileDetails(profileId?: string) {
   return useQuery({
     enabled: Boolean(profileId),

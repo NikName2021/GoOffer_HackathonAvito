@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { AddProfileButton } from '@/components/profileCards/AddProfileButton'
 import { CreateProfileDialog } from '@/components/profileCards/createProfile/CreateProfileDialog'
 import { DeleteProfileDialog } from '@/components/profileCards/DeleteProfileDialog'
+import { BulkProfilesImportButton } from '@/components/profileCards/importProfiles/BulkProfilesImportButton'
 import { ProfileCard } from '@/components/profileCards/ProfileCard'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import {
@@ -59,6 +60,7 @@ export function HomePage() {
           </header>
 
           <section aria-label="Тестовые профили" className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            {account && profilesQuery.isSuccess && <BulkProfilesImportButton accountId={account.id} />}
             {!account && <ProfilesNotice text="Войдите в аккаунт через профиль в левом нижнем углу." />}
             {account && profilesQuery.isPending && <ProfilesNotice text="Загружаем профили…" />}
             {account && profilesQuery.isError && (
