@@ -51,6 +51,10 @@ export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
     setProfile((current) => ({ ...current, ownAds: [...current.ownAds, createEmptyOwnAd()] }))
   }
 
+  function importOwnAds(ads: CreateOwnAdRequest[]) {
+    setProfile((current) => ({ ...current, ownAds: [...current.ownAds, ...ads] }))
+  }
+
   function updateOwnAd(index: number, ad: CreateOwnAdRequest) {
     setProfile((current) => ({
       ...current,
@@ -67,6 +71,10 @@ export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
 
   function addView() {
     setProfile((current) => ({ ...current, views: [...current.views, createEmptyView()] }))
+  }
+
+  function importViews(views: CreateViewedAdRequest[]) {
+    setProfile((current) => ({ ...current, views: [...current.views, ...views] }))
   }
 
   function updateView(index: number, view: CreateViewedAdRequest) {
@@ -86,6 +94,8 @@ export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
   return {
     addOwnAd,
     addView,
+    importOwnAds,
+    importViews,
     profile,
     removeOwnAd,
     removeView,

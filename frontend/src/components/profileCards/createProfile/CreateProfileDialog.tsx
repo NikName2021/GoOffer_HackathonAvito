@@ -85,6 +85,7 @@ export function CreateProfileDialog({ initialProfile, mode = 'create', onOpenCha
                 ads={form.profile.ownAds}
                 onAdd={form.addOwnAd}
                 onChange={form.updateOwnAd}
+                onImport={form.importOwnAds}
                 onRemove={form.removeOwnAd}
               />
             )}
@@ -92,6 +93,7 @@ export function CreateProfileDialog({ initialProfile, mode = 'create', onOpenCha
               <ViewsFormSection
                 onAdd={form.addView}
                 onChange={form.updateView}
+                onImport={form.importViews}
                 onRemove={form.removeView}
                 views={form.profile.views}
               />

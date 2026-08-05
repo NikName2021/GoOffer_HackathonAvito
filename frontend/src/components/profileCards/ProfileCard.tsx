@@ -31,7 +31,7 @@ export function ProfileCard({ onDelete, onEdit, profile }: ProfileCardProps) {
         <div className="flex shrink-0 items-center gap-2">
           <button
             aria-label="Редактировать профиль"
-            className="flex size-8 items-center justify-center rounded-xl text-white shadow-sm transition hover:brightness-95 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#00b956]"
+            className="cursor-pointer flex size-8 items-center justify-center rounded-xl text-white shadow-sm transition hover:brightness-95 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#00b956]"
             onClick={() => onEdit(profile.id)}
             style={{ backgroundColor: '#00b956' }}
             type="button"
@@ -40,7 +40,7 @@ export function ProfileCard({ onDelete, onEdit, profile }: ProfileCardProps) {
           </button>
           <button
             aria-label="Удалить профиль"
-            className="flex size-8 items-center justify-center rounded-xl bg-[#ff4053] text-white shadow-sm transition hover:bg-[#e6384a] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#ff4053]"
+            className="cursor-pointer flex size-8 items-center justify-center rounded-xl bg-[#ff4053] text-white shadow-sm transition hover:bg-[#e6384a] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#ff4053]"
             onClick={() => onDelete(profile)}
             type="button"
           >
