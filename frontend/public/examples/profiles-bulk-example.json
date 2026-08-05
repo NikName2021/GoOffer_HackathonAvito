@@ -1,0 +1,68 @@
+[
+  {
+    "name": "Алексей Морозов",
+    "joinedAt": "2020-03-18",
+    "avatarUrl": "https://randomuser.me/api/portraits/men/46.jpg",
+    "likes": 124,
+    "chatsCount": 37,
+    "views": [
+      {
+        "title": "Игровая приставка",
+        "category": "Электроника",
+        "subcategory": "Игры и приставки",
+        "price": 42990,
+        "viewCount": 8,
+        "lastViewedAt": "2026-07-12T18:30:00Z",
+        "isFavorite": true,
+        "favoritedAt": "2026-07-10T12:15:00Z",
+        "isPurchased": true,
+        "purchasedAt": "2026-07-12T18:30:00Z"
+      }
+    ],
+    "ownAds": [
+      {
+        "title": "Городской велосипед",
+        "category": "Хобби и отдых",
+        "subcategory": "Велосипеды",
+        "price": 28500,
+        "viewCount": 214,
+        "isArchived": true,
+        "isSold": true,
+        "soldAt": "2026-06-20",
+        "review": {
+          "comment": "Всё прошло отлично",
+          "rating": 5,
+          "createdAt": "2026-06-22"
+        }
+      }
+    ]
+  },
+  {
+    "name": "Мария Соколова",
+    "joinedAt": "2022-09-04",
+    "avatarUrl": "https://randomuser.me/api/portraits/women/52.jpg",
+    "likes": 86,
+    "chatsCount": 19,
+    "views": [
+      {
+        "title": "Кофемашина",
+        "category": "Бытовая техника",
+        "price": 31900,
+        "viewCount": 5,
+        "lastViewedAt": "2026-08-01T09:45:00Z",
+        "isFavorite": false,
+        "isPurchased": false
+      }
+    ],
+    "ownAds": [
+      {
+        "title": "Комплект стульев",
+        "category": "Мебель и интерьер",
+        "price": 12000,
+        "viewCount": 73,
+        "isArchived": false,
+        "isSold": false
+      }
+    ]
+  }
+]

@@ -66,3 +66,6 @@ export interface CreateProfileRequest {
   views: CreateViewedAdRequest[]
   ownAds: CreateOwnAdRequest[]
 }
+
+/** Тело PUT-запроса: все редактируемые исходные данные профиля. */
+export type UpdateProfileRequest = CreateProfileRequest

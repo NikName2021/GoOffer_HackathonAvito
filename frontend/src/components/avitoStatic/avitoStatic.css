@@ -1,0 +1,393 @@
+@font-face {
+  font-family: 'Avito Sans';
+  src: url('https://www.avito.st/s/common/assets/fonts/avito-sans/regular.woff2') format('woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'Avito Sans';
+  src: url('https://www.avito.st/s/common/assets/fonts/avito-sans/bold.woff2') format('woff2');
+  font-weight: 700;
+}
+
+.avito-static-page {
+  min-width: 1100px;
+  min-height: 100vh;
+  background: #fff;
+  color: #000;
+  font-family: 'Avito Sans', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.avito-static-promo-top {
+  position: relative;
+  height: 72px;
+  overflow: hidden;
+  background: #ffe0e0;
+}
+
+.avito-static-promo-copy {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: calc(50% - 658px);
+  transform: translateY(-50%);
+  font-size: 18px;
+}
+
+.avito-static-promo-top > img {
+  position: absolute;
+  top: 0;
+  right: calc(50% - 658px);
+  width: 448px;
+  height: 72px;
+  object-fit: cover;
+}
+
+.avito-static-header,
+.avito-static-search-row,
+.avito-static-container,
+.avito-static-footer {
+  width: 1316px;
+  max-width: calc(100vw - 40px);
+  margin-inline: auto;
+}
+
+.avito-static-nav {
+  display: flex;
+  height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  color: #636363;
+  font-size: 14px;
+}
+
+.avito-static-nav-links,
+.avito-static-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.avito-static-actions {
+  gap: 13px;
+  color: #000;
+}
+
+.avito-static-actions svg {
+  width: 24px;
+  height: 24px;
+  fill: #d6d6d6;
+  stroke: #d6d6d6;
+}
+
+.avito-static-add {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.avito-static-bonus {
+  color: #ffb020;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.avito-static-avatar {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  background: #8bc34a;
+  color: white;
+  font-size: 22px;
+}
+
+.avito-static-search-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr) 218px;
+  align-items: center;
+  gap: 20px;
+  height: 70px;
+}
+
+.avito-static-logo {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.avito-static-logo img {
+  width: 35px;
+  height: 35px;
+}
+
+.avito-static-logo strong {
+  font-size: 34px;
+  letter-spacing: -2.2px;
+}
+
+.avito-static-search {
+  display: grid;
+  grid-template-columns: 164px minmax(0, 1fr) 84px;
+  height: 52px;
+  border-radius: 15px;
+  background: #00aaff;
+}
+
+.avito-static-category-button,
+.avito-static-find,
+.avito-static-search-input {
+  display: flex;
+  align-items: center;
+}
+
+.avito-static-category-button {
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+}
+
+.avito-static-search-input {
+  align-self: center;
+  height: 46px;
+  gap: 8px;
+  border-radius: 13px;
+  background: white;
+  padding: 0 18px;
+  color: #777;
+}
+
+.avito-static-search-input svg {
+  width: 18px;
+}
+
+.avito-static-find {
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+}
+
+.avito-static-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 700;
+}
+
+.avito-static-location svg {
+  width: 16px;
+  fill: #000;
+}
+
+.avito-static-catalog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 980px) 300px;
+  gap: 36px;
+  margin-top: 16px;
+}
+
+.avito-static-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.avito-static-category {
+  position: relative;
+  flex: 0 0 204px;
+  height: 100px;
+  overflow: hidden;
+  border-radius: 22px;
+  background: #f3f3f3;
+}
+
+.avito-static-category:nth-child(5),
+.avito-static-category:nth-child(6) {
+  flex-basis: 132px;
+}
+
+.avito-static-category span {
+  position: absolute;
+  z-index: 1;
+  top: 18px;
+  left: 20px;
+  max-width: 120px;
+  font-size: 16px;
+  line-height: 1.15;
+}
+
+.avito-static-category img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avito-static-main-promo {
+  height: 152px;
+  margin-top: 32px;
+  border-radius: 16px;
+  background-position: center;
+  background-size: cover;
+}
+
+.avito-static-business {
+  height: 394px;
+  border-radius: 24px;
+  background: #f3f3f3;
+  padding: 31px 26px 24px;
+}
+
+.avito-static-business h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.avito-static-business > p {
+  margin-top: 5px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.avito-static-business-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px 12px;
+  margin-top: 23px;
+  text-align: center;
+}
+
+.avito-static-business-grid img {
+  width: 64px;
+  height: 64px;
+  margin: auto;
+  border-radius: 18px;
+}
+
+.avito-static-business-grid span {
+  display: block;
+  margin-top: 7px;
+  font-size: 13px;
+}
+
+.avito-static-business-button {
+  margin-top: 19px;
+  border-radius: 13px;
+  background: white;
+  padding: 14px 5px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  box-shadow: 0 2px 7px #00000010;
+}
+
+.avito-static-products {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 34px 16px;
+  margin-top: 36px;
+}
+
+.avito-static-product {
+  position: relative;
+  min-width: 0;
+}
+
+.avito-static-product > img {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  object-fit: cover;
+}
+
+.avito-static-product h2 {
+  max-width: calc(100% - 35px);
+  margin-top: 9px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+
+.avito-static-product strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 16px;
+}
+
+.avito-static-favorite {
+  position: absolute;
+  top: calc(100% - 57px);
+  right: 7px;
+}
+
+.avito-static-favorite svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+  stroke-width: 2.5;
+}
+
+.avito-static-more {
+  position: absolute;
+  right: 7px;
+  bottom: 4px;
+  width: 20px;
+}
+
+.avito-static-footer {
+  margin-top: 80px;
+  border-top: 1px solid #e5e5e5;
+  padding: 28px 0 36px;
+  color: #777;
+  font-size: 13px;
+}
+
+.avito-static-footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+}
+
+.avito-static-footer p {
+  margin-top: 20px;
+}
+
+.avito-static-messages {
+  position: fixed;
+  z-index: 5;
+  right: 34px;
+  bottom: 0;
+  display: flex;
+  width: 320px;
+  height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 12px 12px 0 0;
+  background: white;
+  padding: 0 20px;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 -3px 18px #00000016;
+}
+
+.avito-static-messages svg {
+  width: 20px;
+}
+
+@media (max-width: 1370px) {
+  .avito-static-promo-copy { left: 30px; }
+  .avito-static-promo-top > img { right: 20px; }
+  .avito-static-catalog-layout { grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; }
+  .avito-static-business { padding-inline: 18px; }
+}
+
+@media (max-width: 1120px) {
+  .avito-static-page { min-width: 800px; }
+  .avito-static-actions span:nth-child(2), .avito-static-actions svg { display: none; }
+  .avito-static-nav-links span:nth-child(n + 4) { display: none; }
+  .avito-static-catalog-layout { display: block; }
+  .avito-static-business { display: none; }
+  .avito-static-products { grid-template-columns: repeat(4, 1fr); }
+}

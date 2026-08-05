@@ -40,8 +40,8 @@ function createEmptyView(): CreateViewedAdRequest {
   }
 }
 
-export function useCreateProfileForm() {
-  const [profile, setProfile] = useState<CreateProfileRequest>(createEmptyProfile)
+export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
+  const [profile, setProfile] = useState<CreateProfileRequest>(() => initialProfile ?? createEmptyProfile())
 
   function updateProfile(patch: Partial<CreateProfileRequest>) {
     setProfile((current) => ({ ...current, ...patch }))
@@ -49,6 +49,10 @@ export function useCreateProfileForm() {
 
   function addOwnAd() {
     setProfile((current) => ({ ...current, ownAds: [...current.ownAds, createEmptyOwnAd()] }))
+  }
+
+  function importOwnAds(ads: CreateOwnAdRequest[]) {
+    setProfile((current) => ({ ...current, ownAds: [...current.ownAds, ...ads] }))
   }
 
   function updateOwnAd(index: number, ad: CreateOwnAdRequest) {
@@ -69,6 +73,10 @@ export function useCreateProfileForm() {
     setProfile((current) => ({ ...current, views: [...current.views, createEmptyView()] }))
   }
 
+  function importViews(views: CreateViewedAdRequest[]) {
+    setProfile((current) => ({ ...current, views: [...current.views, ...views] }))
+  }
+
   function updateView(index: number, view: CreateViewedAdRequest) {
     setProfile((current) => ({
       ...current,
@@ -86,6 +94,8 @@ export function useCreateProfileForm() {
   return {
     addOwnAd,
     addView,
+    importOwnAds,
+    importViews,
     profile,
     removeOwnAd,
     removeView,
