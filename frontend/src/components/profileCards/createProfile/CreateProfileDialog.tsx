@@ -18,7 +18,7 @@ import {
 import type { CreateProfileRequest } from '@/types/profileRequest.type'
 
 interface CreateProfileDialogProps {
-  onCreate: (profile: CreateProfileRequest) => void
+  onCreate: (profile: CreateProfileRequest) => Promise<void>
   onOpenChange: (open: boolean) => void
   open: boolean
 }
@@ -32,9 +32,10 @@ const sections = [
 export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProfileDialogProps) {
   const [activeSection, setActiveSection] = useState<CreateProfileSection>('profile')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const form = useCreateProfileForm()
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const validationError = validateCreateProfile(form.profile)
 
@@ -44,11 +45,18 @@ export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProf
       return
     }
 
-    onCreate(form.profile)
-    form.reset()
-    setActiveSection('profile')
     setError('')
-    onOpenChange(false)
+    setIsSubmitting(true)
+    try {
+      await onCreate(form.profile)
+      form.reset()
+      setActiveSection('profile')
+      onOpenChange(false)
+    } catch (requestError) {
+      setError(requestError instanceof Error ? requestError.message : 'Не удалось создать профиль.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -116,11 +124,15 @@ export function CreateProfileDialog({ onCreate, onOpenChange, open }: CreateProf
             <p aria-live="polite" className="mr-auto text-xs text-[#ff4053]">
               {error}
             </p>
-            <Button onClick={() => onOpenChange(false)} type="button" variant="ghost">
+            <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} type="button" variant="ghost">
               Отмена
             </Button>
-            <Button className="bg-[#00aaff] px-5 text-white hover:bg-[#0099e6]" type="submit">
-              Создать карточку
+            <Button
+              className="bg-[#00aaff] px-5 text-white hover:bg-[#0099e6]"
+              disabled={isSubmitting}
+              type="submit"
+            >
+              {isSubmitting ? 'Создаём…' : 'Создать карточку'}
             </Button>
           </DialogFooter>
         </form>

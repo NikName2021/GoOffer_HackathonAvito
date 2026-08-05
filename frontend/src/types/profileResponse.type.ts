@@ -44,6 +44,7 @@ export interface ProfileHighlightsResponse {
 
 /** Ответ GET-запроса с уже рассчитанными бэкендом итогами профиля. */
 export interface GetProfileResponse {
+  id: string
   name: string
   joinedAt: string
   avatarUrl?: string

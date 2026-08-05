@@ -271,4 +271,6 @@ export const TEST_PROFILE_CREATE_REQUESTS: CreateProfileRequest[] = [
   },
 ]
 
-export const TEST_PROFILES: GetProfilesResponse = TEST_PROFILE_CREATE_REQUESTS.map(createMockProfileResponse)
+export const TEST_PROFILES: GetProfilesResponse = TEST_PROFILE_CREATE_REQUESTS.map((profile, index) =>
+  createMockProfileResponse(profile, `00000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`),
+)

@@ -41,7 +41,7 @@ function getByPrice<T extends { price: number }>(items: T[], direction: 'highest
 }
 
 /** Имитирует агрегацию бэкенда только для локальных тестовых данных. */
-export function createMockProfileResponse(profile: CreateProfileRequest): GetProfileResponse {
+export function createMockProfileResponse(profile: CreateProfileRequest, id: string): GetProfileResponse {
   const purchases: ProfilePurchaseResponse[] = profile.views.filter(isPurchased).map((purchase) => ({
     title: purchase.title,
     category: purchase.category,
@@ -65,6 +65,7 @@ export function createMockProfileResponse(profile: CreateProfileRequest): GetPro
   const ratings = sales.flatMap((sale) => (sale.review ? [sale.review.rating] : []))
 
   return {
+    id,
     name: profile.name,
     joinedAt: profile.joinedAt,
     avatarUrl: profile.avatarUrl,

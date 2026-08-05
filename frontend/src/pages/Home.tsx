@@ -4,17 +4,19 @@ import { AddProfileButton } from '@/components/profileCards/AddProfileButton'
 import { CreateProfileDialog } from '@/components/profileCards/createProfile/CreateProfileDialog'
 import { ProfileCard } from '@/components/profileCards/ProfileCard'
 import { Sidebar } from '@/components/sidebar/Sidebar'
-import { createMockProfileResponse } from '@/constants/createMockProfileResponse'
-import { TEST_PROFILES } from '@/constants/testProfiles'
+import { useCreateProfile, useProfiles } from '@/hooks/useProfiles'
+import { useAppSelector } from '@/store/hooks'
 import type { CreateProfileRequest } from '@/types/profileRequest.type'
-import type { GetProfileResponse } from '@/types/profileResponse.type'
 
 export function HomePage() {
-  const [profiles, setProfiles] = useState<GetProfileResponse[]>(TEST_PROFILES)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const account = useAppSelector((state) => state.auth.account)
+  const profilesQuery = useProfiles(account?.id)
+  const createProfileMutation = useCreateProfile(account?.id)
+  const profiles = profilesQuery.data ?? []
 
-  function handleCreateProfile(profile: CreateProfileRequest) {
-    setProfiles((current) => [...current, createMockProfileResponse(profile)])
+  async function handleCreateProfile(profile: CreateProfileRequest) {
+    await createProfileMutation.mutateAsync(profile)
   }
 
   return (
@@ -34,10 +36,23 @@ export function HomePage() {
           </header>
 
           <section aria-label="Тестовые профили" className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {profiles.map((profile) => (
-              <ProfileCard key={`${profile.name}-${profile.joinedAt}`} profile={profile} />
-            ))}
-            <AddProfileButton onClick={() => setIsCreateDialogOpen(true)} />
+            {!account && <ProfilesNotice text="Войдите в аккаунт через профиль в левом нижнем углу." />}
+            {account && profilesQuery.isPending && <ProfilesNotice text="Загружаем профили…" />}
+            {account && profilesQuery.isError && (
+              <ProfilesNotice
+                actionLabel="Повторить"
+                onAction={() => void profilesQuery.refetch()}
+                text={profilesQuery.error.message}
+              />
+            )}
+            {account && profilesQuery.isSuccess && (
+              <>
+                {profiles.map((profile) => (
+                  <ProfileCard key={profile.id} profile={profile} />
+                ))}
+                <AddProfileButton onClick={() => setIsCreateDialogOpen(true)} />
+              </>
+            )}
           </section>
         </div>
       </main>
@@ -47,6 +62,25 @@ export function HomePage() {
         onOpenChange={setIsCreateDialogOpen}
         open={isCreateDialogOpen}
       />
+    </div>
+  )
+}
+
+interface ProfilesNoticeProps {
+  actionLabel?: string
+  onAction?: () => void
+  text: string
+}
+
+function ProfilesNotice({ actionLabel, onAction, text }: ProfilesNoticeProps) {
+  return (
+    <div className="col-span-full rounded-3xl border border-[#e7e9eb] bg-[#f7fcff] px-6 py-8 text-center">
+      <p className="text-sm text-[#6f7377]">{text}</p>
+      {actionLabel && onAction && (
+        <button className="mt-3 text-sm font-semibold text-[#00aaff] hover:text-[#0099e6]" onClick={onAction} type="button">
+          {actionLabel}
+        </button>
+      )}
     </div>
   )
 }
