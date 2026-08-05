@@ -60,7 +60,7 @@ func (g *Generator) Execute(ctx context.Context, accountID, userID uuid.UUID, ye
 	metrics := calculateMetrics(actions)
 
 	// 5. Назначение ачивок
-	achievements := assignAchievements(metrics)
+	achievements := AssignAchievements(metrics)
 
 	// 6. Формируем Recap
 	recap := domain.Recap{
