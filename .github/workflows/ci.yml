@@ -1,6 +1,9 @@
 name: CI
 
 on:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
       - main
@@ -72,3 +75,50 @@ jobs:
 
       - name: Run ESLint
         run: npm run lint
+
+  compose-smoke-test:
+    name: Docker Compose smoke test
+    if: github.event_name == 'push'
+    needs:
+      - go-tests
+      - golangci-lint
+      - eslint
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate Compose configuration
+        run: docker compose --env-file .env.example config --quiet
+
+      - name: Build and start containers
+        run: >-
+          docker compose --env-file .env.example up
+          --build --wait --wait-timeout 180
+
+      - name: Show container status
+        run: docker compose --env-file .env.example ps
+
+      - name: Check backend health
+        run: >-
+          curl --fail --silent --show-error
+          --retry 10 --retry-delay 2
+          http://127.0.0.1:8000/health
+
+      - name: Check frontend
+        run: >-
+          curl --fail --silent --show-error
+          --retry 10 --retry-delay 2
+          http://127.0.0.1/
+
+      - name: Show container logs on failure
+        if: failure()
+        run: docker compose --env-file .env.example logs --no-color
+
+      - name: Stop containers
+        if: always()
+        run: >-
+          docker compose --env-file .env.example down
+          --volumes --remove-orphans

@@ -70,6 +70,12 @@ func TestProfilesAPI(t *testing.T) {
 		if profile.Highlights.MostExpensivePurchase == nil || profile.Highlights.MostExpensivePurchase.Title != "Смартфон" {
 			t.Fatalf("most expensive purchase = %#v", profile.Highlights.MostExpensivePurchase)
 		}
+		if len(profile.Views) != 3 || len(profile.OwnAds) != 2 {
+			t.Fatalf("raw activity = %d views and %d own ads, want 3 and 2", len(profile.Views), len(profile.OwnAds))
+		}
+		if profile.Views[0].PurchasedAt != "2026-03-12T14:10" || profile.OwnAds[0].SoldAt != "2026-02-20" {
+			t.Fatalf("raw activity dates = %#v / %#v", profile.Views[0], profile.OwnAds[0])
+		}
 	})
 
 	t.Run("reject invalid id", func(t *testing.T) {
@@ -123,6 +129,38 @@ func TestProfileCRUDAndCalculatedAnalytics(t *testing.T) {
 	}
 	if created.Highlights.MostExpensivePurchase == nil || created.Highlights.MostExpensivePurchase.Title != "Телефон" {
 		t.Fatalf("purchase highlight = %#v", created.Highlights.MostExpensivePurchase)
+	}
+	if len(created.Views) != 3 || len(created.OwnAds) != 2 {
+		t.Fatalf("created raw activity = %d views and %d own ads, want 3 and 2", len(created.Views), len(created.OwnAds))
+	}
+	if created.Views[0].FavoritedAt != "2026-03-10T18:20" || created.OwnAds[0].Review == nil {
+		t.Fatalf("created raw activity lost editable fields: views=%#v ownAds=%#v", created.Views, created.OwnAds)
+	}
+
+	roundTripBody, err := json.Marshal(dto.ProfileRequest{
+		Name:       created.Name,
+		JoinedAt:   created.JoinedAt,
+		AvatarURL:  created.AvatarURL,
+		Likes:      created.Stats.Likes,
+		ChatsCount: created.Stats.ChatsCount,
+		Views:      created.Views,
+		OwnAds:     created.OwnAds,
+	})
+	if err != nil {
+		t.Fatalf("encode GET-to-PUT payload: %v", err)
+	}
+	roundTripResponse := performRequest(t, handler, http.MethodPut, "/api/profiles/"+created.ID, bytes.NewReader(roundTripBody), map[string]string{
+		"Content-Type": "application/json",
+	})
+	if roundTripResponse.Code != http.StatusOK {
+		t.Fatalf("GET-to-PUT status = %d, want %d: %s", roundTripResponse.Code, http.StatusOK, roundTripResponse.Body.String())
+	}
+	var roundTripped dto.ProfileResponse
+	if err := json.NewDecoder(roundTripResponse.Body).Decode(&roundTripped); err != nil {
+		t.Fatalf("decode GET-to-PUT profile: %v", err)
+	}
+	if len(roundTripped.Views) != 3 || len(roundTripped.OwnAds) != 2 || roundTripped.Stats.TotalSpent != 130990 {
+		t.Fatalf("GET-to-PUT lost profile data: %#v", roundTripped)
 	}
 
 	updateBody := `{
