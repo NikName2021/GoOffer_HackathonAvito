@@ -11,8 +11,10 @@
 }
 
 .avito-static-page {
-  min-width: 1100px;
+  width: 100%;
+  min-width: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background: #fff;
   color: #000;
   font-family: 'Avito Sans', Arial, sans-serif;
@@ -384,10 +386,207 @@
 }
 
 @media (max-width: 1120px) {
-  .avito-static-page { min-width: 800px; }
+  .avito-static-page { min-width: 0; }
   .avito-static-actions span:nth-child(2), .avito-static-actions svg { display: none; }
   .avito-static-nav-links span:nth-child(n + 4) { display: none; }
   .avito-static-catalog-layout { display: block; }
   .avito-static-business { display: none; }
   .avito-static-products { grid-template-columns: repeat(4, 1fr); }
+}
+
+@media (max-width: 767px) {
+  .avito-static-header,
+  .avito-static-search-row,
+  .avito-static-container,
+  .avito-static-footer {
+    width: auto;
+    max-width: none;
+    margin-inline: 12px;
+  }
+
+  .avito-static-promo-top {
+    height: 48px;
+  }
+
+  .avito-static-promo-copy {
+    top: 50%;
+    right: 105px;
+    left: 12px;
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .avito-static-promo-top > img {
+    right: -45px;
+    width: 230px;
+    height: 48px;
+    opacity: 0.65;
+  }
+
+  .avito-static-nav {
+    height: 52px;
+  }
+
+  .avito-static-nav-links {
+    display: none;
+  }
+
+  .avito-static-actions {
+    width: 100%;
+    justify-content: flex-end;
+    gap: 9px;
+  }
+
+  .avito-static-add {
+    margin-right: auto;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .avito-static-bonus {
+    font-size: 20px;
+  }
+
+  .avito-static-avatar {
+    width: 36px;
+    height: 36px;
+    font-size: 17px;
+  }
+
+  .avito-static-search-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px;
+    height: auto;
+    padding: 8px 0 14px;
+  }
+
+  .avito-static-logo img {
+    width: 29px;
+    height: 29px;
+  }
+
+  .avito-static-logo strong {
+    font-size: 28px;
+  }
+
+  .avito-static-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    grid-template-columns: minmax(0, 1fr) 72px;
+    width: 100%;
+    height: 48px;
+    border-radius: 13px;
+  }
+
+  .avito-static-category-button {
+    display: none;
+  }
+
+  .avito-static-search-input {
+    min-width: 0;
+    height: 42px;
+    margin: 3px 0 3px 3px;
+    overflow: hidden;
+    padding: 0 12px;
+    white-space: nowrap;
+  }
+
+  .avito-static-find {
+    font-size: 14px;
+  }
+
+  .avito-static-location {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 13px;
+  }
+
+  .avito-static-catalog-layout {
+    margin-top: 6px;
+  }
+
+  .avito-static-categories {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .avito-static-category,
+  .avito-static-category:nth-child(5),
+  .avito-static-category:nth-child(6) {
+    width: 100%;
+    height: auto;
+    min-height: 78px;
+    aspect-ratio: 2.04 / 1;
+    border-radius: 16px;
+  }
+
+  .avito-static-category span {
+    top: 12px;
+    left: 12px;
+    max-width: 96px;
+    font-size: 13px;
+  }
+
+  .avito-static-main-promo {
+    height: auto;
+    aspect-ratio: 2934 / 456;
+    margin-top: 16px;
+    border-radius: 12px;
+  }
+
+  .avito-static-products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 28px 8px;
+    margin-top: 24px;
+  }
+
+  .avito-static-product > img {
+    border-radius: 10px;
+  }
+
+  .avito-static-product h2 {
+    margin-top: 7px;
+    font-size: 13px;
+    line-height: 1.25;
+  }
+
+  .avito-static-product strong {
+    font-size: 14px;
+  }
+
+  .avito-static-footer {
+    margin-top: 56px;
+    padding-bottom: 72px;
+    font-size: 12px;
+  }
+
+  .avito-static-footer > div {
+    gap: 12px 18px;
+  }
+
+  .avito-static-messages {
+    right: 12px;
+    width: calc(100% - 24px);
+    height: 44px;
+    padding-inline: 16px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .avito-static-promo-copy {
+    right: 80px;
+    font-size: 10px;
+  }
+
+  .avito-static-add {
+    max-width: 175px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .avito-static-location {
+    font-size: 12px;
+  }
 }
