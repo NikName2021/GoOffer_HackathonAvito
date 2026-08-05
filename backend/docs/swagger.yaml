@@ -458,13 +458,23 @@ components:
         createdAt: {type: string, format: date}
     Profile:
       type: object
-      description: Статистика и highlights всегда рассчитываются сервером из views и ownAds.
-      required: [id, name, joinedAt, stats, highlights, purchases, sales]
+      description: Исходные views и ownAds можно без потерь использовать для PUT; статистика и highlights всегда рассчитываются сервером из этих массивов.
+      required: [id, name, joinedAt, views, ownAds, stats, highlights, purchases, sales]
       properties:
         id: {type: string, format: uuid}
         name: {type: string}
         joinedAt: {type: string, format: date}
         avatarUrl: {type: string}
+        views:
+          type: array
+          description: Полный исходный массив просмотров в формате, принимаемом PUT.
+          items:
+            $ref: "#/components/schemas/ViewedAdWrite"
+        ownAds:
+          type: array
+          description: Полный исходный массив объявлений в формате, принимаемом PUT.
+          items:
+            $ref: "#/components/schemas/OwnAdWrite"
         stats:
           $ref: "#/components/schemas/ProfileStats"
         highlights:
