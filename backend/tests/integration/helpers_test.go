@@ -49,19 +49,19 @@ func newFakeApplication() *fakeApplication {
 		ChatsCount:   43,
 		Views: []domain.ViewedAd{
 			{
-				Ad:           domain.Ad{Title: "Смартфон", Category: "Электроника", Price: 118000, ViewCount: 7},
+				Ad:           domain.Ad{AdID: "seed-view-phone", Title: "Смартфон", Category: "Электроника", Price: 118000, ViewCount: 7},
 				LastViewedAt: time.Date(2026, time.March, 12, 14, 10, 0, 0, time.UTC),
 				IsPurchased:  true,
 				PurchasedAt:  timePointer(time.Date(2026, time.March, 12, 14, 10, 0, 0, time.UTC)),
 			},
 			{
-				Ad:           domain.Ad{Title: "Наушники", Category: "Электроника", Price: 12990, ViewCount: 3},
+				Ad:           domain.Ad{AdID: "seed-view-headphones", Title: "Наушники", Category: "Электроника", Price: 12990, ViewCount: 3},
 				LastViewedAt: time.Date(2026, time.May, 4, 16, 45, 0, 0, time.UTC),
 				IsPurchased:  true,
 				PurchasedAt:  timePointer(time.Date(2026, time.May, 4, 16, 45, 0, 0, time.UTC)),
 			},
 			{
-				Ad:           domain.Ad{Title: "Чехол", Category: "Аксессуары", Price: 490, ViewCount: 2},
+				Ad:           domain.Ad{AdID: "seed-view-case", Title: "Чехол", Category: "Аксессуары", Price: 490, ViewCount: 2},
 				LastViewedAt: time.Date(2026, time.January, 17, 13, 30, 0, 0, time.UTC),
 				IsPurchased:  true,
 				PurchasedAt:  timePointer(time.Date(2026, time.January, 17, 13, 30, 0, 0, time.UTC)),
@@ -69,15 +69,22 @@ func newFakeApplication() *fakeApplication {
 		},
 		OwnAds: []domain.OwnAd{
 			{
-				Ad:     domain.Ad{Title: "Планшет", Category: "Электроника", Price: 28500, ViewCount: 214},
-				IsSold: true,
-				SoldAt: timePointer(time.Date(2026, time.February, 20, 0, 0, 0, 0, time.UTC)),
-				Review: &domain.Review{Comment: "Всё отлично", Rating: 5, CreatedAt: time.Date(2026, time.February, 21, 0, 0, 0, 0, time.UTC)},
+				Ad:             domain.Ad{AdID: "seed-own-tablet", Title: "Планшет", Category: "Электроника", Price: 28500, ViewCount: 214},
+				PublishedAt:    time.Date(2026, time.January, 15, 0, 0, 0, 0, time.UTC),
+				FavoritesCount: 31,
+				ContactsCount:  12,
+				City:           "Москва",
+				IsSold:         true,
+				SoldAt:         timePointer(time.Date(2026, time.February, 20, 0, 0, 0, 0, time.UTC)),
+				Review:         &domain.Review{Comment: "Всё отлично", Rating: 5, CreatedAt: time.Date(2026, time.February, 21, 0, 0, 0, 0, time.UTC)},
 			},
 			{
-				Ad:     domain.Ad{Title: "Кресло", Category: "Для дома", Price: 7500, ViewCount: 86},
-				IsSold: true,
-				SoldAt: timePointer(time.Date(2026, time.June, 18, 0, 0, 0, 0, time.UTC)),
+				Ad:             domain.Ad{AdID: "seed-own-chair", Title: "Кресло", Category: "Для дома", Price: 7500, ViewCount: 86},
+				PublishedAt:    time.Date(2026, time.May, 1, 0, 0, 0, 0, time.UTC),
+				FavoritesCount: 8,
+				ContactsCount:  4,
+				IsSold:         true,
+				SoldAt:         timePointer(time.Date(2026, time.June, 18, 0, 0, 0, 0, time.UTC)),
 			},
 		},
 	}

@@ -1,6 +1,9 @@
 package dto
 
 import (
+	"sort"
+	"time"
+
 	"gooffer/backend/internal/domain"
 )
 
@@ -43,6 +46,7 @@ type ProfileHighlightsResponse struct {
 }
 
 type ProfilePurchaseResponse struct {
+	AdID        string `json:"adId"`
 	Title       string `json:"title"`
 	Category    string `json:"category"`
 	Subcategory string `json:"subcategory,omitempty"`
@@ -52,6 +56,7 @@ type ProfilePurchaseResponse struct {
 }
 
 type ProfileSaleResponse struct {
+	AdID        string                 `json:"adId"`
 	Title       string                 `json:"title"`
 	Category    string                 `json:"category"`
 	Subcategory string                 `json:"subcategory,omitempty"`
@@ -119,10 +124,13 @@ func ToProfileResponse(user *domain.User) ProfileResponse {
 
 func toViewedAdWriteModel(view *domain.ViewedAd) ViewedAdRequest {
 	response := ViewedAdRequest{
-		AdRequest:    toAdWriteModel(&view.Ad),
-		LastViewedAt: view.LastViewedAt.Format(dateTimeLayout),
-		IsFavorite:   view.IsFavorite,
-		IsPurchased:  view.IsPurchased,
+		AdRequest:   toAdWriteModel(&view.Ad),
+		ViewedAt:    toViewedAtWriteModel(view),
+		IsFavorite:  view.IsFavorite,
+		IsPurchased: view.IsPurchased,
+	}
+	if !view.LastViewedAt.IsZero() {
+		response.LastViewedAt = view.LastViewedAt.Format(dateTimeLayout)
 	}
 	if view.FavoritedAt != nil {
 		response.FavoritedAt = view.FavoritedAt.Format(dateTimeLayout)
@@ -135,9 +143,15 @@ func toViewedAdWriteModel(view *domain.ViewedAd) ViewedAdRequest {
 
 func toOwnAdWriteModel(ad *domain.OwnAd) OwnAdRequest {
 	response := OwnAdRequest{
-		AdRequest:  toAdWriteModel(&ad.Ad),
-		IsArchived: ad.IsArchived,
-		IsSold:     ad.IsSold,
+		AdRequest:      toAdWriteModel(&ad.Ad),
+		FavoritesCount: ad.FavoritesCount,
+		ContactsCount:  ad.ContactsCount,
+		City:           ad.City,
+		IsArchived:     ad.IsArchived,
+		IsSold:         ad.IsSold,
+	}
+	if !ad.PublishedAt.IsZero() {
+		response.PublishedAt = ad.PublishedAt.Format(dateLayout)
 	}
 	if ad.SoldAt != nil {
 		response.SoldAt = ad.SoldAt.Format(dateLayout)
@@ -154,6 +168,7 @@ func toOwnAdWriteModel(ad *domain.OwnAd) OwnAdRequest {
 
 func toAdWriteModel(ad *domain.Ad) AdRequest {
 	return AdRequest{
+		AdID:        ad.AdID,
 		Title:       ad.Title,
 		Category:    ad.Category,
 		Subcategory: ad.Subcategory,
@@ -173,6 +188,7 @@ func ToProfileResponseList(users []domain.User) []ProfileResponse {
 
 func toPurchaseResponse(purchase *domain.ProfilePurchase) ProfilePurchaseResponse {
 	return ProfilePurchaseResponse{
+		AdID:        purchase.AdID,
 		Title:       purchase.Title,
 		Category:    purchase.Category,
 		Subcategory: purchase.Subcategory,
@@ -184,6 +200,7 @@ func toPurchaseResponse(purchase *domain.ProfilePurchase) ProfilePurchaseRespons
 
 func toSaleResponse(sale *domain.ProfileSale) ProfileSaleResponse {
 	response := ProfileSaleResponse{
+		AdID:        sale.AdID,
 		Title:       sale.Title,
 		Category:    sale.Category,
 		Subcategory: sale.Subcategory,
@@ -200,6 +217,36 @@ func toSaleResponse(sale *domain.ProfileSale) ProfileSaleResponse {
 		}
 	}
 	return response
+}
+
+func toViewedAtWriteModel(view *domain.ViewedAd) []ViewedAdEventRequest {
+	events := append([]domain.ViewedAdEvent(nil), view.ViewedAt...)
+	if len(events) == 0 {
+		if !view.LastViewedAt.IsZero() {
+			events = append(events, domain.ViewedAdEvent{Type: domain.ViewedAdEventWatch, Time: view.LastViewedAt})
+		}
+		if view.IsFavorite && view.FavoritedAt != nil {
+			events = append(events, domain.ViewedAdEvent{Type: domain.ViewedAdEventLike, Time: *view.FavoritedAt})
+		}
+		if view.IsPurchased && view.PurchasedAt != nil {
+			legacyDelivery := false
+			events = append(events, domain.ViewedAdEvent{
+				Type:             domain.ViewedAdEventBuy,
+				Time:             *view.PurchasedAt,
+				UseAvitoDelivery: &legacyDelivery,
+			})
+		}
+		sort.SliceStable(events, func(i, j int) bool { return events[i].Time.Before(events[j].Time) })
+	}
+	result := make([]ViewedAdEventRequest, len(events))
+	for i, event := range events {
+		result[i] = ViewedAdEventRequest{
+			Type:             string(event.Type),
+			Time:             event.Time.UTC().Format(time.RFC3339),
+			UseAvitoDelivery: event.UseAvitoDelivery,
+		}
+	}
+	return result
 }
 
 func optionalPurchaseResponse(purchase *domain.ProfilePurchase) *ProfilePurchaseResponse {

@@ -99,7 +99,10 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	year := 2026
 	purchasedAt := time.Date(year, time.March, 12, 14, 10, 0, 0, time.UTC)
 	favoritedAt := time.Date(year, time.March, 10, 18, 20, 0, 0, time.UTC)
+	firstViewedAt := time.Date(year, time.March, 9, 12, 0, 0, 0, time.UTC)
 	soldAt := time.Date(year, time.June, 18, 0, 0, 0, 0, time.UTC)
+	publishedAt := time.Date(year, time.May, 1, 0, 0, 0, 0, time.UTC)
+	usedDelivery := true
 
 	userRepo := &mockUserRepo{
 		users: map[uuid.UUID]domain.User{
@@ -111,7 +114,13 @@ func TestGenerator_Execute_Success(t *testing.T) {
 				ChatsCount:   1,
 				Views: []domain.ViewedAd{
 					{
-						Ad:           domain.Ad{Title: "Phone", Category: "Electronics", Price: 100000, ViewCount: 2},
+						Ad: domain.Ad{AdID: "phone", Title: "Phone", Category: "Electronics", Price: 100000, ViewCount: 99},
+						ViewedAt: []domain.ViewedAdEvent{
+							{Type: domain.ViewedAdEventWatch, Time: firstViewedAt},
+							{Type: domain.ViewedAdEventLike, Time: favoritedAt},
+							{Type: domain.ViewedAdEventWatch, Time: purchasedAt},
+							{Type: domain.ViewedAdEventBuy, Time: purchasedAt, UseAvitoDelivery: &usedDelivery},
+						},
 						LastViewedAt: purchasedAt,
 						IsFavorite:   true,
 						FavoritedAt:  &favoritedAt,
@@ -121,9 +130,12 @@ func TestGenerator_Execute_Success(t *testing.T) {
 				},
 				OwnAds: []domain.OwnAd{
 					{
-						Ad:     domain.Ad{Title: "Chair", Category: "Home", Price: 7000, ViewCount: 86},
-						IsSold: true,
-						SoldAt: &soldAt,
+						Ad:             domain.Ad{AdID: "chair", Title: "Chair", Category: "Home", Price: 7000, ViewCount: 86},
+						PublishedAt:    publishedAt,
+						FavoritesCount: 8,
+						ContactsCount:  4,
+						IsSold:         true,
+						SoldAt:         &soldAt,
 					},
 				},
 			},
@@ -154,6 +166,12 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	}
 	if recap.TotalPurchases != 1 || recap.TotalSales != 1 {
 		t.Fatalf("purchases/sales = %d/%d, want 1/1", recap.TotalPurchases, recap.TotalSales)
+	}
+	if recap.Summary.Buyer.AvitoDeliveryPurchases != 1 {
+		t.Fatalf("delivery purchases = %d, want 1", recap.Summary.Buyer.AvitoDeliveryPurchases)
+	}
+	if recap.Summary.Seller.FavoritesReceived != 8 || recap.Summary.Seller.ContactsReceived != 4 {
+		t.Fatalf("seller engagement = %#v", recap.Summary.Seller)
 	}
 	if !recap.Summary.Combined.HasBuyerData || !recap.Summary.Combined.HasSellerData {
 		t.Fatalf("combined summary = %#v, want both sides", recap.Summary.Combined)

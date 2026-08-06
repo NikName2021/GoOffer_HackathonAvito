@@ -14,6 +14,7 @@ type CategoryStat struct {
 // RecapItem is a compact listing representation that is safe to persist with
 // a generated recap. It intentionally contains no seller, buyer or chat data.
 type RecapItem struct {
+	AdID        string `json:"ad_id"`
 	Title       string `json:"title"`
 	Category    string `json:"category"`
 	Subcategory string `json:"subcategory,omitempty"`
@@ -22,28 +23,31 @@ type RecapItem struct {
 }
 
 type BuyerRecapSummary struct {
-	HasData         bool       `json:"has_data"`
-	ViewedAdsCount  int        `json:"viewed_ads_count"`
-	TotalViews      int        `json:"total_views"`
-	FavoritesCount  int        `json:"favorites_count"`
-	ChatsCount      int        `json:"chats_count"`
-	PurchasesCount  int        `json:"purchases_count"`
-	MainCategory    string     `json:"main_category,omitempty"`
-	LargestPurchase *RecapItem `json:"largest_purchase,omitempty"`
+	HasData                bool       `json:"has_data"`
+	ViewedAdsCount         int        `json:"viewed_ads_count"`
+	TotalViews             int        `json:"total_views"`
+	FavoritesCount         int        `json:"favorites_count"`
+	ChatsCount             int        `json:"chats_count"`
+	PurchasesCount         int        `json:"purchases_count"`
+	AvitoDeliveryPurchases int        `json:"avito_delivery_purchases"`
+	MainCategory           string     `json:"main_category,omitempty"`
+	LargestPurchase        *RecapItem `json:"largest_purchase,omitempty"`
 }
 
 type SellerRecapSummary struct {
-	HasData          bool       `json:"has_data"`
-	ListingsCount    int        `json:"listings_count"`
-	ActiveListings   int        `json:"active_listings"`
-	ArchivedListings int        `json:"archived_listings"`
-	SalesCount       int        `json:"sales_count"`
-	ListingViews     int        `json:"listing_views"`
-	LikesReceived    int        `json:"likes_received"`
-	ReviewsCount     int        `json:"reviews_count"`
-	AverageRating    *float64   `json:"average_rating,omitempty"`
-	MainCategory     string     `json:"main_category,omitempty"`
-	StarListing      *RecapItem `json:"star_listing,omitempty"`
+	HasData           bool       `json:"has_data"`
+	ListingsCount     int        `json:"listings_count"`
+	ActiveListings    int        `json:"active_listings"`
+	ArchivedListings  int        `json:"archived_listings"`
+	SalesCount        int        `json:"sales_count"`
+	ListingViews      int        `json:"listing_views"`
+	LikesReceived     int        `json:"likes_received"`
+	FavoritesReceived int        `json:"favorites_received"`
+	ContactsReceived  int        `json:"contacts_received"`
+	ReviewsCount      int        `json:"reviews_count"`
+	AverageRating     *float64   `json:"average_rating,omitempty"`
+	MainCategory      string     `json:"main_category,omitempty"`
+	StarListing       *RecapItem `json:"star_listing,omitempty"`
 }
 
 type CombinedRecapSummary struct {

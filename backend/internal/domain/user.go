@@ -21,12 +21,27 @@ type User struct {
 }
 
 type Ad struct {
+	AdID        string `json:"adId"`
 	Title       string `json:"title"`
 	Category    string `json:"category"`
 	Subcategory string `json:"subcategory,omitempty"`
 	ImageURL    string `json:"imageUrl,omitempty"`
 	Price       int64  `json:"price"`
 	ViewCount   int    `json:"viewCount"`
+}
+
+type ViewedAdEventType string
+
+const (
+	ViewedAdEventWatch ViewedAdEventType = "watch"
+	ViewedAdEventLike  ViewedAdEventType = "like"
+	ViewedAdEventBuy   ViewedAdEventType = "buy"
+)
+
+type ViewedAdEvent struct {
+	Type             ViewedAdEventType `json:"type"`
+	Time             time.Time         `json:"time"`
+	UseAvitoDelivery *bool             `json:"useAvitoDelivery,omitempty"`
 }
 
 type Review struct {
@@ -37,17 +52,22 @@ type Review struct {
 
 type OwnAd struct {
 	Ad
-	IsArchived bool       `json:"isArchived"`
-	IsSold     bool       `json:"isSold"`
-	SoldAt     *time.Time `json:"soldAt,omitempty"`
-	Review     *Review    `json:"review,omitempty"`
+	PublishedAt    time.Time  `json:"publishedAt"`
+	FavoritesCount int        `json:"favoritesCount"`
+	ContactsCount  int        `json:"contactsCount"`
+	City           string     `json:"city,omitempty"`
+	IsArchived     bool       `json:"isArchived"`
+	IsSold         bool       `json:"isSold"`
+	SoldAt         *time.Time `json:"soldAt,omitempty"`
+	Review         *Review    `json:"review,omitempty"`
 }
 
 type ViewedAd struct {
 	Ad
-	LastViewedAt time.Time  `json:"lastViewedAt"`
-	IsFavorite   bool       `json:"isFavorite"`
-	FavoritedAt  *time.Time `json:"favoritedAt,omitempty"`
-	IsPurchased  bool       `json:"isPurchased"`
-	PurchasedAt  *time.Time `json:"purchasedAt,omitempty"`
+	ViewedAt     []ViewedAdEvent `json:"viewedAt"`
+	LastViewedAt time.Time       `json:"lastViewedAt"`
+	IsFavorite   bool            `json:"isFavorite"`
+	FavoritedAt  *time.Time      `json:"favoritedAt,omitempty"`
+	IsPurchased  bool            `json:"isPurchased"`
+	PurchasedAt  *time.Time      `json:"purchasedAt,omitempty"`
 }
