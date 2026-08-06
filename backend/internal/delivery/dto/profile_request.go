@@ -16,7 +16,7 @@ const (
 	maxTitleRunes       = 200
 	maxCategoryRunes    = 100
 	maxCommentRunes     = 2000
-	maxActivities       = 100
+	maxActivities       = 10_000
 	maxImageURLBytes    = 7 * 1024 * 1024
 	maxPrice            = int64(1_000_000_000_000_000)
 )
