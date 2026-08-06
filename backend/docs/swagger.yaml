@@ -28,6 +28,22 @@ paths:
                   status:
                     type: string
                     example: ok
+  /metrics:
+    get:
+      tags: [System]
+      summary: Получить метрики приложения в формате Prometheus
+      operationId: metrics
+      responses:
+        "200":
+          description: Runtime, process и HTTP-метрики приложения
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |-
+                  # HELP gooffer_http_requests_total Total number of HTTP requests processed by the application.
+                  # TYPE gooffer_http_requests_total counter
+                  gooffer_http_requests_total{code="200",method="GET"} 1
   /api/auth/register:
     post:
       tags: [Auth]
@@ -400,12 +416,12 @@ components:
           example: 43
         views:
           type: array
-          maxItems: 100
+          maxItems: 10000
           items:
             $ref: "#/components/schemas/ViewedAdWrite"
         ownAds:
           type: array
-          maxItems: 100
+          maxItems: 10000
           items:
             $ref: "#/components/schemas/OwnAdWrite"
     AdWriteBase:
