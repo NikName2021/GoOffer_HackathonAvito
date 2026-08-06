@@ -7,25 +7,32 @@
     "chatsCount": 37,
     "views": [
       {
+        "adId": "alex-view-console",
         "title": "Игровая приставка",
         "category": "Электроника",
         "subcategory": "Игры и приставки",
         "price": 42990,
         "viewCount": 8,
-        "lastViewedAt": "2026-07-12T18:30:00Z",
-        "isFavorite": true,
-        "favoritedAt": "2026-07-10T12:15:00Z",
-        "isPurchased": true,
-        "purchasedAt": "2026-07-12T18:30:00Z"
+        "viewedAt": [
+          { "type": "watch", "time": "2026-07-08T19:20:00Z" },
+          { "type": "like", "time": "2026-07-10T12:15:00Z" },
+          { "type": "watch", "time": "2026-07-12T18:30:00Z" },
+          { "type": "buy", "time": "2026-07-12T18:30:00Z", "useAvitoDelivery": true }
+        ]
       }
     ],
     "ownAds": [
       {
+        "adId": "alex-own-bike",
         "title": "Городской велосипед",
         "category": "Хобби и отдых",
         "subcategory": "Велосипеды",
         "price": 28500,
         "viewCount": 214,
+        "publishedAt": "2026-05-03",
+        "favoritesCount": 31,
+        "contactsCount": 12,
+        "city": "Москва",
         "isArchived": true,
         "isSold": true,
         "soldAt": "2026-06-20",
@@ -45,21 +52,28 @@
     "chatsCount": 19,
     "views": [
       {
+        "adId": "maria-view-coffee",
         "title": "Кофемашина",
         "category": "Бытовая техника",
         "price": 31900,
         "viewCount": 5,
-        "lastViewedAt": "2026-08-01T09:45:00Z",
-        "isFavorite": false,
-        "isPurchased": false
+        "viewedAt": [
+          { "type": "watch", "time": "2026-07-29T18:10:00Z" },
+          { "type": "watch", "time": "2026-08-01T09:45:00Z" }
+        ]
       }
     ],
     "ownAds": [
       {
+        "adId": "maria-own-chairs",
         "title": "Комплект стульев",
         "category": "Мебель и интерьер",
         "price": 12000,
         "viewCount": 73,
+        "publishedAt": "2026-07-14",
+        "favoritesCount": 18,
+        "contactsCount": 5,
+        "city": "Казань",
         "isArchived": false,
         "isSold": false
       }

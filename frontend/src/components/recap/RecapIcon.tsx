@@ -13,6 +13,7 @@ import {
   Sparkles,
   Star,
   Trophy,
+  Truck,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -32,6 +33,7 @@ const icons: Record<string, LucideIcon> = {
   star: Star,
   switch: Repeat2,
   trophy: Trophy,
+  delivery: Truck,
 }
 
 interface RecapIconProps {

@@ -17,6 +17,7 @@ export interface RecapAchievement {
 }
 
 export interface RecapItem {
+  ad_id: string
   title: string
   category: string
   subcategory?: string
@@ -31,6 +32,7 @@ export interface BuyerRecapSummary {
   favorites_count: number
   chats_count: number
   purchases_count: number
+  avito_delivery_purchases: number
   main_category?: string
   largest_purchase?: RecapItem | null
 }
@@ -43,6 +45,8 @@ export interface SellerRecapSummary {
   sales_count: number
   listing_views: number
   likes_received: number
+  favorites_received: number
+  contacts_received: number
   reviews_count: number
   average_rating?: number | null
   main_category?: string

@@ -5,8 +5,8 @@ import type { CreateProfileSection } from './validateCreateProfile'
 
 const sections = [
   { id: 'profile', icon: UserRound, label: 'Профиль' },
-  { id: 'ads', icon: Megaphone, label: 'Объявления' },
-  { id: 'views', icon: Eye, label: 'Просмотры' },
+  { id: 'ads', icon: Megaphone, label: 'Объявления/Продажи' },
+  { id: 'views', icon: Eye, label: 'Просмотры/Покупки' },
 ] as const
 
 interface ProfileFormTabsProps {

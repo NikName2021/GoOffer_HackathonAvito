@@ -1,6 +1,7 @@
 import type { CreateOwnAdRequest, CreateViewedAdRequest } from './profileRequest.type'
 
 interface ProfileActivityResponseBase {
+  adId: string
   title: string
   category: string
   subcategory?: string
@@ -24,6 +25,14 @@ export interface ProfileSaleResponse extends ProfileActivityResponseBase {
   review: ProfileReviewResponse | null
 }
 
+export interface ViewedAdResponse extends CreateViewedAdRequest {
+  lastViewedAt?: string
+  isFavorite: boolean
+  favoritedAt?: string
+  isPurchased: boolean
+  purchasedAt?: string
+}
+
 export interface ProfileStatsResponse {
   likes: number
   chatsCount: number
@@ -44,13 +53,13 @@ export interface ProfileHighlightsResponse {
   leastExpensiveSale: ProfileSaleResponse | null
 }
 
-/** Ответ GET-запроса с уже рассчитанными бэкендом итогами профиля. */
+/** GET /profiles и GET /profiles/{id}: исходные данные плюс рассчитанные backend итоги. */
 export interface GetProfileResponse {
   id: string
   name: string
   joinedAt: string
   avatarUrl?: string
-  views: CreateViewedAdRequest[]
+  views: ViewedAdResponse[]
   ownAds: CreateOwnAdRequest[]
   stats: ProfileStatsResponse
   highlights: ProfileHighlightsResponse
@@ -59,6 +68,4 @@ export interface GetProfileResponse {
 }
 
 export type GetProfilesResponse = GetProfileResponse[]
-
-/** Ответ GET /profiles/{id}: итоги для интерфейса и исходные данные для формы редактирования. */
 export type GetProfileDetailsResponse = GetProfileResponse

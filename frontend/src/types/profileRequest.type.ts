@@ -1,4 +1,5 @@
 interface CreateAdRequestBase {
+  adId: string
   title: string
   category: string
   subcategory?: string
@@ -13,50 +14,30 @@ export interface CreateReviewRequest {
   createdAt: string
 }
 
+export type ViewedAdEventType = 'watch' | 'like' | 'buy'
+
+export type CreateViewedAdEventRequest =
+  | { type: 'watch' | 'like'; time: string; useAvitoDelivery?: never }
+  | { type: 'buy'; time: string; useAvitoDelivery: boolean }
+
 type SaleRequestState =
-  | {
-      isSold: false
-      soldAt?: never
-      review?: never
-    }
-  | {
-      isSold: true
-      soldAt: string
-      review?: CreateReviewRequest
-    }
-
-type FavoriteRequestState =
-  | {
-      isFavorite: false
-      favoritedAt?: never
-    }
-  | {
-      isFavorite: true
-      favoritedAt: string
-    }
-
-type PurchaseRequestState =
-  | {
-      isPurchased: false
-      purchasedAt?: never
-    }
-  | {
-      isPurchased: true
-      purchasedAt: string
-    }
+  | { isSold: false; soldAt?: never; review?: never }
+  | { isSold: true; soldAt: string; review?: CreateReviewRequest }
 
 export type CreateOwnAdRequest = CreateAdRequestBase &
   SaleRequestState & {
+    publishedAt: string
+    favoritesCount: number
+    contactsCount: number
+    city?: string
     isArchived: boolean
   }
 
-export type CreateViewedAdRequest = CreateAdRequestBase &
-  FavoriteRequestState &
-  PurchaseRequestState & {
-    lastViewedAt: string
-  }
+export interface CreateViewedAdRequest extends CreateAdRequestBase {
+  viewedAt: CreateViewedAdEventRequest[]
+}
 
-/** Тело POST-запроса создания тестового профиля. */
+/** Тело POST /profiles. Производные признаки покупки и избранного backend рассчитывает из viewedAt. */
 export interface CreateProfileRequest {
   name: string
   joinedAt: string
@@ -67,5 +48,5 @@ export interface CreateProfileRequest {
   ownAds: CreateOwnAdRequest[]
 }
 
-/** Тело PUT-запроса: все редактируемые исходные данные профиля. */
+/** PUT принимает тот же полный набор исходных данных, что и POST. */
 export type UpdateProfileRequest = CreateProfileRequest

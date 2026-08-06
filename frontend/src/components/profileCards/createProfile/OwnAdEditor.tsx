@@ -3,8 +3,10 @@ import { useState } from 'react'
 
 import { AdBaseFields } from './AdBaseFields'
 import { CheckboxField, FormField, TextareaField } from './FormControls'
+import { OwnAdEngagementFields } from './OwnAdEngagementFields'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import type { CreateOwnAdRequest } from '@/types/profileRequest.type'
+import { formatCount } from '@/utils/formatterNumber'
 
 interface OwnAdEditorProps {
   ad: CreateOwnAdRequest
@@ -31,7 +33,9 @@ export function OwnAdEditor({ ad, index, onChange, onRemove }: OwnAdEditorProps)
           <ChevronDown aria-hidden="true" className={`size-4 shrink-0 text-[#8a8d91] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-sm font-bold text-[#1f1f1f]">{ad.title.trim() || `Объявление ${index + 1}`}</span>
-            <span className="block truncate text-[11px] text-[#8a8d91]">{ad.category.trim() || 'Категория не указана'}</span>
+            <span className="block truncate text-[11px] text-[#8a8d91]">
+              {ad.category.trim() || 'Категория не указана'} · {ad.favoritesCount} в избранном · {formatCount(ad.contactsCount, ['контакт', 'контакта', 'контактов'])}
+            </span>
           </span>
         </CollapsibleTrigger>
         <button
@@ -46,6 +50,9 @@ export function OwnAdEditor({ ad, index, onChange, onRemove }: OwnAdEditorProps)
 
       <CollapsibleContent className="border-t border-[#e7e9eb] px-4 pt-4 pb-4">
         <AdBaseFields onChange={(patch) => onChange({ ...ad, ...patch })} value={ad} />
+        <div className="mt-4">
+          <OwnAdEngagementFields ad={ad} onChange={onChange} />
+        </div>
         <div className="mt-4 grid gap-2 sm:grid-cols-2">
           <CheckboxField checked={ad.isArchived} onChange={(isArchived) => onChange({ ...ad, isArchived })}>Находится в архиве</CheckboxField>
           <CheckboxField checked={ad.isSold} onChange={toggleSold}>Товар продан</CheckboxField>
