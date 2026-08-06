@@ -6,6 +6,7 @@ import { RecapIcon } from './RecapIcon'
 import { RecapOverviewMetrics } from './RecapOverviewMetrics'
 import { getRecapTheme } from './recapTheme'
 import { PATHS } from '@/config/paths'
+import { DialogClose } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import type { RecapCardResponse, RecapResponse } from '@/types/recap.type'
 
@@ -18,6 +19,7 @@ export function RecapSlide({ card, recap }: RecapSlideProps) {
   const theme = getRecapTheme(card.presentation.theme)
   const isOverview = card.kind === 'overview'
   const isFinal = card.kind === 'final'
+  const avitoProfilePath = `${PATHS.AVITO}?profileId=${encodeURIComponent(recap.user_id)}`
 
   return (
     <article className={cn('relative flex h-full min-h-0 overflow-x-hidden overflow-y-auto rounded-[28px] p-5 sm:overflow-hidden sm:p-8', theme.surface)}>
@@ -46,10 +48,12 @@ export function RecapSlide({ card, recap }: RecapSlideProps) {
         {isFinal && <RecapAchievements achievements={recap.achievements} />}
 
         {card.cta && (
-          <Link className="mt-4 inline-flex w-fit items-center gap-2 rounded-2xl bg-[#00aaff] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0099e6]" to={PATHS.AVITO}>
+          <DialogClose
+            render={<Link className="mt-4 inline-flex w-fit items-center gap-2 rounded-2xl bg-[#00aaff] px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-[#0099e6]" to={avitoProfilePath} />}
+          >
             {card.cta.label}
             <ArrowUpRight aria-hidden="true" className="size-4" />
-          </Link>
+          </DialogClose>
         )}
       </div>
     </article>

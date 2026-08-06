@@ -45,7 +45,7 @@ export function ActivityHistory({ profile }: ActivityHistoryProps) {
 
 function ActivitySection({ children, count, icon: Icon, title }: { children: ReactNode; count: number; icon: LucideIcon; title: string }) {
   return (
-    <Collapsible defaultOpen>
+    <Collapsible>
       <CollapsibleTrigger className="group flex w-full items-center gap-2 rounded-lg py-1 text-left focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#00aaff]">
         <Icon className="size-4 text-[#00aaff]" />
         <span className="text-base font-bold text-[#1f1f1f]">{title}</span>

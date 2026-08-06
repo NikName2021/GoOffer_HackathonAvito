@@ -4,7 +4,7 @@ import type { CreateOwnAdRequest } from '@/types/profileRequest.type'
 
 type AdBaseValue = Pick<
   CreateOwnAdRequest,
-  'adId' | 'title' | 'category' | 'subcategory' | 'imageUrl' | 'price' | 'viewCount'
+  'title' | 'category' | 'subcategory' | 'imageUrl' | 'price' | 'viewCount'
 >
 
 interface AdBaseFieldsProps {
@@ -16,14 +16,6 @@ export function AdBaseFields({ onChange, value }: AdBaseFieldsProps) {
   return (
     <div className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-2">
-        <FormField
-          className="font-mono text-xs"
-          label="ID объявления"
-          maxLength={100}
-          onChange={(event) => onChange({ adId: event.target.value })}
-          required
-          value={value.adId}
-        />
         <FormField
           label="Название"
           onChange={(event) => onChange({ title: event.target.value })}
