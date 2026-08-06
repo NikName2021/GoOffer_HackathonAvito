@@ -1,19 +1,24 @@
 import type { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from 'react'
+import type { LucideIcon } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 
 const controlClassName =
-  'mt-1.5 w-full rounded-xl border border-[#dfe1e3] bg-white px-3 py-2 text-sm text-[#1f1f1f] outline-none transition placeholder:text-[#a1a4a7] focus:border-[#00aaff] focus:ring-3 focus:ring-[#00aaff]/15'
+  'w-full rounded-xl border border-[#dfe1e3] bg-white px-3 py-2 text-sm text-[#1f1f1f] outline-none transition placeholder:text-[#a1a4a7] focus:border-[#00aaff] focus:ring-3 focus:ring-[#00aaff]/15'
 
 interface FormFieldProps extends InputHTMLAttributes<HTMLInputElement> {
+  icon?: LucideIcon
   label: string
 }
 
-export function FormField({ className, label, ...props }: FormFieldProps) {
+export function FormField({ className, icon: Icon, label, ...props }: FormFieldProps) {
   return (
     <label className="block min-w-0 text-xs font-medium text-[#6f7377]">
       {label}
-      <input className={cn(controlClassName, className)} {...props} />
+      <span className="relative mt-1.5 block">
+        {Icon && <Icon aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 z-10 size-4 -translate-y-1/2 text-[#00aaff]" />}
+        <input className={cn(controlClassName, Icon && 'pl-10', className)} {...props} />
+      </span>
     </label>
   )
 }
@@ -26,7 +31,7 @@ export function TextareaField({ className, label, ...props }: TextareaFieldProps
   return (
     <label className="block text-xs font-medium text-[#6f7377]">
       {label}
-      <textarea className={cn(controlClassName, 'min-h-20 resize-y', className)} {...props} />
+      <textarea className={cn(controlClassName, 'mt-1.5 min-h-20 resize-y', className)} {...props} />
     </label>
   )
 }

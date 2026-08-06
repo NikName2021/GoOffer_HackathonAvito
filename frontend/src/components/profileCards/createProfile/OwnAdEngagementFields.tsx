@@ -1,5 +1,4 @@
 import { CalendarDays, Heart, MapPin, MessageCircle } from 'lucide-react'
-import type { ReactNode } from 'react'
 
 import { FormField } from './FormControls'
 import type { CreateOwnAdRequest } from '@/types/profileRequest.type'
@@ -17,23 +16,11 @@ export function OwnAdEngagementFields({ ad, onChange }: OwnAdEngagementFieldsPro
         Активность объявления
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <IconField icon={CalendarDays}>
-          <FormField label="Дата публикации" onChange={(event) => onChange({ ...ad, publishedAt: event.target.value })} required type="date" value={ad.publishedAt} />
-        </IconField>
-        <IconField icon={MapPin}>
-          <FormField label="Город" maxLength={100} onChange={(event) => onChange({ ...ad, city: event.target.value })} placeholder="Например, Москва" value={ad.city ?? ''} />
-        </IconField>
-        <IconField icon={Heart}>
-          <FormField label="Добавили в избранное" min="0" onChange={(event) => onChange({ ...ad, favoritesCount: event.target.valueAsNumber || 0 })} required type="number" value={ad.favoritesCount} />
-        </IconField>
-        <IconField icon={MessageCircle}>
-          <FormField label="Открыли контакты" min="0" onChange={(event) => onChange({ ...ad, contactsCount: event.target.valueAsNumber || 0 })} required type="number" value={ad.contactsCount} />
-        </IconField>
+        <FormField icon={CalendarDays} label="Дата публикации" onChange={(event) => onChange({ ...ad, publishedAt: event.target.value })} required type="date" value={ad.publishedAt} />
+        <FormField icon={MapPin} label="Город" maxLength={100} onChange={(event) => onChange({ ...ad, city: event.target.value })} placeholder="Например, Москва" value={ad.city ?? ''} />
+        <FormField icon={Heart} label="Добавили в избранное" min="0" onChange={(event) => onChange({ ...ad, favoritesCount: event.target.valueAsNumber || 0 })} required type="number" value={ad.favoritesCount} />
+        <FormField icon={MessageCircle} label="Открыли контакты" min="0" onChange={(event) => onChange({ ...ad, contactsCount: event.target.valueAsNumber || 0 })} required type="number" value={ad.contactsCount} />
       </div>
     </section>
   )
-}
-
-function IconField({ children, icon: Icon }: { children: ReactNode; icon: typeof Heart }) {
-  return <div className="relative [&_input]:pl-9"><Icon className="pointer-events-none absolute top-[31px] left-3 z-10 size-4 text-[#00aaff]" />{children}</div>
 }

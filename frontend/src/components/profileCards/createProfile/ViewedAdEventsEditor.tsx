@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { FormField } from './FormControls'
 import { Button } from '@/components/ui/button'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import type { CreateViewedAdEventRequest, ViewedAdEventType } from '@/types/profileRequest.type'
 import { formatCount } from '@/utils/formatterNumber'
 
@@ -85,28 +86,37 @@ function EventRow({ event, hasBuy, hasLike, index, onChange, onRemove }: {
   onChange: (event: CreateViewedAdEventRequest) => void
   onRemove: () => void
 }) {
+  const ActiveIcon = eventOptions.find((option) => option.type === event.type)?.icon ?? Eye
+
+  function changeType(type: ViewedAdEventType | null) {
+    if (!type) return
+    onChange(type === 'buy'
+      ? { type: 'buy', time: event.time, useAvitoDelivery: false }
+      : { type, time: event.time })
+  }
+
   return (
-    <div className="grid items-end gap-2 rounded-xl border border-[#eceeef] bg-[#fafafa] p-3 sm:grid-cols-[140px_1fr_auto]">
-      <label className="text-xs font-medium text-[#6f7377]">
-        Событие
-        <select
-          className="mt-1.5 h-[38px] w-full rounded-xl border border-[#dfe1e3] bg-white px-3 text-sm outline-none focus:border-[#00aaff]"
-          onChange={(change) => onChange(change.target.value === 'buy'
-            ? { type: 'buy', time: event.time, useAvitoDelivery: false }
-            : { type: change.target.value as 'watch' | 'like', time: event.time })}
-          value={event.type}
-        >
-          {eventOptions.map((option) => (
-            <option
-              disabled={(option.type === 'like' && hasLike && event.type !== 'like') || (option.type === 'buy' && hasBuy && event.type !== 'buy')}
-              key={option.type}
-              value={option.type}
-            >
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </label>
+    <div className="grid items-end gap-2 rounded-xl border border-[#eceeef] bg-[#fafafa] p-3 sm:grid-cols-[180px_1fr_auto]">
+      <div className="text-xs font-medium text-[#6f7377]">
+        <span>Событие</span>
+        <Select items={eventOptions.map(({ label, type }) => ({ label, value: type }))} onValueChange={changeType} value={event.type}>
+          <SelectTrigger aria-label="Событие" className="mt-1.5">
+            <ActiveIcon className="size-4 text-[#00aaff]" />
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {eventOptions.map(({ icon: Icon, label, type }) => (
+              <SelectItem
+                disabled={(type === 'like' && hasLike && event.type !== 'like') || (type === 'buy' && hasBuy && event.type !== 'buy')}
+                key={type}
+                value={type}
+              >
+                <Icon className="size-4 text-[#00aaff]" />{label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <FormField label={`Дата и время · ${index + 1}`} onChange={(change) => onChange({ ...event, time: change.target.value })} required type="datetime-local" value={event.time} />
       <Button aria-label={`Удалить событие ${index + 1}`} className="size-[38px] text-[#ff4053] hover:bg-[#fff0f2]" onClick={onRemove} size="icon" type="button" variant="ghost">
         <Trash2 className="size-4" />

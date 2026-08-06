@@ -16,11 +16,20 @@ export function validateCreateProfile(profile: CreateProfileRequest): CreateProf
     return { message: 'В каждом списке может быть не более 10 000 элементов.', section: 'ads' }
   }
 
-  const invalidAdIndex = profile.ownAds.findIndex(
-    (ad) => !ad.adId.trim() || !ad.title.trim() || !ad.category.trim() || !ad.publishedAt,
-  )
+  const invalidAdIndex = profile.ownAds.findIndex((ad) => !ad.adId.trim() || !ad.title.trim() || !ad.category.trim())
   if (invalidAdIndex !== -1) {
-    return { message: `Заполните название и категорию объявления ${invalidAdIndex + 1}.`, section: 'ads' }
+    const ad = profile.ownAds[invalidAdIndex]
+    const fields = [
+      !ad.adId.trim() && 'ID',
+      !ad.title.trim() && 'название',
+      !ad.category.trim() && 'категорию',
+    ].filter(Boolean).join(', ')
+    return { message: `Заполните ${fields} объявления ${invalidAdIndex + 1}.`, section: 'ads' }
+  }
+
+  const missingPublishedAtIndex = profile.ownAds.findIndex((ad) => !ad.publishedAt)
+  if (missingPublishedAtIndex !== -1) {
+    return { message: `Укажите дату публикации объявления ${missingPublishedAtIndex + 1}.`, section: 'ads' }
   }
 
   const invalidSaleIndex = profile.ownAds.findIndex(
