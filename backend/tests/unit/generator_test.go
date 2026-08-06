@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strconv"
 	"testing"
 	"time"
 
@@ -13,9 +14,13 @@ import (
 	"github.com/google/uuid"
 )
 
+func recapKey(userID uuid.UUID, year int) string {
+	return userID.String() + ":" + strconv.Itoa(year)
+}
+
 type mockUserRepo struct {
 	users map[uuid.UUID]domain.User
-	err   error // добавляем поддержку ошибок
+	err   error
 }
 
 func (m *mockUserRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.User, error) {
@@ -45,7 +50,7 @@ func (m *mockActionRepo) GetByUserAndYear(ctx context.Context, userID uuid.UUID,
 	if m.err != nil {
 		return nil, m.err
 	}
-	key := userID.String() + ":" + string(rune(year))
+	key := recapKey(userID, year)
 	if actions, ok := m.actions[key]; ok {
 		return actions, nil
 	}
@@ -61,7 +66,7 @@ func (m *mockRecapRepo) Save(ctx context.Context, recap *domain.Recap) error {
 	if m.err != nil {
 		return m.err
 	}
-	key := recap.UserID.String() + ":" + string(rune(recap.Year))
+	key := recapKey(recap.UserID, recap.Year)
 	m.recaps[key] = *recap
 	return nil
 }
@@ -70,7 +75,7 @@ func (m *mockRecapRepo) GetByUserAndYear(ctx context.Context, userID uuid.UUID, 
 	if m.err != nil {
 		return nil, m.err
 	}
-	key := userID.String() + ":" + string(rune(year))
+	key := recapKey(userID, year)
 	if recap, ok := m.recaps[key]; ok {
 		return &recap, nil
 	}
@@ -132,7 +137,7 @@ func TestGenerator_Execute_Success(t *testing.T) {
 
 	actionRepo := &mockActionRepo{
 		actions: map[string][]domain.Action{
-			userID.String() + ":" + string(rune(year)): {
+			recapKey(userID, year): {
 				{ID: uuid.New(), UserID: userID, Type: domain.ActionView, Category: "Electronics", CreatedAt: time.Now()},
 				{ID: uuid.New(), UserID: userID, Type: domain.ActionView, Category: "Electronics", CreatedAt: time.Now()},
 				{ID: uuid.New(), UserID: userID, Type: domain.ActionMessage, Category: "Auto", CreatedAt: time.Now()},
@@ -236,7 +241,7 @@ func TestCalculateMetrics(t *testing.T) {
 
 	actionRepo := &mockActionRepo{
 		actions: map[string][]domain.Action{
-			userID.String() + ":" + string(rune(2025)): actions,
+			recapKey(userID, 2025): actions,
 		},
 	}
 
@@ -307,7 +312,7 @@ func TestAssignAchievements(t *testing.T) {
 
 	actionRepo := &mockActionRepo{
 		actions: map[string][]domain.Action{
-			userID.String() + ":" + string(rune(year)): actions,
+			recapKey(userID, year): actions,
 		},
 	}
 
