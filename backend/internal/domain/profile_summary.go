@@ -34,6 +34,7 @@ type ProfileHighlights struct {
 }
 
 type ProfilePurchase struct {
+	AdID        string
 	Title       string
 	Category    string
 	Subcategory string
@@ -43,6 +44,7 @@ type ProfilePurchase struct {
 }
 
 type ProfileSale struct {
+	AdID        string
 	Title       string
 	Category    string
 	Subcategory string
@@ -71,6 +73,7 @@ func SummarizeProfile(user *User) ProfileSummary {
 			continue
 		}
 		purchase := ProfilePurchase{
+			AdID:        view.AdID,
 			Title:       view.Title,
 			Category:    view.Category,
 			Subcategory: view.Subcategory,
@@ -91,6 +94,7 @@ func SummarizeProfile(user *User) ProfileSummary {
 			continue
 		}
 		sale := ProfileSale{
+			AdID:        ad.AdID,
 			Title:       ad.Title,
 			Category:    ad.Category,
 			Subcategory: ad.Subcategory,
