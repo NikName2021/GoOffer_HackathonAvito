@@ -73,6 +73,9 @@ func TestProfilesAPI(t *testing.T) {
 		if len(profile.Views) != 3 || len(profile.OwnAds) != 2 {
 			t.Fatalf("raw activity = %d views and %d own ads, want 3 and 2", len(profile.Views), len(profile.OwnAds))
 		}
+		if profile.Views[0].AdID == "" || len(profile.Views[0].ViewedAt) == 0 || profile.OwnAds[0].PublishedAt == "" {
+			t.Fatalf("new activity contract is missing: views=%#v ownAds=%#v", profile.Views, profile.OwnAds)
+		}
 		if profile.Views[0].PurchasedAt != "2026-03-12T14:10" || profile.OwnAds[0].SoldAt != "2026-02-20" {
 			t.Fatalf("raw activity dates = %#v / %#v", profile.Views[0], profile.OwnAds[0])
 		}
@@ -96,13 +99,13 @@ func TestProfileCRUDAndCalculatedAnalytics(t *testing.T) {
 		"likes":12,
 		"chatsCount":8,
 		"views":[
-			{"title":"Телефон","category":"Электроника","price":118000,"viewCount":7,"lastViewedAt":"2026-03-12T14:10","isFavorite":true,"favoritedAt":"2026-03-10T18:20","isPurchased":true,"purchasedAt":"2026-03-12T14:10"},
-			{"title":"Наушники","category":"Электроника","price":12990,"viewCount":3,"lastViewedAt":"2026-05-04T16:45","isFavorite":false,"isPurchased":true,"purchasedAt":"2026-05-04T16:45"},
-			{"title":"Ноутбук","category":"Электроника","price":90000,"viewCount":2,"lastViewedAt":"2026-06-01T10:00","isFavorite":false,"isPurchased":false}
+			{"adId":"view-phone","title":"Телефон","category":"Электроника","price":118000,"viewCount":7,"viewedAt":[{"type":"watch","time":"2026-03-09T12:00"},{"type":"like","time":"2026-03-10T18:20"},{"type":"watch","time":"2026-03-12T14:10"},{"type":"buy","time":"2026-03-12T14:10","useAvitoDelivery":true}]},
+			{"adId":"view-headphones","title":"Наушники","category":"Электроника","price":12990,"viewCount":3,"viewedAt":[{"type":"watch","time":"2026-05-04T16:45"},{"type":"buy","time":"2026-05-04T16:45","useAvitoDelivery":false}]},
+			{"adId":"view-laptop","title":"Ноутбук","category":"Электроника","price":90000,"viewCount":2,"viewedAt":[{"type":"watch","time":"2026-06-01T10:00"}]}
 		],
 		"ownAds":[
-			{"title":"Планшет","category":"Электроника","price":28500,"viewCount":214,"isArchived":true,"isSold":true,"soldAt":"2026-02-20","review":{"comment":"Всё отлично","rating":5,"createdAt":"2026-02-21"}},
-			{"title":"Кресло","category":"Для дома","price":7500,"viewCount":86,"isArchived":true,"isSold":true,"soldAt":"2026-06-18"}
+			{"adId":"own-tablet","title":"Планшет","category":"Электроника","price":28500,"viewCount":214,"publishedAt":"2026-01-15","favoritesCount":31,"contactsCount":12,"city":"Москва","isArchived":true,"isSold":true,"soldAt":"2026-02-20","review":{"comment":"Всё отлично","rating":5,"createdAt":"2026-02-21"}},
+			{"adId":"own-chair","title":"Кресло","category":"Для дома","price":7500,"viewCount":86,"publishedAt":"2026-05-01","favoritesCount":8,"contactsCount":4,"isArchived":true,"isSold":true,"soldAt":"2026-06-18"}
 		]
 	}`
 	createdResponse := performRequest(t, handler, http.MethodPost, "/api/profiles", bytes.NewBufferString(createBody), map[string]string{
@@ -136,6 +139,12 @@ func TestProfileCRUDAndCalculatedAnalytics(t *testing.T) {
 	if created.Views[0].FavoritedAt != "2026-03-10T18:20" || created.OwnAds[0].Review == nil {
 		t.Fatalf("created raw activity lost editable fields: views=%#v ownAds=%#v", created.Views, created.OwnAds)
 	}
+	if created.Views[0].AdID != "view-phone" || len(created.Views[0].ViewedAt) != 4 || created.OwnAds[0].ContactsCount != 12 {
+		t.Fatalf("created raw activity lost new fields: views=%#v ownAds=%#v", created.Views, created.OwnAds)
+	}
+	if delivery := created.Views[1].ViewedAt[1].UseAvitoDelivery; delivery == nil || *delivery {
+		t.Fatalf("false useAvitoDelivery was not preserved: %#v", created.Views[1].ViewedAt)
+	}
 
 	roundTripBody, err := json.Marshal(dto.ProfileRequest{
 		Name:       created.Name,
@@ -168,7 +177,7 @@ func TestProfileCRUDAndCalculatedAnalytics(t *testing.T) {
 		"joinedAt":"2024-08-01",
 		"likes":20,
 		"chatsCount":9,
-		"views":[{"title":"Книга","category":"Книги","price":900,"viewCount":4,"lastViewedAt":"2026-07-01T12:00","isFavorite":false,"isPurchased":true,"purchasedAt":"2026-07-01T12:00"}],
+		"views":[{"adId":"view-book","title":"Книга","category":"Книги","price":900,"viewCount":4,"viewedAt":[{"type":"watch","time":"2026-07-01T12:00"},{"type":"buy","time":"2026-07-01T12:00","useAvitoDelivery":false}]}],
 		"ownAds":[]
 	}`
 	updatedResponse := performRequest(t, handler, http.MethodPut, "/api/profiles/"+created.ID, bytes.NewBufferString(updateBody), map[string]string{
@@ -186,7 +195,7 @@ func TestProfileCRUDAndCalculatedAnalytics(t *testing.T) {
 	}
 
 	invalidResponse := performRequest(t, handler, http.MethodPost, "/api/profiles", bytes.NewBufferString(
-		`{"name":"Ошибка","joinedAt":"2024-01-01","likes":0,"chatsCount":0,"views":[{"title":"Товар","category":"Категория","price":1,"viewCount":1,"lastViewedAt":"2026-01-01T10:00","isFavorite":false,"isPurchased":true}],"ownAds":[]}`,
+		`{"name":"Ошибка","joinedAt":"2024-01-01","likes":0,"chatsCount":0,"views":[{"adId":"broken-buy","title":"Товар","category":"Категория","price":1,"viewCount":1,"viewedAt":[{"type":"watch","time":"2026-01-01T10:00"},{"type":"buy","time":"2026-01-01T10:00"}]}],"ownAds":[]}`,
 	), map[string]string{"Content-Type": "application/json"})
 	if invalidResponse.Code != http.StatusBadRequest {
 		t.Fatalf("invalid profile status = %d, want %d", invalidResponse.Code, http.StatusBadRequest)

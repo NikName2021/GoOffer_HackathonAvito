@@ -20,17 +20,18 @@ type UserMetrics struct {
 }
 
 // ProfileMetrics is calculated from the profile payload that the backend
-// already stores. Dated buyer/sale/review facts are filtered by Year. Values
-// without a date (chats, likes and current listings) are treated as a profile
-// snapshot and the generated card copy deliberately avoids calling them annual.
+// already stores. Dated buyer/listing/sale/review facts are filtered by Year.
+// Values without a date (chats, likes and legacy listings) are treated as a
+// profile snapshot and the generated card copy avoids calling them annual.
 type ProfileMetrics struct {
-	Year             int
-	Buyer            domain.BuyerRecapSummary
-	Seller           domain.SellerRecapSummary
-	Combined         domain.CombinedRecapSummary
-	TopCategories    []domain.CategoryStat
-	ActivityDays     int
-	StarListingViews int
+	Year                    int
+	Buyer                   domain.BuyerRecapSummary
+	Seller                  domain.SellerRecapSummary
+	Combined                domain.CombinedRecapSummary
+	TopCategories           []domain.CategoryStat
+	ActivityDays            int
+	StarListingViews        int
+	SellerListingsAreAnnual bool
 }
 
 type categoryMetric struct {
@@ -45,7 +46,11 @@ type categoryMetric struct {
 }
 
 func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
-	metrics := ProfileMetrics{Year: year, TopCategories: []domain.CategoryStat{}}
+	metrics := ProfileMetrics{
+		Year:                    year,
+		TopCategories:           []domain.CategoryStat{},
+		SellerListingsAreAnnual: true,
+	}
 	categories := make(map[string]*categoryMetric)
 	activeDays := make(map[string]struct{})
 	var largestPurchase *domain.RecapItem
@@ -55,23 +60,24 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 
 	for _, view := range user.Views {
 		category := categoryFor(categories, view.Category)
+		activity := viewedActivityForYear(view, year)
 
-		if inYear(view.LastViewedAt, year) {
+		if activity.WatchCount > 0 {
 			metrics.Buyer.ViewedAdsCount++
-			metrics.Buyer.TotalViews += view.ViewCount
+			metrics.Buyer.TotalViews += activity.WatchCount
 			category.ViewedAds++
-			category.Views += view.ViewCount
-			addActiveDay(activeDays, view.LastViewedAt)
+			category.Views += activity.WatchCount
 		}
-		if view.IsFavorite && view.FavoritedAt != nil && inYear(*view.FavoritedAt, year) {
+		if activity.Liked {
 			metrics.Buyer.FavoritesCount++
 			category.Favorites++
-			addActiveDay(activeDays, *view.FavoritedAt)
 		}
-		if view.IsPurchased && view.PurchasedAt != nil && inYear(*view.PurchasedAt, year) {
+		if activity.Bought {
 			metrics.Buyer.PurchasesCount++
 			category.Purchases++
-			addActiveDay(activeDays, *view.PurchasedAt)
+			if activity.UsedAvitoDelivery {
+				metrics.Buyer.AvitoDeliveryPurchases++
+			}
 			item := recapItem(view.Ad)
 			if largestPurchase == nil || item.Price > largestPurchase.Price ||
 				(item.Price == largestPurchase.Price && item.Title < largestPurchase.Title) {
@@ -79,31 +85,47 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 				largestPurchase = &selected
 			}
 		}
+		for _, activityTime := range activity.Times {
+			addActiveDay(activeDays, activityTime)
+		}
 	}
 
 	metrics.Buyer.ChatsCount = user.ChatsCount
 	metrics.Buyer.LargestPurchase = largestPurchase
 
 	for _, ad := range user.OwnAds {
-		metrics.Seller.ListingsCount++
-		metrics.Seller.ListingViews += ad.ViewCount
-		if !ad.IsArchived && !ad.IsSold {
-			metrics.Seller.ActiveListings++
-		}
-		if ad.IsArchived {
-			metrics.Seller.ArchivedListings++
-		}
-
 		category := categoryFor(categories, ad.Category)
-		category.Listings++
-		category.ListingViews += ad.ViewCount
+		listingInYear := inYear(ad.PublishedAt, year)
+		if ad.PublishedAt.IsZero() {
+			// Existing JSONB rows created before publishedAt was introduced are
+			// retained as a snapshot until the profile is updated.
+			listingInYear = true
+			metrics.SellerListingsAreAnnual = false
+		}
+		if listingInYear {
+			metrics.Seller.ListingsCount++
+			metrics.Seller.ListingViews += ad.ViewCount
+			metrics.Seller.FavoritesReceived += ad.FavoritesCount
+			metrics.Seller.ContactsReceived += ad.ContactsCount
+			if !ad.IsArchived && !ad.IsSold {
+				metrics.Seller.ActiveListings++
+			}
+			if ad.IsArchived {
+				metrics.Seller.ArchivedListings++
+			}
+			category.Listings++
+			category.ListingViews += ad.ViewCount
 
-		item := recapItem(ad.Ad)
-		if starListing == nil || ad.ViewCount > starListingViews ||
-			(ad.ViewCount == starListingViews && item.Title < starListing.Title) {
-			selected := item
-			starListing = &selected
-			starListingViews = ad.ViewCount
+			item := recapItem(ad.Ad)
+			if starListing == nil || ad.ViewCount > starListingViews ||
+				(ad.ViewCount == starListingViews && item.Title < starListing.Title) {
+				selected := item
+				starListing = &selected
+				starListingViews = ad.ViewCount
+			}
+			if !ad.PublishedAt.IsZero() {
+				addActiveDay(activeDays, ad.PublishedAt)
+			}
 		}
 
 		if ad.IsSold && ad.SoldAt != nil && inYear(*ad.SoldAt, year) {
@@ -129,7 +151,9 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 	metrics.Buyer.HasData = metrics.Buyer.ViewedAdsCount > 0 ||
 		metrics.Buyer.FavoritesCount > 0 || metrics.Buyer.PurchasesCount > 0 ||
 		metrics.Buyer.ChatsCount > 0
-	metrics.Seller.HasData = metrics.Seller.ListingsCount > 0 || metrics.Seller.LikesReceived > 0
+	metrics.Seller.HasData = metrics.Seller.ListingsCount > 0 || metrics.Seller.SalesCount > 0 ||
+		metrics.Seller.LikesReceived > 0 || metrics.Seller.FavoritesReceived > 0 ||
+		metrics.Seller.ContactsReceived > 0
 	metrics.Buyer.MainCategory = selectCategory(categories, hasBuyerSignals, buyerCategoryLess)
 	metrics.Seller.MainCategory = selectCategory(categories, hasSellerSignals, sellerCategoryLess)
 	metrics.Combined = domain.CombinedRecapSummary{
@@ -286,12 +310,58 @@ func categorySignals(category *categoryMetric) int {
 
 func recapItem(ad domain.Ad) domain.RecapItem {
 	return domain.RecapItem{
+		AdID:        ad.AdID,
 		Title:       ad.Title,
 		Category:    ad.Category,
 		Subcategory: ad.Subcategory,
 		ImageURL:    ad.ImageURL,
 		Price:       ad.Price,
 	}
+}
+
+type yearlyViewedActivity struct {
+	WatchCount        int
+	Liked             bool
+	Bought            bool
+	UsedAvitoDelivery bool
+	Times             []time.Time
+}
+
+func viewedActivityForYear(view domain.ViewedAd, year int) yearlyViewedActivity {
+	activity := yearlyViewedActivity{Times: make([]time.Time, 0)}
+	if len(view.ViewedAt) > 0 {
+		for _, event := range view.ViewedAt {
+			if !inYear(event.Time, year) {
+				continue
+			}
+			activity.Times = append(activity.Times, event.Time)
+			switch event.Type {
+			case domain.ViewedAdEventWatch:
+				activity.WatchCount++
+			case domain.ViewedAdEventLike:
+				activity.Liked = true
+			case domain.ViewedAdEventBuy:
+				activity.Bought = true
+				activity.UsedAvitoDelivery = event.UseAvitoDelivery != nil && *event.UseAvitoDelivery
+			}
+		}
+		return activity
+	}
+
+	// Legacy fallback for profiles saved before viewedAt[] was introduced.
+	if inYear(view.LastViewedAt, year) {
+		activity.WatchCount = view.ViewCount
+		activity.Times = append(activity.Times, view.LastViewedAt)
+	}
+	if view.IsFavorite && view.FavoritedAt != nil && inYear(*view.FavoritedAt, year) {
+		activity.Liked = true
+		activity.Times = append(activity.Times, *view.FavoritedAt)
+	}
+	if view.IsPurchased && view.PurchasedAt != nil && inYear(*view.PurchasedAt, year) {
+		activity.Bought = true
+		activity.Times = append(activity.Times, *view.PurchasedAt)
+	}
+	return activity
 }
 
 func inYear(value time.Time, year int) bool {
