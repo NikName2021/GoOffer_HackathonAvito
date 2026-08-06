@@ -7,6 +7,11 @@ export interface CreateProfileValidationError {
   section: CreateProfileSection
 }
 
+function getActivityName(title: string, index: number) {
+  const name = title.trim()
+  return name ? `«${name}»` : `№${index + 1}`
+}
+
 export function validateCreateProfile(profile: CreateProfileRequest): CreateProfileValidationError | null {
   if (!profile.name.trim() || !profile.joinedAt) {
     return { message: 'Заполните имя и дату регистрации профиля.', section: 'profile' }
@@ -24,12 +29,13 @@ export function validateCreateProfile(profile: CreateProfileRequest): CreateProf
       !ad.title.trim() && 'название',
       !ad.category.trim() && 'категорию',
     ].filter(Boolean).join(', ')
-    return { message: `Заполните ${fields} объявления ${invalidAdIndex + 1}.`, section: 'ads' }
+    return { message: `Заполните ${fields} объявления ${getActivityName(ad.title, invalidAdIndex)}.`, section: 'ads' }
   }
 
   const missingPublishedAtIndex = profile.ownAds.findIndex((ad) => !ad.publishedAt)
   if (missingPublishedAtIndex !== -1) {
-    return { message: `Укажите дату публикации объявления ${missingPublishedAtIndex + 1}.`, section: 'ads' }
+    const ad = profile.ownAds[missingPublishedAtIndex]
+    return { message: `Укажите дату публикации объявления ${getActivityName(ad.title, missingPublishedAtIndex)}.`, section: 'ads' }
   }
 
   const invalidSaleIndex = profile.ownAds.findIndex(
@@ -39,7 +45,8 @@ export function validateCreateProfile(profile: CreateProfileRequest): CreateProf
     ),
   )
   if (invalidSaleIndex !== -1) {
-    return { message: `Заполните данные продажи объявления ${invalidSaleIndex + 1}.`, section: 'ads' }
+    const ad = profile.ownAds[invalidSaleIndex]
+    return { message: `Проверьте данные продажи объявления ${getActivityName(ad.title, invalidSaleIndex)}.`, section: 'ads' }
   }
 
   const invalidViewIndex = profile.views.findIndex(
@@ -54,7 +61,8 @@ export function validateCreateProfile(profile: CreateProfileRequest): CreateProf
       view.viewedAt.filter((event) => event.type === 'buy').length > 1,
   )
   if (invalidViewIndex !== -1) {
-    return { message: `Проверьте данные и события просмотра ${invalidViewIndex + 1}. Нужен хотя бы один watch.`, section: 'views' }
+    const view = profile.views[invalidViewIndex]
+    return { message: `Проверьте события объявления ${getActivityName(view.title, invalidViewIndex)}. Нужен хотя бы один просмотр с датой.`, section: 'views' }
   }
 
   const ids = [...profile.ownAds.map((ad) => ad.adId), ...profile.views.map((view) => view.adId)]
