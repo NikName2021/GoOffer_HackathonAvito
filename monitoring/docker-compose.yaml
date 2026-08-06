@@ -1,0 +1,89 @@
+services:
+  grafana:
+    image: grafana/grafana:12.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - monitoring
+      - result_year
+    depends_on:
+      - loki
+      - victoriametrics
+
+  loki:
+    image: grafana/loki:3.7.0
+    restart: unless-stopped
+    command:
+      - -config.file=/etc/loki/config.yaml
+    volumes:
+      - ./loki/config.yaml:/etc/loki/config.yaml:ro
+      - loki-data:/loki
+    networks:
+      - monitoring
+    expose:
+      - "3100"
+
+  alloy:
+    image: grafana/alloy:v1.10.0
+    restart: unless-stopped
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --storage.path=/var/lib/alloy/data
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - alloy-data:/var/lib/alloy/data
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - monitoring
+      - result_year
+    depends_on:
+      - loki
+
+  victoriametrics:
+    image: victoriametrics/victoria-metrics:v1.148.0
+    restart: unless-stopped
+    command:
+      - -storageDataPath=/storage
+      - -retentionPeriod=90d
+    volumes:
+      - victoria-data:/storage
+    networks:
+      - monitoring
+    expose:
+      - "8428"
+
+  vmagent:
+    image: victoriametrics/vmagent:v1.148.0
+    restart: unless-stopped
+    command:
+      - -promscrape.config=/etc/vmagent/prometheus.yml
+      - -remoteWrite.url=http://victoriametrics:8428/api/v1/write
+    volumes:
+      - ./victoriametrics/prometheus.yml:/etc/vmagent/prometheus.yml:ro
+      - vmagent-data:/vmagent-remotewrite-data
+    networks:
+      - monitoring
+      - result_year
+    depends_on:
+      - victoriametrics
+
+volumes:
+  grafana-data:
+  loki-data:
+  alloy-data:
+  victoria-data:
+  vmagent-data:
+
+networks:
+  monitoring:
+    internal: true
+  result_year:
+    external: true
