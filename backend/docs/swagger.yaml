@@ -28,6 +28,22 @@ paths:
                   status:
                     type: string
                     example: ok
+  /metrics:
+    get:
+      tags: [System]
+      summary: Получить метрики приложения в формате Prometheus
+      operationId: metrics
+      responses:
+        "200":
+          description: Runtime, process и HTTP-метрики приложения
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: |-
+                  # HELP gooffer_http_requests_total Total number of HTTP requests processed by the application.
+                  # TYPE gooffer_http_requests_total counter
+                  gooffer_http_requests_total{code="200",method="GET"} 1
   /api/auth/register:
     post:
       tags: [Auth]
@@ -340,7 +356,7 @@ components:
       schema:
         type: integer
         minimum: 2000
-        example: 2025
+        example: 2026
   schemas:
     Credentials:
       type: object
@@ -400,12 +416,12 @@ components:
           example: 43
         views:
           type: array
-          maxItems: 100
+          maxItems: 10000
           items:
             $ref: "#/components/schemas/ViewedAdWrite"
         ownAds:
           type: array
-          maxItems: 100
+          maxItems: 10000
           items:
             $ref: "#/components/schemas/OwnAdWrite"
     AdWriteBase:
@@ -552,7 +568,7 @@ components:
         year:
           type: integer
           minimum: 2000
-          example: 2025
+          example: 2026
     CategoryStat:
       type: object
       required: [category, count]
@@ -564,6 +580,7 @@ components:
           type: integer
           minimum: 0
           example: 300
+          description: Количество item-level сигналов без весовых коэффициентов.
     Achievement:
       type: object
       required: [slug, title, description, icon, category]
@@ -583,6 +600,136 @@ components:
         category:
           type: string
           example: views
+    RecapItem:
+      type: object
+      required: [title, category, price]
+      properties:
+        title: {type: string, example: Смартфон}
+        category: {type: string, example: Электроника}
+        subcategory: {type: string, example: Смартфоны}
+        image_url: {type: string, format: uri}
+        price: {type: integer, format: int64, minimum: 0, example: 118000}
+    BuyerRecapSummary:
+      type: object
+      required: [has_data, viewed_ads_count, total_views, favorites_count, chats_count, purchases_count]
+      properties:
+        has_data: {type: boolean}
+        viewed_ads_count: {type: integer, minimum: 0}
+        total_views: {type: integer, minimum: 0}
+        favorites_count: {type: integer, minimum: 0}
+        chats_count:
+          type: integer
+          minimum: 0
+          description: Текущий агрегированный снимок профиля; у исходного поля пока нет даты.
+        purchases_count: {type: integer, minimum: 0}
+        main_category: {type: string}
+        largest_purchase:
+          allOf: [{$ref: "#/components/schemas/RecapItem"}]
+          nullable: true
+    SellerRecapSummary:
+      type: object
+      required:
+        - has_data
+        - listings_count
+        - active_listings
+        - archived_listings
+        - sales_count
+        - listing_views
+        - likes_received
+        - reviews_count
+      properties:
+        has_data: {type: boolean}
+        listings_count:
+          type: integer
+          minimum: 0
+          description: Текущий снимок ownAds; дата публикации пока отсутствует.
+        active_listings: {type: integer, minimum: 0}
+        archived_listings: {type: integer, minimum: 0}
+        sales_count: {type: integer, minimum: 0}
+        listing_views: {type: integer, minimum: 0}
+        likes_received: {type: integer, minimum: 0}
+        reviews_count: {type: integer, minimum: 0}
+        average_rating:
+          type: number
+          format: double
+          minimum: 1
+          maximum: 5
+          nullable: true
+        main_category: {type: string}
+        star_listing:
+          allOf: [{$ref: "#/components/schemas/RecapItem"}]
+          nullable: true
+    CombinedRecapSummary:
+      type: object
+      required: [has_buyer_data, has_seller_data, categories_count, deals_count]
+      properties:
+        has_buyer_data: {type: boolean}
+        has_seller_data: {type: boolean}
+        categories_count: {type: integer, minimum: 0}
+        deals_count: {type: integer, minimum: 0}
+        main_category: {type: string}
+    RecapSummary:
+      type: object
+      required: [headline, description, buyer, seller, combined]
+      properties:
+        headline: {type: string, example: Вы были по обе стороны Авито}
+        description: {type: string}
+        buyer: {$ref: "#/components/schemas/BuyerRecapSummary"}
+        seller: {$ref: "#/components/schemas/SellerRecapSummary"}
+        combined: {$ref: "#/components/schemas/CombinedRecapSummary"}
+    ShareRecapSummary:
+      type: object
+      required: [headline, description, combined]
+      properties:
+        headline: {type: string}
+        description: {type: string}
+        combined: {$ref: "#/components/schemas/CombinedRecapSummary"}
+    RecapCardPresentation:
+      type: object
+      required: [layout, theme, icon]
+      properties:
+        layout:
+          type: string
+          example: statistic
+        theme:
+          type: string
+          example: avito-purple
+        icon:
+          type: string
+          example: sparkles
+    RecapCardCTA:
+      type: object
+      required: [label, action]
+      properties:
+        label: {type: string, example: Открыть свежие объявления}
+        action: {type: string, example: open_category}
+        params:
+          type: object
+          additionalProperties: {type: string}
+          example: {category: Электроника}
+    RecapCard:
+      type: object
+      required: [id, kind, title, description, shareable, reason, presentation]
+      properties:
+        id: {type: string, example: main_interest}
+        kind:
+          type: string
+          enum: [overview, interest, buyer, seller, combined, final]
+        eyebrow: {type: string, example: Главный интерес}
+        title: {type: string, example: Электроника}
+        description: {type: string}
+        value: {type: string, example: 12 находок}
+        image_url: {type: string, format: uri}
+        shareable:
+          type: boolean
+          description: Backend-флаг; публичный share endpoint сам исключает false-карточки.
+        reason:
+          type: string
+          description: Объяснение, почему карточка вошла в итоговую последовательность.
+        presentation: {$ref: "#/components/schemas/RecapCardPresentation"}
+        cta:
+          allOf: [{$ref: "#/components/schemas/RecapCardCTA"}]
+          nullable: true
     RecapMetrics:
       type: object
       required:
@@ -599,27 +746,32 @@ components:
       properties:
         year:
           type: integer
-          example: 2025
+          example: 2026
         total_views:
           type: integer
           minimum: 0
           example: 1500
+          description: Сумма viewCount для объявлений с lastViewedAt в выбранном году.
         total_messages:
           type: integer
           minimum: 0
           example: 50
+          description: Текущий chatsCount профиля; годовой timestamp пока отсутствует.
         total_favorites:
           type: integer
           minimum: 0
           example: 100
+          description: Избранное с favoritedAt в выбранном году.
         total_purchases:
           type: integer
           minimum: 0
           example: 10
+          description: Покупки с purchasedAt в выбранном году.
         total_sales:
           type: integer
           minimum: 0
           example: 5
+          description: Продажи с soldAt в выбранном году.
         top_categories:
           type: array
           items:
@@ -640,7 +792,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/RecapMetrics"
         - type: object
-          required: [id, user_id]
+          required: [id, user_id, summary, cards]
           properties:
             id:
               type: string
@@ -648,8 +800,22 @@ components:
             user_id:
               type: string
               format: uuid
+            summary:
+              $ref: "#/components/schemas/RecapSummary"
+            cards:
+              type: array
+              items: {$ref: "#/components/schemas/RecapCard"}
     ShareRecap:
-      $ref: "#/components/schemas/RecapMetrics"
+      allOf:
+        - $ref: "#/components/schemas/RecapMetrics"
+        - type: object
+          required: [summary, cards]
+          properties:
+            summary: {$ref: "#/components/schemas/ShareRecapSummary"}
+            cards:
+              type: array
+              description: Только карточки с shareable=true.
+              items: {$ref: "#/components/schemas/RecapCard"}
     Error:
       type: object
       required: [error]

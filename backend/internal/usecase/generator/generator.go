@@ -11,74 +11,50 @@ import (
 )
 
 type Generator struct {
-	userRepo   ports.UserRepository
-	actionRepo ports.ActionRepository
-	recapRepo  ports.RecapRepository
+	userRepo  ports.UserRepository
+	recapRepo ports.RecapRepository
 }
 
 func New(
 	userRepo ports.UserRepository,
-	actionRepo ports.ActionRepository,
+	_ ports.ActionRepository, // kept temporarily so existing application wiring stays compatible
 	recapRepo ports.RecapRepository,
 ) *Generator {
 	return &Generator{
-		userRepo:   userRepo,
-		actionRepo: actionRepo,
-		recapRepo:  recapRepo,
+		userRepo:  userRepo,
+		recapRepo: recapRepo,
 	}
 }
 
 func (g *Generator) Execute(ctx context.Context, accountID, userID uuid.UUID, year int) (*domain.Recap, error) {
-	// 1. Проверяем существование пользователя
-	if _, err := g.userRepo.GetByID(ctx, accountID, userID); err != nil {
+	user, err := g.userRepo.GetByID(ctx, accountID, userID)
+	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 
-	// 2. Получаем действия пользователя за год
-	actions, err := g.actionRepo.GetByUserAndYear(ctx, userID, year)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get actions: %w", err)
-	}
+	metrics := calculateProfileMetrics(user, year)
+	summary := buildRecapSummary(metrics)
+	cards := buildRecapCards(metrics, summary, user.RegisteredAt)
+	achievementMetrics := metrics.achievementMetrics()
+	achievements := AssignAchievements(achievementMetrics)
 
-	// 3. Если действий нет — создаём пустой Recap и сохраняем
-	if len(actions) == 0 {
-		emptyRecap := &domain.Recap{
-			ID:          uuid.New(),
-			UserID:      userID,
-			Year:        year,
-			GeneratedAt: time.Now().UTC(),
-		}
-
-		if err := g.recapRepo.Save(ctx, emptyRecap); err != nil {
-			return nil, fmt.Errorf("failed to save empty recap: %w", err)
-		}
-
-		return emptyRecap, nil
-	}
-
-	// 4. Подсчёт метрик
-	metrics := calculateMetrics(actions)
-
-	// 5. Назначение ачивок
-	achievements := AssignAchievements(metrics)
-
-	// 6. Формируем Recap
 	recap := domain.Recap{
 		ID:             uuid.New(),
 		UserID:         userID,
 		Year:           year,
-		TotalViews:     metrics.TotalViews,
-		TotalMessages:  metrics.TotalMessages,
-		TotalFavorites: metrics.TotalFavorites,
-		TotalPurchases: metrics.TotalPurchases,
-		TotalSales:     metrics.TotalSales,
+		TotalViews:     metrics.Buyer.TotalViews,
+		TotalMessages:  metrics.Buyer.ChatsCount,
+		TotalFavorites: metrics.Buyer.FavoritesCount,
+		TotalPurchases: metrics.Buyer.PurchasesCount,
+		TotalSales:     metrics.Seller.SalesCount,
 		TopCategories:  metrics.TopCategories,
 		Achievements:   achievements,
 		ActivityDays:   metrics.ActivityDays,
+		Summary:        summary,
+		Cards:          cards,
 		GeneratedAt:    time.Now().UTC(),
 	}
 
-	// 7. Сохраняем в БД
 	if err := g.recapRepo.Save(ctx, &recap); err != nil {
 		return nil, fmt.Errorf("failed to save recap: %w", err)
 	}

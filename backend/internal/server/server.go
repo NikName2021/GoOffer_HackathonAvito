@@ -59,6 +59,8 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", healthHandler)
+	metricsHandler, instrumentHTTP := newMetrics()
+	mux.Handle("GET /metrics", metricsHandler)
 	docs.Register(mux)
 	authHandler := handlers.NewAuthHandler(dependencies.Auth, logger, handlers.AuthHandlerOptions{
 		CookieName:   "gooffer_session",
@@ -87,6 +89,7 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 	handler = middleware.Recovery(logger)(handler)
 	handler = middleware.Logger(logger)(handler)
 	handler = middleware.RequestID(handler)
+	handler = instrumentHTTP(handler)
 	return handler
 }
 

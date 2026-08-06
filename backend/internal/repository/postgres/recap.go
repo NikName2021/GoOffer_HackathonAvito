@@ -30,13 +30,21 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 	if err != nil {
 		return fmt.Errorf("marshal achievements: %w", err)
 	}
+	summary, err := json.Marshal(recap.Summary)
+	if err != nil {
+		return fmt.Errorf("marshal summary: %w", err)
+	}
+	cards, err := json.Marshal(recap.Cards)
+	if err != nil {
+		return fmt.Errorf("marshal cards: %w", err)
+	}
 
 	const query = `
 		INSERT INTO recaps (
 			id, user_id, year, total_views, total_messages, total_favorites,
 			total_purchases, total_sales, top_categories, achievements,
-			activity_days, generated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+			activity_days, summary, cards, generated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (user_id, year) DO UPDATE SET
 			id = EXCLUDED.id,
 			total_views = EXCLUDED.total_views,
@@ -47,6 +55,8 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 			top_categories = EXCLUDED.top_categories,
 			achievements = EXCLUDED.achievements,
 			activity_days = EXCLUDED.activity_days,
+			summary = EXCLUDED.summary,
+			cards = EXCLUDED.cards,
 			generated_at = EXCLUDED.generated_at`
 
 	if _, err := r.pool.Exec(ctx, query,
@@ -61,6 +71,8 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 		topCategories,
 		achievements,
 		recap.ActivityDays,
+		summary,
+		cards,
 		recap.GeneratedAt,
 	); err != nil {
 		return fmt.Errorf("save recap: %w", err)
@@ -76,13 +88,15 @@ func (r *RecapRepository) GetByUserAndYear(
 	const query = `
 		SELECT id, user_id, year, total_views, total_messages, total_favorites,
 		       total_purchases, total_sales, top_categories, achievements,
-		       activity_days, generated_at
+		       activity_days, summary, cards, generated_at
 		FROM recaps
 		WHERE user_id = $1 AND year = $2`
 
 	var recap domain.Recap
 	var topCategories []byte
 	var achievements []byte
+	var summary []byte
+	var cards []byte
 	err := r.pool.QueryRow(ctx, query, userID, year).Scan(
 		&recap.ID,
 		&recap.UserID,
@@ -95,6 +109,8 @@ func (r *RecapRepository) GetByUserAndYear(
 		&topCategories,
 		&achievements,
 		&recap.ActivityDays,
+		&summary,
+		&cards,
 		&recap.GeneratedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -108,6 +124,21 @@ func (r *RecapRepository) GetByUserAndYear(
 	}
 	if err := json.Unmarshal(achievements, &recap.Achievements); err != nil {
 		return nil, fmt.Errorf("unmarshal achievements: %w", err)
+	}
+	if err := json.Unmarshal(summary, &recap.Summary); err != nil {
+		return nil, fmt.Errorf("unmarshal summary: %w", err)
+	}
+	if err := json.Unmarshal(cards, &recap.Cards); err != nil {
+		return nil, fmt.Errorf("unmarshal cards: %w", err)
+	}
+	if recap.TopCategories == nil {
+		recap.TopCategories = []domain.CategoryStat{}
+	}
+	if recap.Achievements == nil {
+		recap.Achievements = []domain.Achievement{}
+	}
+	if recap.Cards == nil {
+		recap.Cards = []domain.RecapCard{}
 	}
 	return &recap, nil
 }

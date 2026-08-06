@@ -47,12 +47,18 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 		t.Fatalf("expected 4 profiles, got %d", len(users))
 	}
 
-	recap, err := gen.Execute(ctx, accountID, annaID, 2025)
+	recap, err := gen.Execute(ctx, accountID, annaID, 2026)
 	if err != nil {
 		t.Fatalf("generate recap: %v", err)
 	}
 
-	if recap.TotalPurchases < 12 {
-		t.Fatalf("expected at least 12 purchases for Anna, got %d", recap.TotalPurchases)
+	if recap.TotalPurchases != 3 || recap.TotalSales != 2 {
+		t.Fatalf("expected Anna profile purchases/sales 3/2, got %d/%d", recap.TotalPurchases, recap.TotalSales)
+	}
+	if !recap.Summary.Combined.HasBuyerData || !recap.Summary.Combined.HasSellerData {
+		t.Fatalf("expected recap to preserve both sides, got %#v", recap.Summary.Combined)
+	}
+	if len(recap.Cards) < 7 || len(recap.Cards) > 9 {
+		t.Fatalf("expected 7-9 cards, got %d", len(recap.Cards))
 	}
 }
