@@ -33,15 +33,19 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal recommendations: %w", err)
 	}
+	storyJSON, err := json.Marshal(recap.Story)
+	if err != nil {
+		return fmt.Errorf("failed to marshal story: %w", err)
+	}
 
 	query := `
 		INSERT INTO recaps (
 			id, user_id, year,
 			total_views, total_messages, total_favorites,
 			total_purchases, total_sales, activity_days,
-			top_categories, achievements, recommendations, generated_at
+			top_categories, achievements, recommendations, story, generated_at
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		ON CONFLICT (user_id, year) DO UPDATE SET
 			total_views = EXCLUDED.total_views,
 			total_messages = EXCLUDED.total_messages,
@@ -52,13 +56,14 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 			top_categories = EXCLUDED.top_categories,
 			achievements = EXCLUDED.achievements,
 			recommendations = EXCLUDED.recommendations,
+			story = EXCLUDED.story,
 			generated_at = EXCLUDED.generated_at
 	`
 	_, err = r.db.Exec(ctx, query,
 		recap.ID, recap.UserID, recap.Year,
 		recap.TotalViews, recap.TotalMessages, recap.TotalFavorites,
 		recap.TotalPurchases, recap.TotalSales, recap.ActivityDays,
-		topCategoriesJSON, achievementsJSON, recommendationsJSON,
+		topCategoriesJSON, achievementsJSON, recommendationsJSON, storyJSON,
 		recap.GeneratedAt,
 	)
 	if err != nil {
@@ -73,20 +78,23 @@ func (r *RecapRepository) GetByUserAndYear(ctx context.Context, userID uuid.UUID
 			id, user_id, year,
 			total_views, total_messages, total_favorites,
 			total_purchases, total_sales, activity_days,
-			top_categories, achievements, COALESCE(recommendations, '[]'::jsonb), generated_at
+			top_categories, achievements,
+			COALESCE(recommendations, '[]'::jsonb),
+			COALESCE(story, '{}'::jsonb),
+			generated_at
 		FROM recaps
 		WHERE user_id = $1 AND year = $2
 	`
 	row := r.db.QueryRow(ctx, query, userID, year)
 
 	var recap domain.Recap
-	var topCategoriesJSON, achievementsJSON, recommendationsJSON []byte
+	var topCategoriesJSON, achievementsJSON, recommendationsJSON, storyJSON []byte
 
 	err := row.Scan(
 		&recap.ID, &recap.UserID, &recap.Year,
 		&recap.TotalViews, &recap.TotalMessages, &recap.TotalFavorites,
 		&recap.TotalPurchases, &recap.TotalSales, &recap.ActivityDays,
-		&topCategoriesJSON, &achievementsJSON, &recommendationsJSON,
+		&topCategoriesJSON, &achievementsJSON, &recommendationsJSON, &storyJSON,
 		&recap.GeneratedAt,
 	)
 	if err != nil {
@@ -105,6 +113,10 @@ func (r *RecapRepository) GetByUserAndYear(ctx context.Context, userID uuid.UUID
 	if err := json.Unmarshal(recommendationsJSON, &recap.Recommendations); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal recommendations: %w", err)
 	}
+	if err := json.Unmarshal(storyJSON, &recap.Story); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal story: %w", err)
+	}
+
 	if recap.TopCategories == nil {
 		recap.TopCategories = []domain.CategoryStat{}
 	}
@@ -113,6 +125,9 @@ func (r *RecapRepository) GetByUserAndYear(ctx context.Context, userID uuid.UUID
 	}
 	if recap.Recommendations == nil {
 		recap.Recommendations = []domain.Recommendation{}
+	}
+	if recap.Story.Insights == nil {
+		recap.Story.Insights = []string{}
 	}
 
 	return &recap, nil

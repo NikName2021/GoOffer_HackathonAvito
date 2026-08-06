@@ -1,0 +1,2 @@
+ALTER TABLE recaps
+    ADD COLUMN IF NOT EXISTS story JSONB NOT NULL DEFAULT '{}'::jsonb;

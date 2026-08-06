@@ -15,4 +15,3 @@ docker compose down --remove-orphans
 
 echo "[deploy] building and starting"
 docker compose up -d --build
-

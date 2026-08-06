@@ -16,6 +16,7 @@ import (
 	"gooffer/backend/internal/repository/postgres"
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/auth"
 	"gooffer/backend/internal/usecase/generator"
 	"gooffer/backend/internal/usecase/ports"
 	"gooffer/backend/internal/usecase/profile"
@@ -67,12 +68,16 @@ func main() {
 	userRepo := postgres.NewUserRepository(pool)
 	actionRepo := postgres.NewActionRepository(pool)
 	recapRepo := postgres.NewRecapRepository(pool)
+	accountRepo := postgres.NewAccountRepository(pool)
+	sessionRepo := postgres.NewSessionRepository(pool)
 
 	profileService := profile.New(logger, userRepo)
 	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
+	authService := auth.New(accountRepo, sessionRepo)
 
 	profileHandler := handlers.NewProfileHandler(logger, profileService)
 	recapHandler := handlers.NewRecapHandler(logger, gen)
+	authHandler := handlers.NewAuthHandler(logger, authService, cfg.CookieSecure)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -84,6 +89,8 @@ func main() {
 		Addr:           ":" + port,
 		ProfileHandler: profileHandler,
 		RecapHandler:   recapHandler,
+		AuthHandler:    authHandler,
+		AuthService:    authService,
 	})
 
 	go func() {

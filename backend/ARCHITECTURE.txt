@@ -1,223 +1,260 @@
 ================================================================================
-                    AVITO RECAP BACKEND - АРХИТЕКТУРА ПРОЕКТА
+                    GOOFFER / AVITO RECAP BACKEND — АРХИТЕКТУРА
 ================================================================================
+
+MVP "Итоги года" (кейс 3, Avito Start).
+Clean Architecture: зависимости направлены внутрь (domain ← usecase ← adapters).
 
 backend/
 │
-├── cmd/                            # ТОЧКИ ВХОДА В ПРИЛОЖЕНИЕ
+├── cmd/
 │   └── server/
-│       └── main.go                 # Инициализация config, logger, DB, HTTP сервера, DI
+│       └── main.go              # config, logger, Postgres, Redis, DI, HTTP, graceful shutdown
 │
-├── internal/                       # ВНУТРЕННИЙ КОД (НЕДОСТУПЕН ИЗВНЕ)
+├── internal/                    # внутренний код (не импортируется снаружи)
 │   │
-│   ├── domain/                     # 🔴 СЛОЙ 1: ENTITIES (БИЗНЕС-СУЩНОСТИ)
-│   │   ├── user.go                 # Сущность User: ID, Name, Avatar, RegisteredAt, ProfileType
-│   │   ├── action.go               # Сущность Action: ID, UserID, Type, CategoryID, Category, CreatedAt
-│   │   ├── category.go             # Сущность Category: ID, Name
-│   │   ├── achievement.go          # Сущность Achievement: Slug, Title, Description, Icon, Category
-│   │   │                           # + PredefinedAchievements (7 ачивок с условиями)
-│   │   └── recap.go                # Сущность Recap: UserID, Year, TotalViews, TotalMessages,
-│   │                               # TotalPurchases, TotalSales, TopCategories, Achievements, ActivityDays
+│   ├── domain/                  # 🔴 СЛОЙ 1: сущности
+│   │   ├── user.go              # User: ID, Name, Avatar, RegisteredAt, ProfileType
+│   │   ├── action.go            # Action: ID, UserID, Type, CategoryID, Category, CreatedAt
+│   │   ├── category.go          # Category: ID, Name
+│   │   ├── achievement.go       # Achievement + DefaultAchievements (7 бейджей)
+│   │   ├── recap.go             # Recap + CategoryStat, Recommendation, Story
+│   │   └── account.go           # Account / Session (опциональный auth)
 │   │
-│   ├── usecase/                    # 🟠 СЛОЙ 2: USE CASES (БИЗНЕС-ЛОГИКА)
-|   |   ├── ports/                  # Интерфейсы (Ports)
+│   ├── usecase/                 # 🟠 СЛОЙ 2: бизнес-логика
+│   │   ├── ports/               # интерфейсы (ports)
 │   │   │   ├── user_repository.go
 │   │   │   ├── action_repository.go
 │   │   │   ├── recap_repository.go
-│   │   │   └── cache.go    
-│   │   ├── generator/              # ГЕНЕРАЦИЯ ИТОГОВ
-│   │   │   ├── generator.go        # Реализация: получение действий → подсчёт метрик → назначение ачивок → сохранение
-│   │   │   ├── metrics.go          # Подсчёт метрик: TotalViews, TotalMessages, TopCategories, ActivityDays
-│   │   │   └── achievements.go     # Назначение ачивок: проверка условий (7 штук)
-│   │   └── profile/                # РАБОТА С ПРОФИЛЯМИ
-│   │       └── profile.go          # Реализация: получение пользователя/списка профилей из репозитория
+│   │   │   ├── account_repository.go
+│   │   │   └── cache.go
+│   │   ├── generator/
+│   │   │   ├── generator.go     # Execute / Get: actions → metrics → achievements
+│   │   │   │                    # → story → recommendations → save + cache
+│   │   │   ├── metrics.go       # TotalViews/Messages/Favorites/Purchases/Sales,
+│   │   │   │                    # TopCategories (top-3), ActivityDays
+│   │   │   ├── achievements.go  # AssignAchievements по фиксированным порогам
+│   │   │   ├── story.go         # BuildStory: persona, headline, summary, insights
+│   │   │   └── recommendations.go  # BuildRecommendations: 1–3 CTA без PII
+│   │   ├── profile/
+│   │   │   └── profile.go       # ListProfiles / GetByID
+│   │   └── auth/
+│   │       └── service.go       # register / login / logout / authenticate
 │   │
-│   ├── repository/                 # 🟡 СЛОЙ 3: INTERFACE ADAPTERS (ПОРТЫ)
-│   │   ├── postgres/               # РЕАЛИЗАЦИЯ ДЛЯ POSTGRESQL (Backend 2)
-│   │   │   ├── user.go             # UserRepository: SELECT * FROM users WHERE id = $1
-│   │   │   ├── action.go           # ActionRepository: SELECT * FROM actions WHERE user_id = $1 AND year = $2
-│   │   │   └── recap.go            # RecapRepository: INSERT/UPDATE/SELECT recaps (JSONB)
-│   │   └── redis/                  # РЕАЛИЗАЦИЯ ДЛЯ REDIS (КЭШ) (Backend 2)
-│   │       └── recap_cache.go      # Кэширование Recap: GET/SET/DELETE в Redis
+│   ├── repository/              # 🟡 адаптеры данных
+│   │   ├── postgres/
+│   │   │   ├── user.go
+│   │   │   ├── action.go
+│   │   │   ├── recap.go         # JSONB: top_categories, achievements, recommendations, story
+│   │   │   ├── account.go
+│   │   │   └── session.go
+│   │   └── redis/
+│   │       ├── recap_cache.go   # GET/SET recap (TTL 24h)
+│   │       └── noop_cache.go    # fallback, если Redis недоступен
 │   │
-│   ├── delivery/                   # 🟡 СЛОЙ 3: INTERFACE ADAPTERS (ПРЕДСТАВЛЕНИЕ)
-│   │   ├── dto/                    # DATA TRANSFER OBJECTS (Backend 1)
-│   │   │   ├── profile_response.go # Ответ API: ProfileResponse + FromDomain()
-│   │   │   └── recap_response.go   # Ответ API: RecapResponse + FromDomain()
-│   │   ├── handlers/               # HTTP ОБРАБОТЧИКИ (Backend 3)
-│   │   │   ├── profile_handler.go  # GET /api/profiles, GET /api/profiles/{id}
-│   │   │   └── recap_handler.go    # POST /api/recap/generate, GET /api/recap/{user_id}/{year}
-│   │   └── middleware/             # HTTP МИДЛВАРЫ (Backend 3)
-│   │       ├── logger.go           # Логирование запросов
-│   │       ├── recovery.go         # Восстановление после паники
-│   │       └── cors.go             # CORS настройки
+│   ├── delivery/                # 🟡 HTTP-адаптеры
+│   │   ├── dto/
+│   │   │   ├── profile_response.go
+│   │   │   └── recap_response.go  # RecapResponse + ShareRecapResponse (без id/user_id)
+│   │   ├── handlers/
+│   │   │   ├── profile_handler.go
+│   │   │   ├── recap_handler.go   # generate / get / share
+│   │   │   └── auth_handler.go
+│   │   └── middleware/
+│   │       ├── logger.go
+│   │       ├── recovery.go
+│   │       ├── cors.go
+│   │       └── auth.go            # OptionalAuth / RequireAuth (AUTH_REQUIRED)
 │   │
-│   ├── config/                     # КОНФИГУРАЦИЯ
-│   │   └── config.go               # Загрузка .env, парсинг переменных, DSN для БД, Redis
+│   ├── config/
+│   │   └── config.go            # env → Config, Postgres DSN
 │   │
-│   └── server/                     # НАСТРОЙКА HTTP СЕРВЕРА (Backend 3)
-│       └── server.go               # Gin настройки, маршруты, middleware, запуск
+│   └── server/
+│       └── server.go            # net/http ServeMux, маршруты, timeouts, Shutdown
 │
-├── pkg/                            # ПЕРЕИСПОЛЬЗУЕМЫЕ ПАКЕТЫ
-│   └── errors/                     # КАСТОМНЫЕ ОШИБКИ
-│       └── errors.go               # Domain errors: ErrNotFound, ErrInvalidID, ErrInvalidYear
+├── pkg/
+│   └── errors/
+│       └── errors.go            # AppError: BadRequest / NotFound / Internal
 │
-├── tests/                          # ТЕСТЫ
-│   ├── unit/                       # ЮНИТ-ТЕСТЫ (Backend 1)
-│   │   ├── generator_test.go       # Тесты для генератора (mock репозитории)
-│   │   └── achievements_test.go    # Тесты для назначения ачивок
-│   └── integration/                # ИНТЕГРАЦИОННЫЕ ТЕСТЫ (Backend 3)
-│       ├── profile_test.go         # Тесты API /api/profiles
-│       └── recap_test.go           # Тесты API /api/recap/*
+├── migrations/
+│   ├── 001_init.up.sql / .down.sql
+│   ├── 002_seed_test_profiles.up.sql / .down.sql   # 5 профилей + actions
+│   ├── 003_auth.up.sql / .down.sql                 # accounts, sessions
+│   ├── 004_recap_story.up.sql / .down.sql          # column story JSONB
+│   └── migrate.go                                  # apply при старте приложения
 │
-├── migrations/                     # SQL МИГРАЦИИ (Backend 2)
-│   ├── 001_init.up.sql             # Создание таблиц: users, categories, actions, recaps
-│   ├── 001_init.down.sql           # Откат: удаление таблиц
-│   ├── 002_seed_test_profiles.up.sql   # Тестовые профили (4-5 штук)
-│   └── 002_seed_test_profiles.down.sql # Удаление тестовых профилей
+├── tests/
+│   ├── unit/
+│   │   ├── generator_test.go
+│   │   ├── achievements_test.go
+│   │   ├── recommendations_test.go
+│   │   ├── story_test.go
+│   │   └── auth_test.go
+│   └── integration/
+│       ├── setup_test.go
+│       ├── profile_test.go
+│       ├── recap_test.go
+│       └── system_test.go
 │
-├── docs/                           # SWAGGER ДОКУМЕНТАЦИЯ (Backend 3)
-│   ├── docs.go                     # Swagger конфигурация
-│   ├── swagger.json                # OpenAPI спецификация
-│   └── swagger.yaml                # OpenAPI спецификация
-├── go.mod                          # Зависимости Go модуля
-├── go.sum                          # Хеши зависимостей
-├── README.md                       # Документация бэкенда
-└── ARCHITECTURE.txt                # ЭТОТ ФАЙЛ — архитектура проекта
+├── .golangci.yml
+├── Dockerfile
+├── Makefile
+├── go.mod / go.sum
+├── README.md
+├── ARCHITECTURE.txt             # этот файл
+└── TEAM_NOTES.txt
 
-├── .env                            # Переменные окружения (НЕ В GIT!)
-├── .env.example                    # Шаблон .env (В GIT!)
-├── .gitignore                      # Игнорируемые файлы
-├── Dockerfile                      # Docker образ (Backend 3)
-└── docker-compose.yml              # Docker Compose: PostgreSQL + Redis + Application
-
+Корень репозитория (не внутри backend/):
+  docker-compose.yaml, .env.example, frontend/, README.md
 
 ================================================================================
-                          ПОТОК ДАННЫХ (REQUEST FLOW)
+                         ПОТОК ДАННЫХ (REQUEST FLOW)
 ================================================================================
 
-  HTTP Request (Gin)
+  HTTP Request
         ↓
-  Middleware (Logger, Recovery, CORS)
+  Middleware: CORS → Logger → Recovery → OptionalAuth
         ↓
-  Router → Handler (парсинг параметров, выбор UseCase)
+  ServeMux → Handler (path values, JSON body, валидация)
         ↓
-  Handler (парсинг DTO, валидация, вызов UseCase)
+  Use Case
+        ├── ports → Postgres (users / actions / recaps / accounts)
+        ├── ports → Redis cache (или noop)
+        ├── calculateMetrics
+        ├── AssignAchievements
+        ├── BuildStory
+        └── BuildRecommendations
         ↓
-  Use Case (бизнес-логика)
-        │
-        ├──→ Repository (получение данных из БД)
-        │         ↓
-        │   Database (PostgreSQL)
-        │         ↓
-        │   Domain (конвертация в сущности)
-        │
-        ├──→ Metrics (подсчёт: просмотры, сообщения, покупки, продажи, топ-категории)
-        │
-        └──→ Achievements (назначение ачивок по условиям)
-        │
+  DTO (Domain → JSON)
         ↓
-  DTO (конвертация Domain → DTO)
-        ↓
-  HTTP Response (JSON)
+  HTTP Response
+
+Генерация recap (POST /api/recap/generate):
+
+  1. Проверка user
+  2. Cache hit? → вернуть
+  3. Actions за год из Postgres
+  4. Metrics → Achievements → Story → Recommendations
+  5. Save recap (ON CONFLICT user_id+year) + cache 24h
+  6. 201 + RecapResponse
 
 ================================================================================
-                               ПРИМЕРНЫЕ API ЭНДПОИНТЫ
+                              API ЭНДПОИНТЫ
 ================================================================================
 
-  GET  /api/profiles                     → Список тестовых профилей
-  GET  /api/profiles/{id}                → Профиль по ID
-  POST /api/recap/generate               → Запуск генерации итогов
-       Body: { "user_id": "uuid", "year": 2025 }
-  GET  /api/recap/{user_id}/{year}       → Получить готовый Recap
-  GET  /api/recap/{user_id}/{year}/share → Share-card (без чувствительных данных)
-  GET  /health                           → Health check
+  GET  /health
+  GET  /api/profiles
+  GET  /api/profiles/{id}
+  POST /api/recap/generate
+       Body: { "user_id": "<uuid>", "year": 2025 }
+  GET  /api/recap/{user_id}/{year}
+  GET  /api/recap/{user_id}/{year}/share     # без id / user_id в JSON
+
+  POST /api/auth/register
+  POST /api/auth/login                       # HttpOnly cookie gooffer_session
+  POST /api/auth/logout
+  GET  /api/auth/me
+
+  AUTH_REQUIRED=false (по умолчанию) — профили и recap без логина (демо кейса).
+  AUTH_REQUIRED=true  — RequireAuth на /api/profiles и /api/recap/*.
 
 ================================================================================
                          ЗАВИСИМОСТИ МЕЖДУ СЛОЯМИ
 ================================================================================
 
-  Внешний мир (HTTP)
+  HTTP / Docker
         ↓
-  Handlers (Backend 3)  ←─── DTO (Backend 1)
+  delivery (handlers, dto, middleware)
         ↓
-  Use Cases (Backend 1) ←─── Repository Interfaces (Backend 1)
-        ↓                              ↓
-  Domain (Backend 1)        Repository Impl (Backend 2)
+  usecase  ←── ports (интерфейсы)
+        ↓
+  domain
 
-   ПРАВИЛО: Зависимости направлены ВНУТРЬ!
-     Внешние слои зависят от внутренних, но не наоборот.
-
-================================================================================
-                         ОТВЕТСТВЕННОСТЬ ПО КОМАНДЕ
-================================================================================
-
-  Backend 1 (Мукам) — Архитектура, домен, бизнес-логика, юнит-тесты
-  ─────────────────────────────────────────────────────────────────────
-   domain/          — все сущности
-   usecase/         — интерфейсы и реализация бизнес-логики
-   repository/interfaces.go — интерфейсы репозиториев
-   delivery/dto/    — DTO для API
-   config/          — конфигурация
-   tests/unit/      — юнит-тесты
-
-  Backend 2 — PostgreSQL, миграции, репозитории, тестовые профили
-  ─────────────────────────────────────────────────────────────────────
-   migrations/      — SQL миграции (up/down)
-   repository/postgres/ — реализация репозиториев
-   repository/redis/    — кэширование в Redis
-
-  Backend 3 — API, обработка ошибок, интеграционные тесты, Docker
-  ─────────────────────────────────────────────────────────────────────
-   delivery/handlers/   — HTTP обработчики
-   delivery/middleware/ — мидлвары
-   server/              — настройка HTTP сервера
-   tests/integration/   — интеграционные тесты
-   Dockerfile           — сборка образа
-   docs/                — Swagger документация
+  repository/postgres и repository/redis реализуют ports.
+  ПРАВИЛО: внешние слои зависят от внутренних, не наоборот.
 
 ================================================================================
-                              ТЕХНОЛОГИЧЕСКИЙ СТЕК
+                         ПРАВИЛА ГЕНЕРАЦИИ (КРАТКО)
 ================================================================================
 
-  Язык:           Go 1.22+
-  HTTP:           Gin (github.com/gin-gonic/gin)
-  БД:             PostgreSQL 15+
-  Кэш:            Redis 7+
-  Драйвер БД:     pgx/v5 (github.com/jackc/pgx/v5)
-  Логирование:    slog (стандартный пакет Go)
-  Конфигурация:   godotenv (github.com/joho/godotenv)
-  UUID:           google/uuid (github.com/google/uuid)
-  Тесты:          testify (github.com/stretchr/testify)
-  Swagger:        swaggo (github.com/swaggo/swag)
-  Линтер:         golangci-lint
-  Docker:         Docker Compose
+  Действия: view | message | favorite | purchase | sale
 
+  Ачивки (Slug → условие):
+    curious            ≥ 500 views
+    explorer           ≥ 1000 views
+    social_butterfly   ≥ 50 messages
+    seller_master      ≥ 5 sales
+    shopaholic         ≥ 10 purchases
+    enthusiast         ≥ 100 activity days
+    veteran            ≥ 300 activity days
+
+  Story persona: seller | buyer | mixed | explorer | newbie
+  Recommendations: до 3 CTA (категория, избранное, объявление, чаты, explore)
+
+  Share-card: агрегаты + achievements + story + recommendations, без id/user_id.
 
 ================================================================================
-                              КОМАНДЫ ЗАПУСКА
+                         ТЕСТОВЫЕ ПРОФИЛИ (SEED)
 ================================================================================
 
-  Локальный запуск:
+  Алексей Продавец   11111111-1111-1111-1111-111111111111   seller
+  Мария Покупатель   22222222-2222-2222-2222-222222222222   buyer
+  Иван Ветеран       33333333-3333-3333-3333-333333333333   veteran
+  Елена Новичок      44444444-4444-4444-4444-444444444444   newbie
+  Пётр Универсал     55555555-5555-5555-5555-555555555555   universal
+
+  Demo-аккаунт: login=demo  password=demo123
+
+================================================================================
+                         ТЕХНОЛОГИЧЕСКИЙ СТЕК
+================================================================================
+
+  Язык:          Go (см. go.mod; в Docker — golang:1.25-alpine)
+  HTTP:          net/http (ServeMux, Go 1.22+ patterns) — без Gin
+  БД:            PostgreSQL 17 (Compose)
+  Кэш:           Redis 7+ (опционально, noop fallback)
+  Драйвер БД:    jackc/pgx/v5
+  Redis client:  redis/go-redis/v9
+  UUID:          google/uuid
+  Логирование:   log/slog (JSON)
+  Крипто/auth:   golang.org/x/crypto
+  Тесты:         testing + testify
+  Линтер:        golangci-lint (.golangci.yml)
+  Деплой:        Docker Compose (корень репозитория)
+
+  Почему PostgreSQL: реляционная модель users/actions/recaps, JSONB для
+  гибких полей recap, простой seed и миграции. Redis — только кэш.
+
+================================================================================
+                              КОМАНДЫ
+================================================================================
+
+  Из корня репозитория:
+
+    cp .env.example .env
+    docker compose up --build                 # Postgres + Redis + backend
+    docker compose --profile full up --build  # + frontend
+    docker compose down -v                    # сброс данных
+
+  Backend локально:
+
     cd backend
     go mod download
-    go run cmd/server/main.go
-
-  Через Docker:
-    docker-compose up -d   # Запустить PostgreSQL + Redis
-    docker-compose up      # Запустить всё (с логами)
-    docker-compose down    # Остановить
+    go run ./cmd/server
 
   Тесты:
-    go test ./tests/unit/...      # Юнит-тесты
-    go test ./tests/integration/... # Интеграционные тесты
-    go test ./... -cover          # Покрытие
+
+    go test ./tests/unit/... -count=1 -v
+    go test ./tests/integration/... -count=1 -v
 
   Линтер:
+
     golangci-lint run ./...
 
-  Миграции:
-    migrate -path migrations -database "$DATABASE_URL" up
-    migrate -path migrations -database "$DATABASE_URL" down
+  Проверка API:
 
-================================================================================
+    curl -s http://localhost:8000/health
+    curl -s http://localhost:8000/api/profiles
+    curl -s -X POST http://localhost:8000/api/recap/generate \
+      -H 'Content-Type: application/json' \
+      -d '{"user_id":"22222222-2222-2222-2222-222222222222","year":2025}'

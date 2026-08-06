@@ -8,6 +8,7 @@ import (
 
 	"gooffer/backend/internal/delivery/handlers"
 	"gooffer/backend/internal/delivery/middleware"
+	"gooffer/backend/internal/usecase/auth"
 )
 
 type Server struct {
@@ -20,6 +21,8 @@ type Dependencies struct {
 	Addr           string
 	ProfileHandler *handlers.ProfileHandler
 	RecapHandler   *handlers.RecapHandler
+	AuthHandler    *handlers.AuthHandler
+	AuthService    *auth.Service
 }
 
 func New(deps Dependencies) *Server {
@@ -30,14 +33,38 @@ func New(deps Dependencies) *Server {
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	mux.HandleFunc("GET /api/profiles", deps.ProfileHandler.List)
-	mux.HandleFunc("GET /api/profiles/{id}", deps.ProfileHandler.GetByID)
+	if deps.AuthHandler != nil {
+		mux.HandleFunc("POST /api/auth/register", deps.AuthHandler.Register)
+		mux.HandleFunc("POST /api/auth/login", deps.AuthHandler.Login)
+		mux.HandleFunc("POST /api/auth/logout", deps.AuthHandler.Logout)
+		mux.HandleFunc("GET /api/auth/me", deps.AuthHandler.Me)
+	}
 
-	mux.HandleFunc("POST /api/recap/generate", deps.RecapHandler.Generate)
-	mux.HandleFunc("GET /api/recap/{user_id}/{year}", deps.RecapHandler.Get)
-	mux.HandleFunc("GET /api/recap/{user_id}/{year}/share", deps.RecapHandler.Share)
+	profileList := http.HandlerFunc(deps.ProfileHandler.List)
+	profileGet := http.HandlerFunc(deps.ProfileHandler.GetByID)
+	recapGen := http.HandlerFunc(deps.RecapHandler.Generate)
+	recapGet := http.HandlerFunc(deps.RecapHandler.Get)
+	recapShare := http.HandlerFunc(deps.RecapHandler.Share)
+
+	if middleware.AuthRequiredFromEnv() && deps.AuthService != nil {
+		require := middleware.RequireAuth(deps.AuthService, deps.Logger)
+		mux.Handle("GET /api/profiles", require(profileList))
+		mux.Handle("GET /api/profiles/{id}", require(profileGet))
+		mux.Handle("POST /api/recap/generate", require(recapGen))
+		mux.Handle("GET /api/recap/{user_id}/{year}", require(recapGet))
+		mux.Handle("GET /api/recap/{user_id}/{year}/share", require(recapShare))
+	} else {
+		mux.HandleFunc("GET /api/profiles", deps.ProfileHandler.List)
+		mux.HandleFunc("GET /api/profiles/{id}", deps.ProfileHandler.GetByID)
+		mux.HandleFunc("POST /api/recap/generate", deps.RecapHandler.Generate)
+		mux.HandleFunc("GET /api/recap/{user_id}/{year}", deps.RecapHandler.Get)
+		mux.HandleFunc("GET /api/recap/{user_id}/{year}/share", deps.RecapHandler.Share)
+	}
 
 	var handler http.Handler = mux
+	if deps.AuthService != nil {
+		handler = middleware.OptionalAuth(deps.AuthService, deps.Logger)(handler)
+	}
 	handler = middleware.Recovery(deps.Logger)(handler)
 	handler = middleware.Logger(deps.Logger)(handler)
 	handler = middleware.CORS(handler)

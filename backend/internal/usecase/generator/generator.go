@@ -61,6 +61,7 @@ func (g *Generator) Execute(ctx context.Context, userID uuid.UUID, year int) (*d
 			TopCategories:   []domain.CategoryStat{},
 			Achievements:    []domain.Achievement{},
 			Recommendations: BuildRecommendations(nil),
+			Story:           BuildStory(year, nil, nil),
 			GeneratedAt:     time.Now().UTC(),
 		}
 		if err := g.recapRepo.Save(ctx, empty); err != nil {
@@ -72,6 +73,7 @@ func (g *Generator) Execute(ctx context.Context, userID uuid.UUID, year int) (*d
 
 	metrics := calculateMetrics(actions)
 	achievements := AssignAchievements(metrics)
+	story := BuildStory(year, metrics, achievements)
 	recommendations := BuildRecommendations(metrics)
 
 	recap := domain.Recap{
@@ -86,6 +88,7 @@ func (g *Generator) Execute(ctx context.Context, userID uuid.UUID, year int) (*d
 		TopCategories:   metrics.TopCategories,
 		Achievements:    achievements,
 		Recommendations: recommendations,
+		Story:           story,
 		ActivityDays:    metrics.ActivityDays,
 		GeneratedAt:     time.Now().UTC(),
 	}

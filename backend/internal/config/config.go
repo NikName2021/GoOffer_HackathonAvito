@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type Config struct {
@@ -18,6 +19,7 @@ type Config struct {
 	RedisPort     string
 	RedisPassword string
 	RedisDB       int
+	CookieSecure  bool
 }
 
 func Load() *Config {
@@ -33,6 +35,7 @@ func Load() *Config {
 		RedisPort:     getEnv("REDIS_PORT", "6379"),
 		RedisPassword: getEnv("REDIS_PASSWORD", ""),
 		RedisDB:       getEnvAsInt("REDIS_DB", 0),
+		CookieSecure:  getEnvBool("COOKIE_SECURE", false),
 	}
 }
 
@@ -60,4 +63,12 @@ func getEnvAsInt(key string, defaultValue int) int {
 		slog.Warn("invalid int value for env", slog.String("key", key), slog.String("value", value))
 	}
 	return defaultValue
+}
+
+func getEnvBool(key string, defaultValue bool) bool {
+	v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if v == "" {
+		return defaultValue
+	}
+	return v == "1" || v == "true" || v == "yes"
 }

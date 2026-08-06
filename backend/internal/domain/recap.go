@@ -16,7 +16,15 @@ type Recommendation struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	ActionLabel string `json:"action_label"`
-	Category    string `json:"category,omitempty"` // опционально: топ-категория
+	Category    string `json:"category,omitempty"`
+}
+
+// Story — персональная «история года» без чувствительных данных.
+type Story struct {
+	Persona  string   `json:"persona"`  // seller | buyer | mixed | explorer | newbie
+	Headline string   `json:"headline"` // яркий заголовок
+	Summary  string   `json:"summary"`  // 2–4 предложения
+	Insights []string `json:"insights"` // выводы «почему такой recap»
 }
 
 type Recap struct {
@@ -31,6 +39,7 @@ type Recap struct {
 	TopCategories   []CategoryStat
 	Achievements    []Achievement
 	Recommendations []Recommendation
+	Story           Story
 	ActivityDays    int
 	GeneratedAt     time.Time
 }

@@ -37,6 +37,10 @@ func Apply(ctx context.Context, pool *pgxpool.Pool) error {
 	}
 	sort.Strings(names)
 
+	if len(names) == 0 {
+		return fmt.Errorf("no migration files embedded (check //go:embed *.up.sql)")
+	}
+
 	for _, name := range names {
 		if err := applyOne(ctx, pool, name); err != nil {
 			return err
@@ -72,6 +76,8 @@ func applyOne(ctx context.Context, pool *pgxpool.Pool, name string) error {
 		return fmt.Errorf("read migration %s: %w", name, err)
 	}
 
+	slog.Info("applying migration", "file", name)
+
 	if _, err := tx.Exec(ctx, string(sqlBytes)); err != nil {
 		return fmt.Errorf("apply migration %s: %w", name, err)
 	}
@@ -87,6 +93,5 @@ func applyOne(ctx context.Context, pool *pgxpool.Pool, name string) error {
 		return fmt.Errorf("commit migration %s: %w", name, err)
 	}
 
-	slog.Info("applying migration", "file", name)
 	return nil
 }

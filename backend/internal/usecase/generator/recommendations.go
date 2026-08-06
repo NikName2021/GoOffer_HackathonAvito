@@ -23,6 +23,7 @@ func BuildRecommendations(metrics *UserMetrics) []domain.Recommendation {
 		topCategory = metrics.TopCategories[0].Category
 	}
 
+	// Вот здесь все реализовал
 	// 1. Вернуться к интересной категории
 	if topCategory != "" && metrics.TotalViews > 0 {
 		recs = append(recs, domain.Recommendation{

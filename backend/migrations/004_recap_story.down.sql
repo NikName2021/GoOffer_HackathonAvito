@@ -1,0 +1,2 @@
+ALTER TABLE recaps
+    DROP COLUMN IF EXISTS story;
