@@ -206,6 +206,31 @@ func TestSystemMiddlewareAndDocs(t *testing.T) {
 	application := newFakeApplication()
 	handler := newTestHandler(t, application)
 
+	t.Run("prometheus metrics", func(t *testing.T) {
+		health := performRequest(t, handler, http.MethodGet, "/health", nil, nil)
+		if health.Code != http.StatusOK {
+			t.Fatalf("health status = %d, want %d", health.Code, http.StatusOK)
+		}
+		response := performRequest(t, handler, http.MethodGet, "/metrics", nil, nil)
+		if response.Code != http.StatusOK {
+			t.Fatalf("metrics status = %d, want %d", response.Code, http.StatusOK)
+		}
+		if contentType := response.Header().Get("Content-Type"); !strings.HasPrefix(contentType, "text/plain") {
+			t.Fatalf("metrics Content-Type = %q, want Prometheus text format", contentType)
+		}
+		body := response.Body.String()
+		for _, metric := range []string{
+			"go_goroutines",
+			"process_cpu_seconds_total",
+			"gooffer_http_requests_total",
+			"gooffer_http_request_duration_seconds",
+		} {
+			if !strings.Contains(body, metric) {
+				t.Fatalf("metrics response does not contain %q", metric)
+			}
+		}
+	})
+
 	t.Run("cors preflight", func(t *testing.T) {
 		response := performRequest(t, handler, http.MethodOptions, "/api/profiles", nil, map[string]string{
 			"Origin": "http://localhost:5173",
