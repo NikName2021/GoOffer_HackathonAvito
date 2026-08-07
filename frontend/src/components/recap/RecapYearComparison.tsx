@@ -37,8 +37,8 @@ export function RecapYearComparison({ recap }: RecapYearComparisonProps) {
 
   return (
     <Collapsible className="mt-4" onOpenChange={handleOpenChange} open={open}>
-      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-2 rounded-2xl bg-white px-4 py-3 text-left text-sm font-bold text-[#1f1f1f] shadow-sm">
-        <TrendingUp aria-hidden="true" className="size-5 text-[#00c565]" />
+      <CollapsibleTrigger className="flex w-full cursor-pointer items-center gap-3 rounded-2xl border border-white/80 bg-white/70 px-4 py-3 text-left text-sm font-bold text-[#1f1f1f] shadow-sm backdrop-blur-xl transition hover:-translate-y-0.5 hover:shadow-md">
+        <span className="grid size-9 place-items-center rounded-2xl bg-[#e7faef] text-[#00c565]"><TrendingUp aria-hidden="true" className="size-5" /></span>
         Сравнить с {previousYear} годом
         <ChevronDown aria-hidden="true" className={`ml-auto size-4 transition ${open ? 'rotate-180' : ''}`} />
       </CollapsibleTrigger>

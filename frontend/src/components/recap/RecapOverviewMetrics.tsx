@@ -1,4 +1,5 @@
 import { CalendarCheck, Eye, Heart, Repeat2 } from 'lucide-react'
+import { motion } from 'motion/react'
 
 import type { RecapResponse } from '@/types/recap.type'
 
@@ -17,11 +18,11 @@ export function RecapOverviewMetrics({ recap }: RecapOverviewMetricsProps) {
   return (
     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
       {metrics.map(({ icon: Icon, label, value }) => (
-        <div className="rounded-2xl bg-white/75 p-3 backdrop-blur-sm" key={label}>
+        <motion.div className="group rounded-2xl border border-white/80 bg-white/70 p-3 shadow-sm backdrop-blur-xl" key={label} whileHover={{ scale: 1.035, y: -4 }}>
           <Icon aria-hidden="true" className="size-4 text-[#00aaff]" />
           <p className="mt-2 text-lg font-black sm:text-xl">{value.toLocaleString('ru-RU')}</p>
           <p className="mt-0.5 text-[10px] font-medium text-[#6f7377] sm:text-xs">{label}</p>
-        </div>
+        </motion.div>
       ))}
     </div>
   )
