@@ -22,8 +22,40 @@ func NewAuthRepository(pool *pgxpool.Pool) *AuthRepository {
 	return &AuthRepository{pool: pool}
 }
 
-func (r *AuthRepository) CreateAccount(ctx context.Context, account *domain.Account, passwordHash string) error {
-	_, err := r.pool.Exec(ctx,
+func (r *AuthRepository) CreateAccountWithSession(
+	ctx context.Context,
+	account *domain.Account,
+	passwordHash string,
+	tokenHash []byte,
+	expiresAt time.Time,
+) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin account registration transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	if err := insertAccount(ctx, tx, account, passwordHash); err != nil {
+		return err
+	}
+	if err := insertSession(ctx, tx, account.ID, tokenHash, expiresAt); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit account registration transaction: %w", err)
+	}
+	return nil
+}
+
+func insertAccount(
+	ctx context.Context,
+	tx pgx.Tx,
+	account *domain.Account,
+	passwordHash string,
+) error {
+	_, err := tx.Exec(ctx,
 		`INSERT INTO accounts (id, login, password_hash, created_at) VALUES ($1, $2, $3, $4)`,
 		account.ID,
 		account.Login,
@@ -62,13 +94,24 @@ func (r *AuthRepository) CreateSession(
 	tokenHash []byte,
 	expiresAt time.Time,
 ) error {
+	return insertSession(ctx, r.pool, accountID, tokenHash, expiresAt)
+}
+
+type sessionExecutor interface {
+	Exec(context.Context, string, ...any) (pgconn.CommandTag, error)
+}
+
+func insertSession(
+	ctx context.Context,
+	executor sessionExecutor,
+	accountID uuid.UUID,
+	tokenHash []byte,
+	expiresAt time.Time,
+) error {
 	const query = `
-		WITH cleanup AS (
-			DELETE FROM sessions WHERE expires_at <= NOW()
-		)
 		INSERT INTO sessions (id, account_id, token_hash, expires_at)
 		VALUES ($1, $2, $3, $4)`
-	if _, err := r.pool.Exec(ctx, query, uuid.New(), accountID, tokenHash, expiresAt); err != nil {
+	if _, err := executor.Exec(ctx, query, uuid.New(), accountID, tokenHash, expiresAt); err != nil {
 		return fmt.Errorf("insert session: %w", err)
 	}
 	return nil

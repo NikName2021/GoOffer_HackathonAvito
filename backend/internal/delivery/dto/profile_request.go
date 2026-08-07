@@ -201,7 +201,7 @@ func (request ViewedAdRequest) toDomain() (domain.ViewedAd, error) {
 	if err != nil {
 		return domain.ViewedAd{}, err
 	}
-	if request.ViewedAt == nil || len(request.ViewedAt) == 0 {
+	if len(request.ViewedAt) == 0 {
 		return domain.ViewedAd{}, errors.New("viewedAt must contain at least one event")
 	}
 	if len(request.ViewedAt) > maxViewedEvents {

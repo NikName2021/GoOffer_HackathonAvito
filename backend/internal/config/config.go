@@ -26,6 +26,7 @@ type Config struct {
 	DatabasePass    string
 	DatabaseName    string
 	DatabaseSSLMode string
+	RedisURL        string
 	AllowedOrigins  []string
 	ShutdownTimeout time.Duration
 	ReadTimeout     time.Duration
@@ -44,6 +45,7 @@ func Load() (Config, error) {
 		DatabasePass:    valueOrDefault("DB_PASSWORD", os.Getenv("POSTGRES_PASSWORD")),
 		DatabaseName:    valueOrDefault("DB_NAME", os.Getenv("POSTGRES_DATABASE")),
 		DatabaseSSLMode: valueOrDefault("DB_SSLMODE", "disable"),
+		RedisURL:        valueOrDefault("REDIS_URL", "redis://localhost:6379"),
 		AllowedOrigins:  splitCSV(valueOrDefault("CORS_ORIGINS", "http://localhost,http://localhost:5173")),
 		ShutdownTimeout: defaultShutdownTimeout,
 		ReadTimeout:     defaultReadTimeout,

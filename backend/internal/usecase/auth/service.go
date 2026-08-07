@@ -60,13 +60,19 @@ func (s *Service) Register(ctx context.Context, login, password string) (*domain
 	}
 	now := s.now().UTC()
 	account := &domain.Account{ID: uuid.New(), Login: login, CreatedAt: now}
-	if err := s.repository.CreateAccount(ctx, account, passwordHash); err != nil {
-		return nil, "", fmt.Errorf("create account: %w", err)
-	}
 
-	token, err := s.createSession(ctx, account.ID, now)
+	token, tokenHash, expiresAt, err := s.newSession(now)
 	if err != nil {
 		return nil, "", err
+	}
+	if err := s.repository.CreateAccountWithSession(
+		ctx,
+		account,
+		passwordHash,
+		tokenHash,
+		expiresAt,
+	); err != nil {
+		return nil, "", fmt.Errorf("create account with session: %w", err)
 	}
 	return account, token, nil
 }
@@ -126,15 +132,23 @@ func (s *Service) Logout(ctx context.Context, token string) error {
 }
 
 func (s *Service) createSession(ctx context.Context, accountID uuid.UUID, now time.Time) (string, error) {
-	randomBytes := make([]byte, sessionTokenBytes)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", fmt.Errorf("generate session token: %w", err)
+	token, tokenHash, expiresAt, err := s.newSession(now)
+	if err != nil {
+		return "", err
 	}
-	token := base64.RawURLEncoding.EncodeToString(randomBytes)
-	if err := s.repository.CreateSession(ctx, accountID, sessionHash(token), now.Add(s.sessionTTL)); err != nil {
+	if err := s.repository.CreateSession(ctx, accountID, tokenHash, expiresAt); err != nil {
 		return "", fmt.Errorf("create session: %w", err)
 	}
 	return token, nil
+}
+
+func (s *Service) newSession(now time.Time) (string, []byte, time.Time, error) {
+	randomBytes := make([]byte, sessionTokenBytes)
+	if _, err := rand.Read(randomBytes); err != nil {
+		return "", nil, time.Time{}, fmt.Errorf("generate session token: %w", err)
+	}
+	token := base64.RawURLEncoding.EncodeToString(randomBytes)
+	return token, sessionHash(token), now.Add(s.sessionTTL), nil
 }
 
 func sessionHash(token string) []byte {
