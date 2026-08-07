@@ -30,16 +30,22 @@ func newFakeAuthRepository() *fakeAuthRepository {
 	}
 }
 
-func (r *fakeAuthRepository) CreateAccount(
+func (r *fakeAuthRepository) CreateAccountWithSession(
 	_ context.Context,
 	account *domain.Account,
 	passwordHash string,
+	tokenHash []byte,
+	expiresAt time.Time,
 ) error {
 	if _, exists := r.accounts[account.Login]; exists {
 		return apperrors.ErrLoginTaken
 	}
 	r.accounts[account.Login] = *account
 	r.hashes[account.Login] = passwordHash
+	r.sessions[string(tokenHash)] = storedSession{
+		accountID: account.ID,
+		expiresAt: expiresAt,
+	}
 	return nil
 }
 
