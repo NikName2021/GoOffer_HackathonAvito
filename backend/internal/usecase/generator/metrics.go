@@ -29,9 +29,19 @@ type ProfileMetrics struct {
 	Seller                  domain.SellerRecapSummary
 	Combined                domain.CombinedRecapSummary
 	TopCategories           []domain.CategoryStat
+	CategoryStats           []domain.CategoryStat
 	ActivityDays            int
+	Monthly                 [12]MonthlyActivity
 	StarListingViews        int
 	SellerListingsAreAnnual bool
+}
+
+type MonthlyActivity struct {
+	Views     int
+	Favorites int
+	Purchases int
+	Listings  int
+	Sales     int
 }
 
 type categoryMetric struct {
@@ -61,6 +71,7 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 	for _, view := range user.Views {
 		category := categoryFor(categories, view.Category)
 		activity := viewedActivityForYear(view, year)
+		addViewedMonthlyActivity(&metrics.Monthly, view, year)
 
 		if activity.WatchCount > 0 {
 			metrics.Buyer.ViewedAdsCount++
@@ -125,6 +136,7 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 			}
 			if !ad.PublishedAt.IsZero() {
 				addActiveDay(activeDays, ad.PublishedAt)
+				metrics.Monthly[int(ad.PublishedAt.UTC().Month())-1].Listings++
 			}
 		}
 
@@ -132,6 +144,7 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 			metrics.Seller.SalesCount++
 			category.Sales++
 			addActiveDay(activeDays, *ad.SoldAt)
+			metrics.Monthly[int(ad.SoldAt.UTC().Month())-1].Sales++
 		}
 		if ad.Review != nil && inYear(ad.Review.CreatedAt, year) {
 			metrics.Seller.ReviewsCount++
@@ -163,7 +176,11 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 		Deals:         metrics.Buyer.PurchasesCount + metrics.Seller.SalesCount,
 		MainCategory:  selectCategory(categories, hasAnySignals, combinedCategoryLess),
 	}
-	metrics.TopCategories = topCategories(categories)
+	metrics.CategoryStats = categoryStats(categories)
+	metrics.TopCategories = append([]domain.CategoryStat(nil), metrics.CategoryStats...)
+	if len(metrics.TopCategories) > 3 {
+		metrics.TopCategories = metrics.TopCategories[:3]
+	}
 	metrics.ActivityDays = len(activeDays)
 	return metrics
 }
@@ -281,7 +298,7 @@ func compareCategory(candidate, selected *categoryMetric, selectors []func(*cate
 	return candidate.Name < selected.Name
 }
 
-func topCategories(categories map[string]*categoryMetric) []domain.CategoryStat {
+func categoryStats(categories map[string]*categoryMetric) []domain.CategoryStat {
 	ordered := make([]*categoryMetric, 0, len(categories))
 	for _, category := range categories {
 		if categorySignals(category) > 0 {
@@ -291,9 +308,6 @@ func topCategories(categories map[string]*categoryMetric) []domain.CategoryStat 
 	sort.Slice(ordered, func(i, j int) bool {
 		return combinedCategoryLess(ordered[i], ordered[j])
 	})
-	if len(ordered) > 3 {
-		ordered = ordered[:3]
-	}
 	result := make([]domain.CategoryStat, len(ordered))
 	for index, category := range ordered {
 		// Count is a legacy field. It now represents explainable item-level
@@ -301,6 +315,38 @@ func topCategories(categories map[string]*categoryMetric) []domain.CategoryStat 
 		result[index] = domain.CategoryStat{Category: category.Name, Count: categorySignals(category)}
 	}
 	return result
+}
+
+func addViewedMonthlyActivity(monthly *[12]MonthlyActivity, view domain.ViewedAd, year int) {
+	if len(view.ViewedAt) > 0 {
+		for _, event := range view.ViewedAt {
+			if !inYear(event.Time, year) {
+				continue
+			}
+			activity := &monthly[int(event.Time.UTC().Month())-1]
+			switch event.Type {
+			case domain.ViewedAdEventWatch:
+				activity.Views++
+			case domain.ViewedAdEventLike:
+				activity.Favorites++
+			case domain.ViewedAdEventBuy:
+				activity.Purchases++
+			}
+		}
+		return
+	}
+
+	// Legacy profiles contain only aggregate counters. They are assigned to the
+	// latest known month so the chart remains consistent with recap totals.
+	if inYear(view.LastViewedAt, year) && view.ViewCount > 0 {
+		monthly[int(view.LastViewedAt.UTC().Month())-1].Views += view.ViewCount
+	}
+	if view.IsFavorite && view.FavoritedAt != nil && inYear(*view.FavoritedAt, year) {
+		monthly[int(view.FavoritedAt.UTC().Month())-1].Favorites++
+	}
+	if view.IsPurchased && view.PurchasedAt != nil && inYear(*view.PurchasedAt, year) {
+		monthly[int(view.PurchasedAt.UTC().Month())-1].Purchases++
+	}
 }
 
 func categorySignals(category *categoryMetric) int {
