@@ -1,8 +1,8 @@
-import { Gift, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useState } from 'react'
 
-import { RecapGiftCracks } from './RecapGiftCracks'
+import { RecapGiftParcel } from './RecapGiftParcel'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 
 const confettiColors = ['#00aaff', '#965eeb', '#00c565', '#ff4053', '#ff9f1a']
@@ -72,14 +72,7 @@ export function RecapGiftIntro({ onOpen, profile, year }: RecapGiftIntroProps) {
           whileHover={reduceMotion ? undefined : { rotateX: -4, rotateY: 5, scale: 1.035 }}
           whileTap={{ scale: 0.97 }}
         >
-          <motion.span animate={opening ? { opacity: 0, rotate: -14, y: -160 } : { y: [0, -8, 0] }} className="absolute top-5 left-2 z-20 h-20 w-[calc(100%-1rem)] rounded-[24px] bg-gradient-to-r from-[#00aaff] via-[#5ac8fa] to-[#00c565] shadow-[0_22px_50px_rgba(0,170,255,0.35)] will-change-transform" transition={opening ? { duration: 0.55, ease: 'easeOut' } : { duration: 2.4, repeat: Infinity }} />
-          <motion.span animate={opening ? { scaleY: 0, y: -60 } : {}} className="absolute top-0 left-1/2 z-30 h-28 w-16 -translate-x-1/2 rounded-2xl bg-[#ff4053] shadow-lg will-change-transform" transition={{ duration: 0.45 }} />
-          <motion.span animate={opening ? { opacity: 0, scale: 0.66, y: 90 } : {}} className="absolute top-20 left-0 h-44 w-full overflow-hidden rounded-[34px] border border-white/25 bg-gradient-to-br from-[#f8f5ff] to-[#e9ddff] shadow-[0_36px_80px_rgba(0,0,0,0.45)] will-change-transform" transition={{ delay: 0.08, duration: 0.55 }}>
-            <span className="absolute inset-y-0 left-1/2 w-16 -translate-x-1/2 bg-[#ff4053]" />
-            <span className="absolute bottom-7 left-7 rounded-2xl bg-white px-5 py-4 text-left text-[#1f1f1f] shadow-sm"><b className="block text-base">Итоги {year}</b><small className="text-[#8a8d91]">Только для вас</small></span>
-            <Gift className="absolute right-9 bottom-8 size-11 text-[#965eeb]" />
-            <RecapGiftCracks hits={hits} />
-          </motion.span>
+          <RecapGiftParcel hits={hits} opening={opening} reduceMotion={reduceMotion} />
 
           <AnimatePresence>
             {opening && Array.from({ length: 14 }, (_, index) => (
