@@ -1,60 +1,50 @@
 # Backend — GoOffer «Итоги года»
 
-Go API, которое по действиям пользователя собирает персональный **recap**: метрики, ачивки, историю года и рекомендации.
+HTTP API на Go: генерация персональных итогов года по тестовым профилям.
+
+Полный сценарий продукта и быстрый старт: **[корневой README](../README.md)**.
 
 ---
 
-## Стек
-
-- **Go** (см. `go.mod`)
-- **PostgreSQL 17** — пользователи, actions, recaps, auth
-- **Redis** — кэш recap (при недоступности — noop, сервис работает)
-- **pgx**, **go-redis**, стандартный `net/http` (ServeMux Go 1.22+)
-
----
-
-## Быстрый старт
-
-Из **корня** репозитория:
+## Запуск
 
 ```bash
+# из корня репозитория
 cp .env.example .env
 docker compose up --build
 ```
 
-API: http://localhost:8000  
-Health: `GET /health` → `{"status":"ok"}`
+API: `http://localhost:8000`  
+Health: `GET /health`
 
-### Локально без Docker (опционально)
+Локально (Postgres + Redis уже в compose):
 
 ```bash
 cd backend
-export DB_HOST=localhost DB_PORT=5446 DB_USER=result_year \
-  DB_PASSWORD=result_year_dev_password DB_NAME=result_year \
-  REDIS_HOST=localhost REDIS_PORT=6379 SERVER_PORT=8000
 go run ./cmd/server
 ```
 
-Миграции применяются автоматически при старте (`migrations.Apply`).
+Миграции применяются при старте через `go:embed` (`migrations/migrate.go` + `*.up.sql`).
 
 ---
 
 ## API
 
-| Method | Path | Описание |
-|---|---|---|
+| Метод | Путь | Описание |
+|-------|------|----------|
 | `GET` | `/health` | Healthcheck |
 | `GET` | `/api/profiles` | Список тестовых профилей |
-| `GET` | `/api/profiles/{id}` | Профиль по UUID |
-| `POST` | `/api/recap/generate` | Сгенерировать итоги года |
+| `GET` | `/api/profiles/{id}` | Профиль |
+| `POST` | `/api/recap/generate` | Генерация итогов |
 | `GET` | `/api/recap/{user_id}/{year}` | Личный recap |
-| `GET` | `/api/recap/{user_id}/{year}/share` | Публичная share-card (без id/user_id) |
+| `GET` | `/api/recap/{user_id}/{year}/share` | Share **без** `id` / `user_id` |
+| `POST` | `/api/recap/generate-all?year=2025` | Пересчёт всех профилей |
+| `POST` | `/api/auth/login` | Cookie-сессия (опционально) |
 | `POST` | `/api/auth/register` | Регистрация |
-| `POST` | `/api/auth/login` | Вход (HttpOnly cookie `gooffer_session`) |
 | `POST` | `/api/auth/logout` | Выход |
 | `GET` | `/api/auth/me` | Текущий аккаунт |
 
-### Генерация
+### Generate
 
 ```bash
 curl -s -X POST http://localhost:8000/api/recap/generate \
@@ -62,74 +52,61 @@ curl -s -X POST http://localhost:8000/api/recap/generate \
   -d '{"user_id":"22222222-2222-2222-2222-222222222222","year":2025}'
 ```
 
-Ответ: `201 Created` + объект recap.  
-Неизвестные поля в body отклоняются (`DisallowUnknownFields`).
+Ответ включает:
 
-### Auth (опционально)
+- счётчики: views, messages, favorites, purchases, sales, activity_days  
+- `top_categories`, `achievements[]`, `recommendations[]`  
+- `story` (persona, headline, summary, insights, highlights)
 
-По умолчанию `AUTH_REQUIRED=false`.
+Лишние поля в body отклоняются (`DisallowUnknownFields`).
 
-Демо-аккаунт: `demo` / `demo123`.
+### Share
 
-```env
-AUTH_REQUIRED=true
-```
-
----
-
-## Правила генерации
-
-### Действия
-
-| Тип | Смысл |
-|---|---|
-| `view` | Просмотр объявления |
-| `message` | Сообщение |
-| `favorite` | Избранное |
-| `purchase` | Покупка |
-| `sale` | Продажа |
-
-### Ачивки
-
-| Slug | Условие |
-|---|---|
-| `curious` | ≥ 500 views |
-| `explorer` | ≥ 1000 views |
-| `social_butterfly` | ≥ 50 messages |
-| `seller_master` | ≥ 5 sales |
-| `shopaholic` | ≥ 10 purchases |
-| `enthusiast` | ≥ 100 activity days |
-| `veteran` | ≥ 300 activity days |
-
-### Story и рекомендации
-
-- **Story**: persona (`seller` / `buyer` / `mixed` / `explorer` / `newbie`) + headline, summary, insights
-- **Recommendations**: 1–3 CTA (категория, избранное, объявление, чаты) без PII
-- **Share**: без `id` и `user_id`
+Тело **без** `id` и `user_id` — безопасно для публичной карточки / PNG.
 
 ---
 
 ## Тестовые профили
 
 | Имя | UUID | Тип |
-|---|---|---|
+|-----|------|-----|
 | Алексей Продавец | `11111111-1111-1111-1111-111111111111` | seller |
 | Мария Покупатель | `22222222-2222-2222-2222-222222222222` | buyer |
 | Иван Ветеран | `33333333-3333-3333-3333-333333333333` | veteran |
 | Елена Новичок | `44444444-4444-4444-4444-444444444444` | newbie |
 | Пётр Универсал | `55555555-5555-5555-5555-555555555555` | universal |
 
+Seed: `migrations/002_seed_test_profiles.up.sql` (объёмы достаточны для ачивок у «активных» профилей).
+
 ---
 
 ## Архитектура
 
 ```text
-cmd/server → delivery → usecase → domain
-                ↓
-         repository (postgres / redis)
+cmd/server          DI, миграции, HTTP
+internal/domain     User, Action, Recap, Achievement, Recommendation, Story
+internal/usecase    generator (metrics → achievements → recommendations → story)
+                    profile, auth
+internal/repository postgres + redis (NoopCache fallback)
+internal/delivery   handlers, dto, middleware
+migrations/         embed *.up.sql (001–004)
+tests/unit|integration
 ```
 
+Clean Architecture: зависимости направлены внутрь (domain ← usecase ← adapters).
+
 Подробности: `ARCHITECTURE.txt`.
+
+---
+
+## Пайплайн генерации
+
+1. Действия пользователя за год (`actions`)  
+2. Метрики  
+3. Ачивки по фиксированным порогам  
+4. Рекомендации (1–3 CTA)  
+5. Story (persona + текст)  
+6. Save + cache (Redis / Noop)
 
 ---
 
@@ -139,20 +116,30 @@ cmd/server → delivery → usecase → domain
 cd backend
 go test ./tests/unit/... -count=1 -v
 go test ./tests/integration/... -count=1 -v
+go test ./tests/... -count=1
 golangci-lint run ./...
 ```
 
+Конфиг: `.golangci.yml` (также в корне репозитория).
+
 ---
 
-## Почему PostgreSQL
+## Почему PostgreSQL + Redis
 
-Реляционная модель users/actions/recaps, JSONB для гибких полей, простой seed. Redis — только кэш recap (TTL 24h), не источник истины.
+- **PostgreSQL** — users/actions/recaps, JSONB, воспроизводимый seed  
+- **Redis** — кэш recap (TTL); при недоступности — `NoopCache`, API не падает  
+
+---
+
+## Auth
+
+- Cookie session, demo: `demo` / `demo123`  
+- Для демо recap обычно `AUTH_REQUIRED=false` (см. `.env.example`)
 
 ---
 
 ## Ограничения MVP
 
-- Тестовые профили, не продакшен-события Avito
-- Share path может содержать `user_id` (тело обезличено)
-- Рекомендации — CTA без deep-link на конкретные объявления
-```
+- Тестовые профили, не боевые event-stream Avito  
+- Share path может содержать `user_id` (тело обезличено)  
+- Рекомендации — CTA без deep-link на объявления  

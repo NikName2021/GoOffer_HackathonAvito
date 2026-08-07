@@ -43,6 +43,7 @@ func New(deps Dependencies) *Server {
 	profileList := http.HandlerFunc(deps.ProfileHandler.List)
 	profileGet := http.HandlerFunc(deps.ProfileHandler.GetByID)
 	recapGen := http.HandlerFunc(deps.RecapHandler.Generate)
+	recapGenAll := http.HandlerFunc(deps.RecapHandler.GenerateAll)
 	recapGet := http.HandlerFunc(deps.RecapHandler.Get)
 	recapShare := http.HandlerFunc(deps.RecapHandler.Share)
 
@@ -51,12 +52,14 @@ func New(deps Dependencies) *Server {
 		mux.Handle("GET /api/profiles", require(profileList))
 		mux.Handle("GET /api/profiles/{id}", require(profileGet))
 		mux.Handle("POST /api/recap/generate", require(recapGen))
+		mux.Handle("POST /api/recap/generate-all", require(recapGenAll))
 		mux.Handle("GET /api/recap/{user_id}/{year}", require(recapGet))
 		mux.Handle("GET /api/recap/{user_id}/{year}/share", require(recapShare))
 	} else {
 		mux.HandleFunc("GET /api/profiles", deps.ProfileHandler.List)
 		mux.HandleFunc("GET /api/profiles/{id}", deps.ProfileHandler.GetByID)
 		mux.HandleFunc("POST /api/recap/generate", deps.RecapHandler.Generate)
+		mux.HandleFunc("POST /api/recap/generate-all", deps.RecapHandler.GenerateAll)
 		mux.HandleFunc("GET /api/recap/{user_id}/{year}", deps.RecapHandler.Get)
 		mux.HandleFunc("GET /api/recap/{user_id}/{year}/share", deps.RecapHandler.Share)
 	}
@@ -76,7 +79,7 @@ func New(deps Dependencies) *Server {
 			Handler:           handler,
 			ReadHeaderTimeout: 5 * time.Second,
 			ReadTimeout:       15 * time.Second,
-			WriteTimeout:      30 * time.Second,
+			WriteTimeout:      60 * time.Second, // generate-all может быть дольше
 			IdleTimeout:       60 * time.Second,
 		},
 	}

@@ -42,11 +42,6 @@ func (g *Generator) Execute(ctx context.Context, userID uuid.UUID, year int) (*d
 	}
 
 	cacheKey := fmt.Sprintf("recap:%s:%d", userID.String(), year)
-	var cached domain.Recap
-	found, err := g.cache.Get(ctx, cacheKey, &cached)
-	if err == nil && found {
-		return &cached, nil
-	}
 
 	actions, err := g.actionRepo.GetByUserAndYear(ctx, userID, year)
 	if err != nil {
@@ -106,6 +101,7 @@ func (g *Generator) Execute(ctx context.Context, userID uuid.UUID, year int) (*d
 	return &recap, nil
 }
 
+// Get читает из cache, иначе из БД.
 func (g *Generator) Get(ctx context.Context, userID uuid.UUID, year int) (*domain.Recap, error) {
 	cacheKey := fmt.Sprintf("recap:%s:%d", userID.String(), year)
 	var cached domain.Recap

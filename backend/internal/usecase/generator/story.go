@@ -19,6 +19,11 @@ func BuildStory(year int, metrics *UserMetrics, achievements []domain.Achievemen
 				"Мало действий за год — итоги ещё формируются.",
 				"Даже несколько просмотров уже показывают интересы.",
 			},
+			Highlights: []string{
+				"Старт на площадке",
+				"Итоги ещё формируются",
+				"Впереди много возможностей",
+			},
 		}
 	}
 
@@ -26,10 +31,11 @@ func BuildStory(year int, metrics *UserMetrics, achievements []domain.Achievemen
 	top := topCategoryName(metrics)
 
 	return domain.Story{
-		Persona:  persona,
-		Headline: buildHeadline(year, persona, metrics, top),
-		Summary:  buildSummary(year, persona, metrics, top, achievements),
-		Insights: buildInsights(metrics, top, achievements),
+		Persona:    persona,
+		Headline:   buildHeadline(year, persona, metrics, top),
+		Summary:    buildSummary(year, persona, metrics, top, achievements),
+		Insights:   buildInsights(metrics, top, achievements),
+		Highlights: buildHighlights(metrics, top, achievements),
 	}
 }
 
@@ -179,6 +185,44 @@ func buildInsights(m *UserMetrics, top string, achievements []domain.Achievement
 		insights = append(insights, "Итоги собраны только из ваших действий на площадке за выбранный год.")
 	}
 	return insights
+}
+
+func buildHighlights(m *UserMetrics, top string, achievements []domain.Achievement) []string {
+	h := make([]string, 0, 3)
+
+	if top != "" {
+		h = append(h, fmt.Sprintf("Топ: «%s»", top))
+	}
+	if m.TotalSales >= 5 {
+		h = append(h, fmt.Sprintf("%d продаж за год", m.TotalSales))
+	} else if m.TotalPurchases >= 5 {
+		h = append(h, fmt.Sprintf("%d покупок за год", m.TotalPurchases))
+	} else if m.TotalViews >= 100 {
+		h = append(h, fmt.Sprintf("%d просмотров", m.TotalViews))
+	}
+	if m.ActivityDays >= 100 {
+		h = append(h, fmt.Sprintf("%d дней активности", m.ActivityDays))
+	} else if len(achievements) > 0 {
+		h = append(h, fmt.Sprintf("%d ачивок", len(achievements)))
+	}
+	if m.TotalMessages >= 20 && len(h) < 3 {
+		h = append(h, fmt.Sprintf("%d сообщений в чатах", m.TotalMessages))
+	}
+	if m.TotalFavorites >= 20 && len(h) < 3 {
+		h = append(h, fmt.Sprintf("%d в избранном", m.TotalFavorites))
+	}
+
+	fallbacks := []string{"Год на Авито", "Персональные итоги", "Ваш стиль на площадке"}
+	for _, f := range fallbacks {
+		if len(h) >= 3 {
+			break
+		}
+		h = append(h, f)
+	}
+	if len(h) > 3 {
+		h = h[:3]
+	}
+	return h
 }
 
 func dayWord(n int) string {

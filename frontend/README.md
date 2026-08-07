@@ -1,77 +1,98 @@
-# React + TypeScript + Vite
+# Frontend — «Итоги года»
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React + TypeScript + Vite. UI для backend GoOffer (кейс Avito «Итоги года»).
 
-Currently, two official plugins are available:
+Общий запуск и API: **[корневой README](../README.md)**.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Запуск
 
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
+1. Backend: из корня репо `docker compose up` (порт **8000**).  
+2. Frontend:
 
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+cd frontend
+echo 'VITE_API_URL=/api' > .env.local
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Открыть: **http://localhost:5173**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+`VITE_API_URL=/api` — через Vite proxy на backend (удобно для cookie).
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Без proxy:
 
+```env
+VITE_API_URL=http://localhost:8000/api
 ```
+
+Не смешивайте в браузере `localhost` и `127.0.0.1`.
+
+---
+
+## Пользовательский сценарий
+
+| Шаг | Экран | Что происходит |
+|-----|--------|----------------|
+| 1 | `/` Home | 5 профилей, persona-badge, выбор для compare |
+| 2 | Кнопка «Итоги 2025» | `POST /api/recap/generate` → `/recap/:userId/2025` |
+| 3 | Recap | Story, метрики, ачивки, рекомендации, FadeIn |
+| 4 | Share | `/share/:userId/2025` — без id в данных, **PNG**, копирование ссылки |
+| 5 | Compare | Два профиля side-by-side |
+| 6 | «Перегенерировать все» | `POST /api/recap/generate-all` |
+| 7 | Login | `demo` / `demo123` или продолжить без входа |
+
+**Новичок (Елена):** «тихий год», 0 ачивок, мягкий empty state — контраст к ветерану/покупателю.
+
+---
+
+## Скрипты
+
+```bash
+npm run dev       # разработка
+npm run build     # production
+npm run preview   # просмотр build
+npm run lint      # eslint
+```
+
+---
+
+## Структура `src`
+
+```text
+api/              axios: profiles, recap, auth, generate-all
+pages/            Home, Recap, Share, Compare, Login
+components/recap/ StoryHero, PersonaBadge, EmptyState, FadeIn,
+                  MetricCard, AchievementBadge, RecommendationCard
+components/sidebar/
+hooks/            useProfiles, useRecap, useAuth
+utils/            buildStory (fallback narrative)
+constants/        backendProfiles (UUID + tagline)
+```
+
+---
+
+## Зависимости UI (важное)
+
+- `@tanstack/react-query` — кэш recap / profiles  
+- `html-to-image` — скачивание share-card в PNG  
+- `lucide-react` — иконки  
+- Tailwind — стили  
+
+---
+
+## Полировка (UX)
+
+- Persona-badge на карточках и в hero  
+- Empty states: нет recap / нет ачивок / ошибка API  
+- Loading-спиннеры с понятным текстом  
+- Микрокопирайт ошибок («backend на порту 8000»)  
+
+---
+
+## Ограничения
+
+- Deep-link на реальные объявления Avito не реализован (CTA-заглушки)  
+- Share URL может содержать `user_id`; JSON share — без идентификаторов  

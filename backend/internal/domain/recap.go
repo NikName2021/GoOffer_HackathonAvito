@@ -19,12 +19,12 @@ type Recommendation struct {
 	Category    string `json:"category,omitempty"`
 }
 
-// Story — персональная «история года» без чувствительных данных.
 type Story struct {
-	Persona  string   `json:"persona"`  // seller | buyer | mixed | explorer | newbie
-	Headline string   `json:"headline"` // яркий заголовок
-	Summary  string   `json:"summary"`  // 2–4 предложения
-	Insights []string `json:"insights"` // выводы «почему такой recap»
+	Persona    string   `json:"persona"`    // seller | buyer | mixed | explorer | newbie
+	Headline   string   `json:"headline"`   // яркий заголовок
+	Summary    string   `json:"summary"`    // 2–4 предложения
+	Insights   []string `json:"insights"`   // выводы «почему такой recap»
+	Highlights []string `json:"highlights"` // 3 коротких факта
 }
 
 type Recap struct {

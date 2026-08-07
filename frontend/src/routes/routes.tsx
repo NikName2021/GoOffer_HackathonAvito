@@ -1,20 +1,19 @@
 import { Route, Routes } from 'react-router-dom'
-
 import { PATHS } from '@/config/paths'
-import { CartPage } from '@/pages/Cart'
 import { HomePage } from '@/pages/Home'
+import { RecapPage } from '@/pages/RecapPage'
+import { SharePage } from '@/pages/SharePage'
+import { LoginPage } from '@/pages/LoginPage'
+import { ComparePage } from '@/pages/ComparePage'
 
 export function AppRouter() {
-  const navigations = [
-    { path: PATHS.HOME, element: <HomePage /> },
-    { path: PATHS.CART, element: <CartPage /> },
-  ] as const
-
   return (
     <Routes>
-      {navigations.map(({ path, element }) => (
-        <Route key={path} path={path} element={element} />
-      ))}
+      <Route path={PATHS.LOGIN} element={<LoginPage />} />
+      <Route path={PATHS.HOME} element={<HomePage />} />
+      <Route path={PATHS.RECAP} element={<RecapPage />} />
+      <Route path={PATHS.SHARE} element={<SharePage />} />
+      <Route path={PATHS.COMPARE} element={<ComparePage />} />
     </Routes>
   )
 }

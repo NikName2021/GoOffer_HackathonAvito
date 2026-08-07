@@ -102,6 +102,59 @@ func (h *RecapHandler) Share(w http.ResponseWriter, r *http.Request) {
 	h.writeJSON(w, http.StatusOK, dto.ToShareRecapResponse(recap))
 }
 
+func (h *RecapHandler) GenerateAll(w http.ResponseWriter, r *http.Request) {
+	year := 2025
+	if y := r.URL.Query().Get("year"); y != "" {
+		parsed, err := strconv.Atoi(y)
+		if err == nil && parsed >= 2000 && parsed <= 2100 {
+			year = parsed
+		}
+	}
+
+	userIDs := []string{
+		"11111111-1111-1111-1111-111111111111", // Алексей Продавец
+		"22222222-2222-2222-2222-222222222222", // Мария Покупатель
+		"33333333-3333-3333-3333-333333333333", // Иван / ветеран
+		"44444444-4444-4444-4444-444444444444", // Елена / новичок
+		"55555555-5555-5555-5555-555555555555", // Пётр / универсал
+	}
+
+	type item struct {
+		UserID string `json:"user_id"`
+		OK     bool   `json:"ok"`
+		Error  string `json:"error,omitempty"`
+	}
+
+	results := make([]item, 0, len(userIDs))
+	okCount := 0
+
+	for _, idStr := range userIDs {
+		uid, err := uuid.Parse(idStr)
+		if err != nil {
+			results = append(results, item{UserID: idStr, OK: false, Error: "invalid id"})
+			continue
+		}
+		_, err = h.generator.Execute(r.Context(), uid, year)
+		if err != nil {
+			h.logger.Error("generate-all item",
+				slog.String("user_id", idStr),
+				slog.String("error", err.Error()),
+			)
+			results = append(results, item{UserID: idStr, OK: false, Error: err.Error()})
+			continue
+		}
+		results = append(results, item{UserID: idStr, OK: true})
+		okCount++
+	}
+
+	h.writeJSON(w, http.StatusOK, map[string]any{
+		"year":    year,
+		"total":   len(userIDs),
+		"success": okCount,
+		"results": results,
+	})
+}
+
 func (h *RecapHandler) parseUserYear(w http.ResponseWriter, r *http.Request) (uuid.UUID, int, bool) {
 	userID, err := uuid.Parse(r.PathValue("user_id"))
 	if err != nil {

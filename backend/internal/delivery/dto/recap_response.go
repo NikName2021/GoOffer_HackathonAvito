@@ -30,10 +30,11 @@ type RecommendationDTO struct {
 }
 
 type StoryDTO struct {
-	Persona  string   `json:"persona"`
-	Headline string   `json:"headline"`
-	Summary  string   `json:"summary"`
-	Insights []string `json:"insights"`
+	Persona    string   `json:"persona"`
+	Headline   string   `json:"headline"`
+	Summary    string   `json:"summary"`
+	Insights   []string `json:"insights"`
+	Highlights []string `json:"highlights"`
 }
 
 type RecapResponse struct {
@@ -58,11 +59,16 @@ func toStoryDTO(s domain.Story) StoryDTO {
 	if insights == nil {
 		insights = []string{}
 	}
+	highlights := s.Highlights
+	if highlights == nil {
+		highlights = []string{}
+	}
 	return StoryDTO{
-		Persona:  s.Persona,
-		Headline: s.Headline,
-		Summary:  s.Summary,
-		Insights: insights,
+		Persona:    s.Persona,
+		Headline:   s.Headline,
+		Summary:    s.Summary,
+		Insights:   insights,
+		Highlights: highlights,
 	}
 }
 
@@ -112,7 +118,6 @@ func ToRecapResponse(recap *domain.Recap) RecapResponse {
 	}
 }
 
-// ShareRecapResponse — публичная карточка без id / user_id.
 type ShareRecapResponse struct {
 	Year            int                 `json:"year"`
 	TotalViews      int                 `json:"total_views"`
