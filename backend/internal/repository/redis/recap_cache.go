@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"gooffer/backend/internal/usecase/ports"
 )
 
 const RecapTTL = 24 * time.Hour
@@ -50,3 +51,5 @@ func (c *RecapCache) Delete(ctx context.Context, key string) error {
 	}
 	return nil
 }
+
+var _ ports.Cache = (*RecapCache)(nil)
