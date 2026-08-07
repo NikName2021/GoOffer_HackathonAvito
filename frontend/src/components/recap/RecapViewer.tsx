@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type TouchEvent } from 'react'
 
 import { RecapControls } from './RecapControls'
 import { RecapSlide } from './RecapSlide'
+import { RecapSharePreview } from './RecapSharePreview'
 import { ProfileImage } from '@/components/profileCards/ProfileImage'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import type { RecapResponse } from '@/types/recap.type'
@@ -71,6 +72,7 @@ export function RecapViewer({ profile, recap }: RecapViewerProps) {
             <p className="truncate text-sm font-bold text-[#1f1f1f]">{profile.name}</p>
             <p className="text-xs font-medium text-[#8a8d91]">Авито · Итоги {recap.year}</p>
           </div>
+          <RecapSharePreview recap={recap} />
         </div>
       </header>
 

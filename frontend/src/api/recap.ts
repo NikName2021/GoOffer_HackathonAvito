@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import { apiClient } from './api'
-import type { GenerateRecapRequest, RecapResponse } from '@/types/recap.type'
+import type { GenerateRecapRequest, RecapResponse, ShareRecapResponse } from '@/types/recap.type'
 
 interface RecapErrorEnvelope {
   error?: {
@@ -31,6 +31,16 @@ export async function generateRecap(request: GenerateRecapRequest): Promise<Reca
     if (!data.summary || !Array.isArray(data.cards) || data.cards.length === 0) {
       throw new Error('Сервер вернул итоги без карточек. Перезапустите актуальную версию backend.')
     }
+    return data
+  } catch (error) {
+    throwRecapError(error)
+  }
+}
+
+export async function getShareRecap(userId: string, year: number): Promise<ShareRecapResponse> {
+  try {
+    const safeUserId = encodeURIComponent(userId)
+    const { data } = await apiClient.get<ShareRecapResponse>(`/recap/${safeUserId}/${year}/share`)
     return data
   } catch (error) {
     throwRecapError(error)

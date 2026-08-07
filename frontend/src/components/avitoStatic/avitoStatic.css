@@ -677,3 +677,35 @@
     font-size: 12px;
   }
 }
+.avito-static-destination {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0;
+  padding: 16px 20px;
+  border: 1px solid #d6effa;
+  border-radius: 18px;
+  background: #eaf8ff;
+  color: #00aaff;
+}
+
+.avito-static-destination > svg {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+
+.avito-static-destination div {
+  display: grid;
+  gap: 2px;
+}
+
+.avito-static-destination strong {
+  color: #1f1f1f;
+  font-size: 18px;
+}
+
+.avito-static-destination span {
+  color: #6f7377;
+  font-size: 14px;
+}

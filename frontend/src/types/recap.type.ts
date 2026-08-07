@@ -111,3 +111,13 @@ export interface RecapResponse {
   cards: RecapCardResponse[]
   generated_at: string
 }
+
+export interface ShareRecapSummary {
+  headline: string
+  description: string
+  combined: CombinedRecapSummary
+}
+
+export interface ShareRecapResponse extends Omit<RecapResponse, 'id' | 'user_id' | 'summary'> {
+  summary: ShareRecapSummary
+}
