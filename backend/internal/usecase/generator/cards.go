@@ -74,16 +74,30 @@ func buildRecapCards(metrics ProfileMetrics, summary domain.RecapSummary, joined
 	buyer := buyerCards(metrics)
 	seller := sellerCards(metrics)
 	combined := combinedCards(metrics, joinedAt)
+	categoryChart := buildCategoryMixCard(metrics)
+	activityChart := buildActivityRhythmCard(metrics)
 	selected := []domain.RecapCard{overview}
+	chartCandidates := make([]domain.RecapCard, 0, 2)
+	if categoryChart != nil {
+		chartCandidates = append(chartCandidates, *categoryChart)
+		// The donut already communicates the main interest, so the equivalent
+		// text card would only repeat the same insight.
+		general = []domain.RecapCard{}
+	}
+	if activityChart != nil {
+		chartCandidates = append(chartCandidates, *activityChart)
+	}
 	selected = appendUnique(selected, general, 1)
+	selected = appendUnique(selected, chartCandidates, 2)
 	selected = appendUnique(selected, buyer, 2)
 	selected = appendUnique(selected, seller, 2)
 	selected = appendUnique(selected, combined, 1)
 
 	// Fill up to eight content cards from still-unused candidates. With the
 	// finale this gives the frontend a compact sequence of at most nine cards.
-	allCandidates := make([]domain.RecapCard, 0, len(general)+len(buyer)+len(seller)+len(combined))
+	allCandidates := make([]domain.RecapCard, 0, len(general)+len(chartCandidates)+len(buyer)+len(seller)+len(combined))
 	allCandidates = append(allCandidates, general...)
+	allCandidates = append(allCandidates, chartCandidates...)
 	allCandidates = append(allCandidates, buyer...)
 	allCandidates = append(allCandidates, seller...)
 	allCandidates = append(allCandidates, combined...)

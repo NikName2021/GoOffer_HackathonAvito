@@ -180,7 +180,9 @@ func TestGenerator_Execute_Success(t *testing.T) {
 		t.Fatalf("headline = %q", recap.Summary.Headline)
 	}
 	buyerCards, sellerCards := 0, 0
+	cardsByID := make(map[string]domain.RecapCard, len(recap.Cards))
 	for _, card := range recap.Cards {
+		cardsByID[card.ID] = card
 		switch card.Kind {
 		case "buyer":
 			buyerCards++
@@ -190,6 +192,24 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	}
 	if buyerCards < 2 || sellerCards < 2 {
 		t.Fatalf("buyer/seller cards = %d/%d, want at least 2/2", buyerCards, sellerCards)
+	}
+	if len(recap.Cards) > 9 {
+		t.Fatalf("cards = %d, want no more than 9", len(recap.Cards))
+	}
+	categoryChart, exists := cardsByID["category_mix"]
+	if !exists || categoryChart.Visualization == nil || categoryChart.Visualization.Type != "donut" {
+		t.Fatalf("category chart = %#v, want donut visualization", categoryChart)
+	}
+	if categoryChart.CTA == nil || categoryChart.CTA.Action != "open_category" ||
+		categoryChart.CTA.Params["category"] != "Electronics" {
+		t.Fatalf("category chart CTA = %#v", categoryChart.CTA)
+	}
+	activityChart, exists := cardsByID["activity_rhythm"]
+	if !exists || activityChart.Visualization == nil || activityChart.Visualization.Type != "bar" {
+		t.Fatalf("activity chart = %#v, want bar visualization", activityChart)
+	}
+	if activityChart.Visualization.Highlight == nil || activityChart.Visualization.Highlight.Label != "Март" {
+		t.Fatalf("activity highlight = %#v, want March", activityChart.Visualization.Highlight)
 	}
 }
 

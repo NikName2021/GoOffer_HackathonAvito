@@ -734,6 +734,55 @@ components:
         headline: {type: string}
         description: {type: string}
         combined: {$ref: "#/components/schemas/CombinedRecapSummary"}
+    RecapChartSeries:
+      type: object
+      required: [key, label, color, values]
+      properties:
+        key: {type: string, example: views}
+        label: {type: string, example: Просмотры}
+        color: {type: string, example: avito-blue}
+        values:
+          type: array
+          minItems: 12
+          maxItems: 12
+          items: {type: integer, minimum: 0}
+    RecapChartSegment:
+      type: object
+      required: [key, label, color, value]
+      properties:
+        key: {type: string, example: category_1}
+        label: {type: string, example: Электроника}
+        color: {type: string, example: avito-purple}
+        value: {type: integer, minimum: 0, example: 12}
+    RecapChartHighlight:
+      type: object
+      required: [index, label, value]
+      properties:
+        index: {type: integer, minimum: 0, example: 2}
+        label: {type: string, example: Март}
+        value: {type: integer, minimum: 0, example: 18}
+    RecapVisualization:
+      type: object
+      required: [version, type]
+      properties:
+        version: {type: integer, enum: [1]}
+        type:
+          type: string
+          enum: [bar, donut]
+        unit: {type: string, example: действий}
+        stacked: {type: boolean}
+        labels:
+          type: array
+          items: {type: string}
+        series:
+          type: array
+          items: {$ref: "#/components/schemas/RecapChartSeries"}
+        segments:
+          type: array
+          items: {$ref: "#/components/schemas/RecapChartSegment"}
+        highlight:
+          allOf: [{$ref: "#/components/schemas/RecapChartHighlight"}]
+          nullable: true
     RecapCardPresentation:
       type: object
       required: [layout, theme, icon]
@@ -764,7 +813,7 @@ components:
         id: {type: string, example: main_interest}
         kind:
           type: string
-          enum: [overview, interest, buyer, seller, combined, final]
+          enum: [overview, interest, buyer, seller, combined, chart, final]
         eyebrow: {type: string, example: Главный интерес}
         title: {type: string, example: Электроника}
         description: {type: string}
@@ -777,6 +826,9 @@ components:
           type: string
           description: Объяснение, почему карточка вошла в итоговую последовательность.
         presentation: {$ref: "#/components/schemas/RecapCardPresentation"}
+        visualization:
+          allOf: [{$ref: "#/components/schemas/RecapVisualization"}]
+          nullable: true
         cta:
           allOf: [{$ref: "#/components/schemas/RecapCardCTA"}]
           nullable: true

@@ -77,6 +77,10 @@ func ToRecapResponse(recap *domain.Recap) RecapResponse {
 			Category:    ach.Category,
 		}
 	}
+	cards := recap.Cards
+	if cards == nil {
+		cards = []domain.RecapCard{}
+	}
 
 	return RecapResponse{
 		ID:             recap.ID,
@@ -91,7 +95,7 @@ func ToRecapResponse(recap *domain.Recap) RecapResponse {
 		Achievements:   achievements,
 		ActivityDays:   recap.ActivityDays,
 		Summary:        recap.Summary,
-		Cards:          recap.Cards,
+		Cards:          cards,
 		GeneratedAt:    recap.GeneratedAt,
 	}
 }
