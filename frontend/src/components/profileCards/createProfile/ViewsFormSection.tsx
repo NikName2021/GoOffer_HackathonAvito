@@ -19,7 +19,7 @@ export function ViewsFormSection({ onAdd, onChange, onImport, onRemove, views }:
       <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-bold text-[#1f1f1f]">Все просмотры</h3>
-          <p className="mt-1 text-xs text-[#8a8d91]">Добавляйте вручную или загружайте массив объектов из JSON.</p>
+          <p className="mt-1 text-xs text-[#8a8d91]">Добавляйте вручную или загружайте JSON — до 10 000 объектов.</p>
         </div>
         <div className="flex flex-wrap items-center justify-end gap-2">
           <JsonImportButton onImport={onImport} parse={parseViewedAdsJson} />

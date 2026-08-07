@@ -9,6 +9,7 @@ import { AvitoHeader } from '@/components/avitoStatic/AvitoHeader'
 import { AvitoProductGrid } from '@/components/avitoStatic/AvitoProductGrid'
 import { AvitoPromo } from '@/components/avitoStatic/AvitoPromo'
 import { AvitoSearch } from '@/components/avitoStatic/AvitoSearch'
+import { AvitoYearRecapButton } from '@/components/avitoStatic/AvitoYearRecapButton'
 
 export function AvitoPage() {
   return (
@@ -26,6 +27,7 @@ export function AvitoPage() {
         <AvitoProductGrid />
       </main>
       <AvitoFooter />
+      <AvitoYearRecapButton />
       <div className="avito-static-messages">Сообщения <ChevronUp /></div>
     </div>
   )

@@ -45,7 +45,7 @@ export function AdBaseFields({ onChange, value }: AdBaseFieldsProps) {
           value={value.price}
         />
         <FormField
-          label="Количество просмотров"
+          label="Общие просмотры объявления"
           min="0"
           onChange={(event) => onChange({ viewCount: event.target.valueAsNumber || 0 })}
           required

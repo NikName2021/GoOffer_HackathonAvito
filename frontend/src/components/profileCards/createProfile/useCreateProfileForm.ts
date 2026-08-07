@@ -17,12 +17,21 @@ function createEmptyProfile(): CreateProfileRequest {
   }
 }
 
+function createAdId(prefix: 'own' | 'view') {
+  const id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
+  return `${prefix}-${id}`
+}
+
 function createEmptyOwnAd(): CreateOwnAdRequest {
   return {
+    adId: createAdId('own'),
     title: '',
     category: '',
     price: 0,
     viewCount: 0,
+    publishedAt: '',
+    favoritesCount: 0,
+    contactsCount: 0,
     isArchived: false,
     isSold: false,
   }
@@ -30,13 +39,12 @@ function createEmptyOwnAd(): CreateOwnAdRequest {
 
 function createEmptyView(): CreateViewedAdRequest {
   return {
+    adId: createAdId('view'),
     title: '',
     category: '',
     price: 0,
     viewCount: 0,
-    lastViewedAt: '',
-    isFavorite: false,
-    isPurchased: false,
+    viewedAt: [{ type: 'watch', time: '' }],
   }
 }
 

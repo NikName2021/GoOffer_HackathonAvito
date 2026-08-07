@@ -1,6 +1,7 @@
 import type { CreateOwnAdRequest, CreateViewedAdRequest } from '@/types/profileRequest.type'
 
 type JsonRecord = Record<string, unknown>
+const MAX_ACTIVITY_ITEMS = 10_000
 
 function parseArray(text: string): unknown[] {
   let value: unknown
@@ -12,6 +13,7 @@ function parseArray(text: string): unknown[] {
 
   if (!Array.isArray(value)) throw new Error('В JSON должен находиться массив объектов.')
   if (value.length === 0) throw new Error('Массив не должен быть пустым.')
+  if (value.length > MAX_ACTIVITY_ITEMS) throw new Error(`В массиве может быть не более ${MAX_ACTIVITY_ITEMS} объектов.`)
   return value
 }
 
@@ -32,8 +34,8 @@ function assertString(record: JsonRecord, field: string, index: number, optional
 
 function assertNumber(record: JsonRecord, field: string, index: number) {
   const value = record[field]
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) {
-    throw new Error(`Поле ${field} элемента ${index + 1} должно быть неотрицательным числом.`)
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0) {
+    throw new Error(`Поле ${field} элемента ${index + 1} должно быть целым неотрицательным числом.`)
   }
 }
 
@@ -42,6 +44,7 @@ function assertBoolean(record: JsonRecord, field: string, index: number) {
 }
 
 function validateBase(record: JsonRecord, index: number) {
+  assertString(record, 'adId', index)
   assertString(record, 'title', index)
   assertString(record, 'category', index)
   assertString(record, 'subcategory', index, true)
@@ -61,9 +64,13 @@ function validateReview(value: unknown, index: number) {
 }
 
 export function parseOwnAdsJson(text: string): CreateOwnAdRequest[] {
-  return parseArray(text).map((value, index) => {
+  const ads = parseArray(text).map((value, index) => {
     const record = getRecord(value, index)
     validateBase(record, index)
+    assertString(record, 'publishedAt', index)
+    assertNumber(record, 'favoritesCount', index)
+    assertNumber(record, 'contactsCount', index)
+    assertString(record, 'city', index, true)
     assertBoolean(record, 'isArchived', index)
     assertBoolean(record, 'isSold', index)
 
@@ -75,21 +82,56 @@ export function parseOwnAdsJson(text: string): CreateOwnAdRequest[] {
     }
     return record as unknown as CreateOwnAdRequest
   })
+  assertUniqueAdIds(ads)
+  return ads
 }
 
 export function parseViewedAdsJson(text: string): CreateViewedAdRequest[] {
-  return parseArray(text).map((value, index) => {
+  const views = parseArray(text).map((value, index) => {
     const record = getRecord(value, index)
     validateBase(record, index)
-    assertString(record, 'lastViewedAt', index)
-    assertBoolean(record, 'isFavorite', index)
-    assertBoolean(record, 'isPurchased', index)
-
-    if (record.isFavorite) assertString(record, 'favoritedAt', index)
-    else if (record.favoritedAt !== undefined) throw new Error(`У просмотра ${index + 1} без избранного не должно быть favoritedAt.`)
-    if (record.isPurchased) assertString(record, 'purchasedAt', index)
-    else if (record.purchasedAt !== undefined) throw new Error(`У просмотра ${index + 1} без покупки не должно быть purchasedAt.`)
+    validateViewedEvents(record.viewedAt, index)
 
     return record as unknown as CreateViewedAdRequest
+  })
+  assertUniqueAdIds(views)
+  return views
+}
+
+function validateViewedEvents(value: unknown, itemIndex: number) {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error(`Поле viewedAt элемента ${itemIndex + 1} должно содержать хотя бы одно событие.`)
+  }
+  if (value.length > MAX_ACTIVITY_ITEMS) {
+    throw new Error(`В viewedAt элемента ${itemIndex + 1} может быть не более ${MAX_ACTIVITY_ITEMS} событий.`)
+  }
+
+  let watches = 0
+  let likes = 0
+  let buys = 0
+  value.forEach((item, eventIndex) => {
+    const event = getRecord(item, eventIndex)
+    assertString(event, 'type', eventIndex)
+    assertString(event, 'time', eventIndex)
+    if (!['watch', 'like', 'buy'].includes(event.type as string)) {
+      throw new Error(`Тип события ${eventIndex + 1} элемента ${itemIndex + 1} должен быть watch, like или buy.`)
+    }
+    if (event.type === 'watch') watches += 1
+    if (event.type === 'like') likes += 1
+    if (event.type === 'buy') buys += 1
+    if (event.type === 'buy') assertBoolean(event, 'useAvitoDelivery', eventIndex)
+    else if (event.useAvitoDelivery !== undefined) {
+      throw new Error(`useAvitoDelivery разрешён только для события buy.`)
+    }
+  })
+  if (watches === 0) throw new Error(`В viewedAt элемента ${itemIndex + 1} требуется хотя бы один watch.`)
+  if (likes > 1 || buys > 1) throw new Error(`В viewedAt элемента ${itemIndex + 1} допустимо не более одного like и buy.`)
+}
+
+function assertUniqueAdIds(items: Array<{ adId: string }>) {
+  const ids = new Set<string>()
+  items.forEach((item, index) => {
+    if (ids.has(item.adId)) throw new Error(`Поле adId элемента ${index + 1} должно быть уникальным.`)
+    ids.add(item.adId)
   })
 }

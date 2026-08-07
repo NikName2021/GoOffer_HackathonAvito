@@ -1,4 +1,5 @@
 import { parseOwnAdsJson, parseViewedAdsJson } from '../createProfile/parseActivityJson'
+import { validateCreateProfile } from '../createProfile/validateCreateProfile'
 import type { CreateProfileRequest } from '@/types/profileRequest.type'
 
 type JsonRecord = Record<string, unknown>
@@ -51,7 +52,7 @@ export function parseProfilesJson(text: string): CreateProfileRequest[] {
 
   return value.map((item, index) => {
     const profile = getRecord(item, index)
-    return {
+    const parsed: CreateProfileRequest = {
       name: getString(profile, 'name', index) ?? '',
       joinedAt: getString(profile, 'joinedAt', index) ?? '',
       avatarUrl: getString(profile, 'avatarUrl', index, true),
@@ -60,5 +61,8 @@ export function parseProfilesJson(text: string): CreateProfileRequest[] {
       views: getActivities(profile, 'views', index, parseViewedAdsJson),
       ownAds: getActivities(profile, 'ownAds', index, parseOwnAdsJson),
     }
+    const validationError = validateCreateProfile(parsed)
+    if (validationError) throw new Error(`Профиль ${index + 1}: ${validationError.message}`)
+    return parsed
   })
 }
