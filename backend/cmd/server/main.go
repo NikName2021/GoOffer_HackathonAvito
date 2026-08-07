@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	goredis "github.com/redis/go-redis/v9"
 	"gooffer/backend/internal/config"
 	"gooffer/backend/internal/repository/postgres"
+	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
 	"gooffer/backend/internal/usecase/auth"
 	"gooffer/backend/internal/usecase/generator"
@@ -54,10 +56,28 @@ func run(logger *slog.Logger) error {
 		return fmt.Errorf("apply database migrations: %w", err)
 	}
 
+	redisOptions, err := goredis.ParseURL(cfg.RedisURL)
+	if err != nil {
+		return fmt.Errorf("parse redis config: %w", err)
+	}
+	redisClient := goredis.NewClient(redisOptions)
+	defer func() {
+		if err := redisClient.Close(); err != nil {
+			logger.Warn("failed to close redis client", slog.String("error", err.Error()))
+		}
+	}()
+	if err := redisClient.Ping(startupCtx).Err(); err != nil {
+		logger.Warn("redis unavailable, recap cache will fall back to postgres",
+			slog.String("error", err.Error()),
+		)
+	}
+
 	userRepository := postgres.NewUserRepository(database)
 	authRepository := postgres.NewAuthRepository(database)
 	actionRepository := postgres.NewActionRepository(database)
-	recapRepository := postgres.NewRecapRepository(database)
+	recapStore := postgres.NewRecapRepository(database)
+	recapCache := redisrepo.NewRecapCache(redisClient)
+	recapRepository := redisrepo.NewCachedRecapRepository(recapStore, recapCache, logger)
 	profileService := profile.New(logger, userRepository)
 	authService := auth.New(authRepository, cfg.SessionTTL)
 	recapGenerator := generator.New(
