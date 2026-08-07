@@ -81,9 +81,40 @@ export interface RecapCardCTA {
   params?: Record<string, string>
 }
 
+export interface RecapChartSeries {
+  key: string
+  label: string
+  color: string
+  values: number[]
+}
+
+export interface RecapChartSegment {
+  key: string
+  label: string
+  color: string
+  value: number
+}
+
+export interface RecapChartHighlight {
+  index: number
+  label: string
+  value: number
+}
+
+export interface RecapVisualization {
+  version: 1
+  type: 'bar' | 'donut'
+  unit?: string
+  stacked?: boolean
+  labels?: string[]
+  series?: RecapChartSeries[]
+  segments?: RecapChartSegment[]
+  highlight?: RecapChartHighlight | null
+}
+
 export interface RecapCardResponse {
   id: string
-  kind: 'overview' | 'interest' | 'buyer' | 'seller' | 'combined' | 'final'
+  kind: 'overview' | 'interest' | 'buyer' | 'seller' | 'combined' | 'chart' | 'final'
   eyebrow?: string
   title: string
   description: string
@@ -92,6 +123,7 @@ export interface RecapCardResponse {
   shareable: boolean
   reason: string
   presentation: RecapCardPresentation
+  visualization?: RecapVisualization | null
   cta?: RecapCardCTA | null
 }
 
