@@ -12,7 +12,8 @@ import { PersonaBadge } from '@/components/recap/PersonaBadge'
 
 export function HomePage() {
   const navigate = useNavigate()
-  const { data: profiles, isLoading, isError } = useProfiles()
+  const { data, isLoading, isError } = useProfiles()
+  const profiles = data ?? []
   const generate = useGenerateRecap()
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -126,11 +127,11 @@ export function HomePage() {
           )}
 
           <section className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {isLoading && !profiles?.length
+            {isLoading && profiles.length === 0
               ? Array.from({ length: 5 }).map((_, i) => (
                   <div key={i} className="h-56 animate-pulse rounded-3xl bg-[#f3f4f6]" />
                 ))
-              : profiles?.map((profile) => {
+              : profiles.map((profile) => {
                   const meta = profileMeta(profile.id)
                   const busy = loadingId === profile.id
                   const isSelected = selected.includes(profile.id)
