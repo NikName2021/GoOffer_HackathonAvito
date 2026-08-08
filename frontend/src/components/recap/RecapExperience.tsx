@@ -5,37 +5,20 @@ import { RecapGiftIntro } from './RecapGiftIntro'
 import { RecapViewer } from './RecapViewer'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import type { RecapResponse } from '@/types/recap.type'
+import { markRecapOpened, wasRecapOpened } from '@/utils/recapStorage'
 
 interface RecapExperienceProps {
   profile: GetProfileResponse
   recap: RecapResponse
 }
 
-function getOpenedStorageKey(profileId: string, year: number) {
-  return `avito-recap-opened:${profileId}:${year}`
-}
-
-function wasRecapOpened(storageKey: string) {
-  if (typeof window === 'undefined') return false
-  try {
-    return window.localStorage.getItem(storageKey) === 'true'
-  } catch {
-    return false
-  }
-}
-
 export function RecapExperience({ profile, recap }: RecapExperienceProps) {
-  const storageKey = getOpenedStorageKey(profile.id, recap.year)
-  const [opened, setOpened] = useState(() => wasRecapOpened(storageKey))
+  const [opened, setOpened] = useState(() => wasRecapOpened(profile.id, recap.year))
   const reduceMotion = useReducedMotion()
   const open = useCallback(() => {
-    try {
-      window.localStorage.setItem(storageKey, 'true')
-    } catch {
-      // The recap still opens when browser storage is unavailable.
-    }
+    markRecapOpened(profile.id, recap.year)
     setOpened(true)
-  }, [storageKey])
+  }, [profile.id, recap.year])
 
   return (
     <AnimatePresence initial={false} mode="wait">
