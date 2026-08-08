@@ -86,4 +86,5 @@ volumes:
 
 networks:
   result_year:
+    external: true
     driver: bridge
