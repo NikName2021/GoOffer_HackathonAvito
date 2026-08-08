@@ -28,4 +28,3 @@ test-results
 
 .env*
 /scripts/generate-profile-import-fixtures.mjs
-/public/test-data
