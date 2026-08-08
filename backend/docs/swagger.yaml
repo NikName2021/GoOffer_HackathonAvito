@@ -328,6 +328,29 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/recap/events:
+    post:
+      tags: [Recap]
+      summary: Зафиксировать бизнес-событие просмотра итогов
+      description: Принимает только события из фиксированного списка и не добавляет идентификаторы пользователя в Prometheus labels.
+      operationId: trackRecapEvent
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecapBusinessEvent"
+      responses:
+        "204":
+          description: Событие зарегистрировано
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     cookieAuth:
@@ -806,6 +829,18 @@ components:
           type: object
           additionalProperties: {type: string}
           example: {category: Электроника}
+    RecapBusinessEvent:
+      type: object
+      required: [event]
+      additionalProperties: false
+      properties:
+        event:
+          type: string
+          enum: [recap_opened, gift_opened, slide_viewed, recap_completed, share_created, cta_clicked]
+        cta_visible:
+          type: boolean
+          default: false
+          description: Передаётся только для slide_viewed; увеличивает знаменатель CTA CTR.
     RecapCard:
       type: object
       required: [id, kind, title, description, shareable, reason, presentation]

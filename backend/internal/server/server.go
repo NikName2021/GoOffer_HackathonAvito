@@ -17,6 +17,7 @@ type Dependencies struct {
 	Profiles       handlers.ProfileService
 	RecapGenerator handlers.RecapGenerator
 	Recaps         handlers.RecapReader
+	BusinessEvents handlers.BusinessEventRecorder
 }
 
 type Options struct {
@@ -77,6 +78,7 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 		dependencies.RecapGenerator,
 		dependencies.Recaps,
 		dependencies.Profiles,
+		dependencies.BusinessEvents,
 		logger,
 	)
 	recapHandler.Register(protectedMux)

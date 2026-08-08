@@ -28,14 +28,23 @@ type fakeCredential struct {
 }
 
 type fakeApplication struct {
-	users         []domain.User
-	recaps        map[string]domain.Recap
-	profileErr    error
-	generatorErr  error
-	readerErr     error
-	panicProfiles bool
-	credentials   map[string]fakeCredential
-	sessions      map[string]uuid.UUID
+	users          []domain.User
+	recaps         map[string]domain.Recap
+	businessEvents []string
+	ctaImpressions int
+	profileErr     error
+	generatorErr   error
+	readerErr      error
+	panicProfiles  bool
+	credentials    map[string]fakeCredential
+	sessions       map[string]uuid.UUID
+}
+
+func (f *fakeApplication) RecordBusinessEvent(event string, ctaVisible bool) {
+	f.businessEvents = append(f.businessEvents, event)
+	if event == "slide_viewed" && ctaVisible {
+		f.ctaImpressions++
+	}
 }
 
 func newFakeApplication() *fakeApplication {
@@ -307,6 +316,7 @@ func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 		Profiles:       application,
 		RecapGenerator: application,
 		Recaps:         application,
+		BusinessEvents: application,
 	}, server.Options{
 		Logger:         logger,
 		AllowedOrigins: []string{"http://localhost:5173"},

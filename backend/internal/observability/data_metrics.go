@@ -5,6 +5,57 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+var businessEventNames = []string{
+	"recap_opened",
+	"gift_opened",
+	"slide_viewed",
+	"recap_completed",
+	"share_created",
+	"cta_clicked",
+}
+
+type BusinessMetrics struct {
+	events         *prometheus.CounterVec
+	ctaImpressions prometheus.Counter
+}
+
+func NewBusinessMetrics() *BusinessMetrics {
+	metrics := &BusinessMetrics{
+		events: prometheus.NewCounterVec(prometheus.CounterOpts{
+			Namespace: "gooffer",
+			Subsystem: "business",
+			Name:      "events_total",
+			Help:      "Total number of user-facing recap business events.",
+		}, []string{"event"}),
+		ctaImpressions: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: "gooffer",
+			Subsystem: "business",
+			Name:      "cta_impressions_total",
+			Help:      "Total number of recap slide views where a CTA was visible.",
+		}),
+	}
+	for _, event := range businessEventNames {
+		metrics.events.WithLabelValues(event).Add(0)
+	}
+	return metrics
+}
+
+func (m *BusinessMetrics) RecordBusinessEvent(event string, ctaVisible bool) {
+	for _, allowed := range businessEventNames {
+		if event == allowed {
+			m.events.WithLabelValues(event).Inc()
+			if event == "slide_viewed" && ctaVisible {
+				m.ctaImpressions.Inc()
+			}
+			return
+		}
+	}
+}
+
+func (m *BusinessMetrics) Collectors() []prometheus.Collector {
+	return []prometheus.Collector{m.events, m.ctaImpressions}
+}
+
 type RecapCacheMetrics struct {
 	requests *prometheus.CounterVec
 	errors   *prometheus.CounterVec

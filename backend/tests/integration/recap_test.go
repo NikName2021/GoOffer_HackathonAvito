@@ -77,6 +77,42 @@ func TestRecapAPI(t *testing.T) {
 		}
 	})
 
+	t.Run("track business event", func(t *testing.T) {
+		body := []byte(`{"event":"slide_viewed","cta_visible":true}`)
+		response := performRequest(
+			t,
+			handler,
+			http.MethodPost,
+			"/api/recap/events",
+			bytes.NewReader(body),
+			map[string]string{"Content-Type": "application/json"},
+		)
+		if response.Code != http.StatusNoContent {
+			t.Fatalf("status = %d, want %d", response.Code, http.StatusNoContent)
+		}
+		if len(application.businessEvents) != 1 || application.businessEvents[0] != "slide_viewed" {
+			t.Fatalf("business events = %#v, want slide_viewed", application.businessEvents)
+		}
+		if application.ctaImpressions != 1 {
+			t.Fatalf("CTA impressions = %d, want 1", application.ctaImpressions)
+		}
+	})
+
+	t.Run("reject unknown business event", func(t *testing.T) {
+		body := []byte(`{"event":"profile_deleted"}`)
+		response := performRequest(
+			t,
+			handler,
+			http.MethodPost,
+			"/api/recap/events",
+			bytes.NewReader(body),
+			map[string]string{"Content-Type": "application/json"},
+		)
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("status = %d, want %d", response.Code, http.StatusBadRequest)
+		}
+	})
+
 	t.Run("missing recap", func(t *testing.T) {
 		response := performRequest(t, handler, http.MethodGet, "/api/recap/"+testUserID.String()+"/2024", nil, nil)
 		if response.Code != http.StatusNotFound {

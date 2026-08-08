@@ -79,6 +79,7 @@ func run(logger *slog.Logger) error {
 	recapStore := postgres.NewRecapRepository(database)
 	recapCache := redisrepo.NewRecapCache(redisClient)
 	recapCacheMetrics := observability.NewRecapCacheMetrics()
+	businessMetrics := observability.NewBusinessMetrics()
 	recapRepository := redisrepo.NewCachedRecapRepository(
 		recapStore,
 		recapCache,
@@ -87,6 +88,7 @@ func run(logger *slog.Logger) error {
 	)
 	metricCollectors := observability.NewPostgresPoolCollectors(database)
 	metricCollectors = append(metricCollectors, recapCacheMetrics.Collectors()...)
+	metricCollectors = append(metricCollectors, businessMetrics.Collectors()...)
 	profileService := profile.New(logger, userRepository)
 	authService := auth.New(authRepository, cfg.SessionTTL)
 	recapGenerator := generator.New(
@@ -100,6 +102,7 @@ func run(logger *slog.Logger) error {
 		Profiles:       profileService,
 		RecapGenerator: recapGenerator,
 		Recaps:         recapRepository,
+		BusinessEvents: businessMetrics,
 	}, server.Options{
 		Logger:           logger,
 		AllowedOrigins:   cfg.AllowedOrigins,
