@@ -12,6 +12,10 @@ var businessEventNames = []string{
 	"recap_completed",
 	"share_created",
 	"cta_clicked",
+	"mission_viewed",
+	"mission_selected",
+	"mission_completed",
+	"mission_cta_clicked",
 }
 
 type BusinessMetrics struct {

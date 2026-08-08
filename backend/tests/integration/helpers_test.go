@@ -30,6 +30,7 @@ type fakeCredential struct {
 type fakeApplication struct {
 	users          []domain.User
 	recaps         map[string]domain.Recap
+	missions       map[string]domain.MissionOverview
 	businessEvents []string
 	ctaImpressions int
 	profileErr     error
@@ -132,8 +133,9 @@ func newFakeApplication() *fakeApplication {
 		CreatedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
 	}
 	return &fakeApplication{
-		users:  []domain.User{user},
-		recaps: map[string]domain.Recap{recapKey(testUserID, 2025): recap},
+		users:    []domain.User{user},
+		recaps:   map[string]domain.Recap{recapKey(testUserID, 2025): recap},
+		missions: make(map[string]domain.MissionOverview),
 		credentials: map[string]fakeCredential{
 			"nikita": {account: account, password: "avito2026"},
 		},
@@ -308,6 +310,72 @@ func (f *fakeApplication) GetByUserAndYear(
 	return &recap, nil
 }
 
+func (f *fakeApplication) GetOverview(
+	ctx context.Context,
+	accountID, userID uuid.UUID,
+	year int,
+) (*domain.MissionOverview, error) {
+	if _, err := f.GetByID(ctx, accountID, userID); err != nil {
+		return nil, err
+	}
+	if _, exists := f.recaps[recapKey(userID, year)]; !exists {
+		return nil, apperrors.ErrNotFound
+	}
+	if overview, exists := f.missions[recapKey(userID, year)]; exists {
+		copy := overview
+		return &copy, nil
+	}
+	return &domain.MissionOverview{Options: fakeMissionOptions()}, nil
+}
+
+func (f *fakeApplication) Select(
+	ctx context.Context,
+	accountID, userID uuid.UUID,
+	year int,
+	code domain.MissionCode,
+) (*domain.MissionOverview, error) {
+	if _, err := f.GetOverview(ctx, accountID, userID, year); err != nil {
+		return nil, err
+	}
+	var selectedOption *domain.MissionOption
+	for _, option := range fakeMissionOptions() {
+		if option.Code == code {
+			copy := option
+			selectedOption = &copy
+			break
+		}
+	}
+	if selectedOption == nil {
+		return nil, apperrors.ErrInvalidMission
+	}
+	now := time.Now().UTC()
+	overview := domain.MissionOverview{
+		Options: fakeMissionOptions(),
+		Selected: &domain.MissionState{
+			Code:        selectedOption.Code,
+			Title:       selectedOption.Title,
+			Description: selectedOption.Description,
+			Target:      selectedOption.Target,
+			Status:      domain.MissionActive,
+			Icon:        selectedOption.Icon,
+			Theme:       selectedOption.Theme,
+			CTA:         selectedOption.CTA,
+			SelectedAt:  now,
+			UpdatedAt:   now,
+		},
+	}
+	f.missions[recapKey(userID, year)] = overview
+	return &overview, nil
+}
+
+func fakeMissionOptions() []domain.MissionOption {
+	return []domain.MissionOption{
+		{Code: domain.MissionSellThreeItems, Title: "Продать три ненужные вещи", Target: 3},
+		{Code: domain.MissionBuyFromFavorites, Title: "Завершить покупку из избранного", Target: 1},
+		{Code: domain.MissionTryDelivery, Title: "Попробовать Авито Доставку", Target: 1},
+	}
+}
+
 func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -316,6 +384,7 @@ func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 		Profiles:       application,
 		RecapGenerator: application,
 		Recaps:         application,
+		Missions:       application,
 		BusinessEvents: application,
 	}, server.Options{
 		Logger:         logger,

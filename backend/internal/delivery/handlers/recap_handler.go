@@ -32,12 +32,16 @@ type BusinessEventRecorder interface {
 }
 
 var allowedBusinessEvents = map[string]struct{}{
-	"recap_opened":    {},
-	"gift_opened":     {},
-	"slide_viewed":    {},
-	"recap_completed": {},
-	"share_created":   {},
-	"cta_clicked":     {},
+	"recap_opened":        {},
+	"gift_opened":         {},
+	"slide_viewed":        {},
+	"recap_completed":     {},
+	"share_created":       {},
+	"cta_clicked":         {},
+	"mission_viewed":      {},
+	"mission_selected":    {},
+	"mission_completed":   {},
+	"mission_cta_clicked": {},
 }
 
 type RecapHandler struct {

@@ -17,6 +17,7 @@ type Dependencies struct {
 	Profiles       handlers.ProfileService
 	RecapGenerator handlers.RecapGenerator
 	Recaps         handlers.RecapReader
+	Missions       handlers.MissionService
 	BusinessEvents handlers.BusinessEventRecorder
 }
 
@@ -82,6 +83,8 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 		logger,
 	)
 	recapHandler.Register(protectedMux)
+	missionHandler := handlers.NewMissionHandler(dependencies.Missions, logger)
+	missionHandler.Register(protectedMux)
 	protectedMux.HandleFunc("/", notFoundHandler)
 	protectedHandler := middleware.Authenticate(dependencies.Auth, "gooffer_session", logger)(protectedMux)
 	mux.Handle("/api/", protectedHandler)

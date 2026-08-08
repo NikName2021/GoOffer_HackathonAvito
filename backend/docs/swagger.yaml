@@ -331,7 +331,7 @@ paths:
   /api/recap/events:
     post:
       tags: [Recap]
-      summary: Зафиксировать бизнес-событие просмотра итогов
+      summary: Зафиксировать бизнес-событие recap или миссии
       description: Принимает только события из фиксированного списка и не добавляет идентификаторы пользователя в Prometheus labels.
       operationId: trackRecapEvent
       security:
@@ -349,6 +349,63 @@ paths:
           $ref: "#/components/responses/BadRequest"
         "401":
           $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/recap/{user_id}/{year}/mission:
+    get:
+      tags: [Recap]
+      summary: Получить миссии и прогресс выбранной цели
+      description: Backend пересчитывает прогресс по событиям профиля после selected_at и сохраняет новое состояние.
+      operationId: getRecapMission
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+        - $ref: "#/components/parameters/Year"
+      responses:
+        "200":
+          description: Каталог миссий и выбранная цель; selected равен null до выбора
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MissionOverview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Recap]
+      summary: Выбрать миссию на следующий год
+      description: Повторный выбор того же кода идемпотентен. Другой код заменяет активную миссию и начинает её с нуля.
+      operationId: selectRecapMission
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+        - $ref: "#/components/parameters/Year"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectMissionRequest"
+      responses:
+        "200":
+          description: Обновлённый каталог и выбранная миссия
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MissionOverview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
 components:
@@ -633,6 +690,76 @@ components:
           type: integer
           minimum: 2000
           example: 2026
+    SelectMissionRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+          enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
+          example: sell_three_items
+    MissionOption:
+      type: object
+      required: [code, title, description, target, icon, theme, cta]
+      properties:
+        code:
+          type: string
+          enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
+        title: {type: string, example: Продать три ненужные вещи}
+        description: {type: string}
+        target: {type: integer, minimum: 1, example: 3}
+        icon: {type: string, example: recycle}
+        theme: {type: string, example: avito-green}
+        cta: {$ref: "#/components/schemas/RecapCardCTA"}
+    MissionState:
+      type: object
+      required:
+        - code
+        - title
+        - description
+        - progress
+        - target
+        - progress_percent
+        - status
+        - icon
+        - theme
+        - cta
+        - selected_at
+        - updated_at
+      properties:
+        code:
+          type: string
+          enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
+        title: {type: string}
+        description: {type: string}
+        progress: {type: integer, minimum: 0, example: 1}
+        target: {type: integer, minimum: 1, example: 3}
+        progress_percent: {type: integer, minimum: 0, maximum: 100, example: 33}
+        status:
+          type: string
+          enum: [active, completed]
+        icon: {type: string}
+        theme: {type: string}
+        cta: {$ref: "#/components/schemas/RecapCardCTA"}
+        selected_at: {type: string, format: date-time}
+        updated_at: {type: string, format: date-time}
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+    MissionOverview:
+      type: object
+      required: [options, selected]
+      properties:
+        options:
+          type: array
+          minItems: 3
+          maxItems: 3
+          items: {$ref: "#/components/schemas/MissionOption"}
+        selected:
+          allOf: [{$ref: "#/components/schemas/MissionState"}]
+          nullable: true
     CategoryStat:
       type: object
       required: [category, count]
@@ -836,7 +963,17 @@ components:
       properties:
         event:
           type: string
-          enum: [recap_opened, gift_opened, slide_viewed, recap_completed, share_created, cta_clicked]
+          enum:
+            - recap_opened
+            - gift_opened
+            - slide_viewed
+            - recap_completed
+            - share_created
+            - cta_clicked
+            - mission_viewed
+            - mission_selected
+            - mission_completed
+            - mission_cta_clicked
         cta_visible:
           type: boolean
           default: false

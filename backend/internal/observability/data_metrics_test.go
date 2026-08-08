@@ -14,6 +14,7 @@ func TestBusinessMetrics(t *testing.T) {
 	metrics.RecordBusinessEvent("recap_opened", false)
 	metrics.RecordBusinessEvent("slide_viewed", false)
 	metrics.RecordBusinessEvent("slide_viewed", true)
+	metrics.RecordBusinessEvent("mission_selected", false)
 	metrics.RecordBusinessEvent("unknown_event", true)
 
 	registry := prometheus.NewRegistry()
@@ -32,6 +33,9 @@ func TestBusinessMetrics(t *testing.T) {
 	}
 	if counterValue(events, "event", "unknown_event") != 0 {
 		t.Fatal("unknown event created a metric label")
+	}
+	if counterValue(events, "event", "mission_selected") != 1 {
+		t.Fatal("mission_selected counter was not incremented")
 	}
 	ctaImpressions := metricFamily(t, families, "gooffer_business_cta_impressions_total")
 	if ctaImpressions.Metric[0].GetCounter().GetValue() != 1 {
