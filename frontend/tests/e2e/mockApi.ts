@@ -27,10 +27,19 @@ export async function mockApi(page: Page) {
       await route.fulfill({ headers: corsHeaders, status: 204 })
       return
     }
-    if (pathname === '/api/auth/me') return json(route, { createdAt: '2026-01-01T00:00:00Z', id: 'account-1', login: 'tester' })
+    if (pathname === '/api/auth/me')
+      return json(route, {
+        createdAt: '2026-01-01T00:00:00Z',
+        id: 'account-1',
+        login: 'tester',
+      })
     if (pathname === '/api/profiles') return json(route, [profile])
     if (pathname === `/api/profiles/${profileId}`) return json(route, profile)
     if (pathname === '/api/recap/generate') return json(route, recap, 201)
+    if (pathname === '/api/recap/events') {
+      await route.fulfill({ headers: corsHeaders, status: 204 })
+      return
+    }
 
     await json(route, { error: { code: 'not_found', message: 'Not found' } }, 404)
   })

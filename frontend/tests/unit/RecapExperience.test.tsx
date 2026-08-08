@@ -1,14 +1,19 @@
 import { beforeEach, describe, expect, it, jest } from '@jest/globals'
 import { fireEvent, render, screen } from '@testing-library/react'
-import type { ReactNode } from 'react'
+import { StrictMode, type ReactNode } from 'react'
 
+import { sendRecapEvent } from '@/api/recapEvents'
 import { RecapExperience } from '@/components/recap/RecapExperience'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import type { RecapResponse } from '@/types/recap.type'
 
+jest.mock('@/api/recapEvents', () => ({ sendRecapEvent: jest.fn() }))
+
 jest.mock('motion/react', () => ({
   AnimatePresence: ({ children }: { children: ReactNode }) => children,
-  motion: { div: ({ children }: { children: ReactNode }) => <div>{children}</div> },
+  motion: {
+    div: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  },
   useReducedMotion: () => true,
 }))
 
@@ -40,12 +45,18 @@ const recap = {
 } as RecapResponse
 
 describe('RecapExperience', () => {
-  beforeEach(() => window.localStorage.clear())
+  beforeEach(() => {
+    window.localStorage.clear()
+    jest.mocked(sendRecapEvent).mockClear()
+  })
 
   it('shows the gift once and opens slides after unpacking', () => {
-    const { unmount } = render(<RecapExperience profile={profile} recap={recap} />)
+    const { unmount } = render(<StrictMode><RecapExperience profile={profile} recap={recap} /></StrictMode>)
 
+    expect(sendRecapEvent).toHaveBeenCalledWith({ event: 'recap_opened' })
+    expect(jest.mocked(sendRecapEvent).mock.calls.filter(([event]) => event.event === 'recap_opened')).toHaveLength(1)
     fireEvent.click(screen.getByRole('button', { name: 'Распаковать' }))
+    expect(sendRecapEvent).toHaveBeenCalledWith({ event: 'gift_opened' })
     expect(screen.getByText('Слайды итогов')).toBeInTheDocument()
 
     unmount()

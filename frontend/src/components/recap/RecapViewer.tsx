@@ -5,6 +5,7 @@ import { RecapControls } from './RecapControls'
 import { RecapSlide } from './RecapSlide'
 import { RecapSharePreview } from './RecapSharePreview'
 import { ProfileImage } from '@/components/profileCards/ProfileImage'
+import { useRecapViewAnalytics } from '@/hooks/useRecapViewAnalytics'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import type { RecapResponse } from '@/types/recap.type'
 
@@ -14,9 +15,19 @@ interface RecapViewerProps {
 }
 
 const slideVariants: Variants = {
-  enter: (direction: number) => ({ filter: 'blur(8px)', opacity: 0, scale: 0.96, x: direction > 0 ? 90 : -90 }),
+  enter: (direction: number) => ({
+    filter: 'blur(8px)',
+    opacity: 0,
+    scale: 0.96,
+    x: direction > 0 ? 90 : -90,
+  }),
   center: { filter: 'blur(0px)', opacity: 1, scale: 1, x: 0 },
-  exit: (direction: number) => ({ filter: 'blur(8px)', opacity: 0, scale: 0.96, x: direction > 0 ? -90 : 90 }),
+  exit: (direction: number) => ({
+    filter: 'blur(8px)',
+    opacity: 0,
+    scale: 0.96,
+    x: direction > 0 ? -90 : 90,
+  }),
 }
 
 const reducedSlideVariants: Variants = {
@@ -32,6 +43,7 @@ export function RecapViewer({ profile, recap }: RecapViewerProps) {
   const touchStart = useRef<number | null>(null)
   const total = recap.cards.length
   const card = recap.cards[currentIndex]
+  useRecapViewAnalytics(card, currentIndex, total)
 
   function previous() {
     setDirection(-1)
@@ -91,7 +103,9 @@ export function RecapViewer({ profile, recap }: RecapViewerProps) {
               key={item.id}
               onClick={() => goTo(index)}
               type="button"
-            ><motion.span animate={{ scaleX: index <= currentIndex ? 1 : 0 }} className="absolute inset-0 origin-left rounded-full bg-gradient-to-r from-[#00aaff] to-[#965eeb]" transition={{ duration: 0.35 }} /></button>
+            >
+              <motion.span animate={{ scaleX: index <= currentIndex ? 1 : 0 }} className="absolute inset-0 origin-left rounded-full bg-gradient-to-r from-[#00aaff] to-[#965eeb]" transition={{ duration: 0.35 }} />
+            </button>
           ))}
         </nav>
         <div className="mt-2 flex items-center gap-3">

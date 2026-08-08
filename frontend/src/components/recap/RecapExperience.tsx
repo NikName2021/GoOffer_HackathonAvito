@@ -1,8 +1,9 @@
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { RecapGiftIntro } from './RecapGiftIntro'
 import { RecapViewer } from './RecapViewer'
+import { sendRecapEvent } from '@/api/recapEvents'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import type { RecapResponse } from '@/types/recap.type'
 import { markRecapOpened, wasRecapOpened } from '@/utils/recapStorage'
@@ -15,7 +16,20 @@ interface RecapExperienceProps {
 export function RecapExperience({ profile, recap }: RecapExperienceProps) {
   const [opened, setOpened] = useState(() => wasRecapOpened(profile.id, recap.year))
   const reduceMotion = useReducedMotion()
+  const recapOpenedSent = useRef(false)
+  const giftOpenedSent = useRef(false)
+
+  useEffect(() => {
+    if (recapOpenedSent.current) return
+    recapOpenedSent.current = true
+    void sendRecapEvent({ event: 'recap_opened' })
+  }, [])
+
   const open = useCallback(() => {
+    if (!giftOpenedSent.current) {
+      giftOpenedSent.current = true
+      void sendRecapEvent({ event: 'gift_opened' })
+    }
     markRecapOpened(profile.id, recap.year)
     setOpened(true)
   }, [profile.id, recap.year])
