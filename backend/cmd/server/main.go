@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	goredis "github.com/redis/go-redis/v9"
 	"gooffer/backend/internal/config"
+	"gooffer/backend/internal/observability"
 	"gooffer/backend/internal/repository/postgres"
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
@@ -77,7 +78,15 @@ func run(logger *slog.Logger) error {
 	actionRepository := postgres.NewActionRepository(database)
 	recapStore := postgres.NewRecapRepository(database)
 	recapCache := redisrepo.NewRecapCache(redisClient)
-	recapRepository := redisrepo.NewCachedRecapRepository(recapStore, recapCache, logger)
+	recapCacheMetrics := observability.NewRecapCacheMetrics()
+	recapRepository := redisrepo.NewCachedRecapRepository(
+		recapStore,
+		recapCache,
+		logger,
+		recapCacheMetrics,
+	)
+	metricCollectors := observability.NewPostgresPoolCollectors(database)
+	metricCollectors = append(metricCollectors, recapCacheMetrics.Collectors()...)
 	profileService := profile.New(logger, userRepository)
 	authService := auth.New(authRepository, cfg.SessionTTL)
 	recapGenerator := generator.New(
@@ -92,12 +101,13 @@ func run(logger *slog.Logger) error {
 		RecapGenerator: recapGenerator,
 		Recaps:         recapRepository,
 	}, server.Options{
-		Logger:         logger,
-		AllowedOrigins: cfg.AllowedOrigins,
-		ReadTimeout:    cfg.ReadTimeout,
-		WriteTimeout:   cfg.WriteTimeout,
-		IdleTimeout:    cfg.IdleTimeout,
-		CookieSecure:   cfg.CookieSecure,
+		Logger:           logger,
+		AllowedOrigins:   cfg.AllowedOrigins,
+		ReadTimeout:      cfg.ReadTimeout,
+		WriteTimeout:     cfg.WriteTimeout,
+		IdleTimeout:      cfg.IdleTimeout,
+		CookieSecure:     cfg.CookieSecure,
+		MetricCollectors: metricCollectors,
 	})
 
 	shutdownContext, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)

@@ -93,6 +93,9 @@ jobs:
       - name: Validate Compose configuration
         run: docker compose --env-file .env.example config --quiet
 
+      - name: Create network
+        run: docker network create result_year
+
       - name: Build and start containers
         run: >-
           docker compose --env-file .env.example up

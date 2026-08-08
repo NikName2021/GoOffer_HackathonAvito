@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"gooffer/backend/docs"
 	"gooffer/backend/internal/delivery/handlers"
 	"gooffer/backend/internal/delivery/middleware"
@@ -19,12 +20,13 @@ type Dependencies struct {
 }
 
 type Options struct {
-	Logger         *slog.Logger
-	AllowedOrigins []string
-	ReadTimeout    time.Duration
-	WriteTimeout   time.Duration
-	IdleTimeout    time.Duration
-	CookieSecure   bool
+	Logger           *slog.Logger
+	AllowedOrigins   []string
+	ReadTimeout      time.Duration
+	WriteTimeout     time.Duration
+	IdleTimeout      time.Duration
+	CookieSecure     bool
+	MetricCollectors []prometheus.Collector
 }
 
 func New(address string, dependencies Dependencies, options Options) *http.Server {
@@ -59,7 +61,7 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", healthHandler)
-	metricsHandler, instrumentHTTP := newMetrics()
+	metricsHandler, instrumentHTTP := newMetrics(options.MetricCollectors...)
 	mux.Handle("GET /metrics", metricsHandler)
 	docs.Register(mux)
 	authHandler := handlers.NewAuthHandler(dependencies.Auth, logger, handlers.AuthHandlerOptions{

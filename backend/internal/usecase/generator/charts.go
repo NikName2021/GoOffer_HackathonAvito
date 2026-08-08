@@ -62,7 +62,7 @@ func buildCategoryMixCard(metrics ProfileMetrics) *domain.RecapCard {
 		Kind:        "chart",
 		Eyebrow:     fmt.Sprintf("Интересы %d года", metrics.Year),
 		Title:       leader.Category + " — ваш главный интерес",
-		Description: fmt.Sprintf("На эту категорию пришлось %d%% значимых сигналов в профиле.", share),
+		Description: fmt.Sprintf("На эту категорию пришлось %d%% вашей активности на Авито.", share),
 		Value:       fmt.Sprintf("%d%%", share),
 		Shareable:   true,
 		Reason:      "Категории отсортированы по покупкам, избранному, продажам, просмотрам и активности объявлений.",
@@ -74,7 +74,6 @@ func buildCategoryMixCard(metrics ProfileMetrics) *domain.RecapCard {
 		Visualization: &domain.RecapVisualization{
 			Version:  1,
 			Type:     "donut",
-			Unit:     "сигналов",
 			Segments: segments,
 			Highlight: &domain.RecapChartHighlight{
 				Index: 0,
@@ -133,7 +132,6 @@ func buildActivityRhythmCard(metrics ProfileMetrics) *domain.RecapCard {
 		Visualization: &domain.RecapVisualization{
 			Version: 1,
 			Type:    "bar",
-			Unit:    "действий",
 			Stacked: true,
 			Labels:  append([]string(nil), monthLabels...),
 			Series:  series,
