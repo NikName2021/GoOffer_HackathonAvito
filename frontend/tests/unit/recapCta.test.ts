@@ -16,6 +16,7 @@ describe('getRecapCtaUrl', () => {
     ['create_listing', '/avito/create?profileId=profile+1'],
     ['open_recommendations', '/avito/recommendations?profileId=profile+1'],
     ['open_own_listings', '/avito/my/items?profileId=profile+1'],
+    ['open_delivery_items', '/avito/delivery?profileId=profile+1'],
   ])('maps %s to a local mocked page', (action, expected) => {
     expect(url(action)).toBe(expected)
   })
