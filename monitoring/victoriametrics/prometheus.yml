@@ -24,3 +24,8 @@ scrape_configs:
     static_configs:
       - targets:
           - loki:3100
+
+  - job_name: nginx
+    static_configs:
+      - targets:
+          - nginx-exporter:9113

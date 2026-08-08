@@ -5,11 +5,16 @@ services:
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SERVER_DOMAIN: ${GF_SERVER_DOMAIN}
+      GF_SERVER_ROOT_URL: ${GF_SERVER_ROOT_URL}
+      GF_SERVER_SERVE_FROM_SUB_PATH: true
+      GF_SERVER_PROTOCOL: http
+      GF_SERVER_ENFORCE_DOMAIN: false
     volumes:
       - grafana-data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     ports:
-      - "3000:3000"
+      - "3000"
     networks:
       - monitoring
       - result_year
@@ -79,7 +84,7 @@ services:
     image: nginx/nginx-prometheus-exporter:1.5.1
     restart: unless-stopped
     command:
-      - --nginx.scrape-uri=http://frontend:8080/nginx_status
+      - --nginx.scrape-uri=${NGINX_SC}
     expose:
       - "9113"
     networks:
