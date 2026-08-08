@@ -3,3 +3,4 @@ export { getAuthFailure, logout, getCurrentAccount, register, login } from './au
 export { createProfile, deleteProfile, getProfile, getProfiles, updateProfile } from './profile'
 export { generateRecap, getShareRecap } from './recap'
 export { sendRecapEvent } from './recapEvents'
+export { getMission, selectMission } from './mission'

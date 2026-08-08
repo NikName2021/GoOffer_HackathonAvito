@@ -65,6 +65,16 @@ export const recap = {
       title: 'Ваш год на Авито',
       value: '2026',
     },
+    {
+      description: 'Выберите миссию и продолжите историю в следующем году.',
+      eyebrow: 'До встречи',
+      id: 'year_final',
+      kind: 'final',
+      presentation: { icon: 'sparkles', layout: 'hero', theme: 'avito-blue' },
+      reason: 'Финальный экран итогов.',
+      shareable: true,
+      title: 'Продолжение следует',
+    },
   ],
   generated_at: '2026-08-08T00:00:00Z',
   id: 'recap-e2e',
@@ -103,4 +113,37 @@ export const recap = {
   total_views: 10,
   user_id: profileId,
   year: 2026,
+}
+
+export const missionOverview = {
+  options: [
+    {
+      code: 'sell_three_items',
+      cta: { action: 'create_listing', label: 'Разместить объявление' },
+      description: 'Помогите трём вещам найти новых владельцев.',
+      icon: 'recycle',
+      target: 3,
+      theme: 'avito-green',
+      title: 'Продать три ненужные вещи',
+    },
+    {
+      code: 'buy_from_favorites',
+      cta: { action: 'open_favorites', label: 'Открыть избранное' },
+      description: 'Превратите одну сохранённую находку в покупку.',
+      icon: 'heart',
+      target: 1,
+      theme: 'avito-red',
+      title: 'Завершить покупку из избранного',
+    },
+    {
+      code: 'try_avito_delivery',
+      cta: { action: 'open_delivery_items', label: 'Найти товары с Доставкой' },
+      description: 'Совершите одну покупку с Авито Доставкой.',
+      icon: 'delivery',
+      target: 1,
+      theme: 'avito-blue',
+      title: 'Попробовать Авито Доставку',
+    },
+  ],
+  selected: null,
 }

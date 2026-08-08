@@ -43,6 +43,8 @@ export function getRecapCtaUrl(cta: RecapCardCTA, profileId: string) {
       return withProfile(`${PATHS.AVITO}/create`, profileId);
     case "open_recommendations":
       return withProfile(`${PATHS.AVITO}/recommendations`, profileId);
+    case "open_delivery_items":
+      return withProfile(`${PATHS.AVITO}/delivery`, profileId);
     default:
       return withProfile(PATHS.AVITO, profileId);
   }

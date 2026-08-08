@@ -11,6 +11,7 @@ import { RecapSceneBackground } from './RecapSceneBackground'
 import { RecapVisualization } from './RecapVisualization'
 import { RecapYearComparison } from './RecapYearComparison'
 import { getRecapTheme } from './recapTheme'
+import { RecapMission } from './mission/RecapMission'
 import { sendRecapEvent } from '@/api/recapEvents'
 import { DialogClose } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
@@ -103,6 +104,7 @@ export function RecapSlide({ card, recap }: RecapSlideProps) {
         {isOverview && <RecapOverviewMetrics recap={recap} />}
         {isOverview && <RecapYearComparison recap={recap} />}
         {isFinal && <RecapAchievements achievements={recap.achievements} />}
+        {isFinal && <RecapMission profileId={recap.user_id} year={recap.year} />}
 
         {card.cta && (
           <DialogClose

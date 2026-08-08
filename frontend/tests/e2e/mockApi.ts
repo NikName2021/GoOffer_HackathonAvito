@@ -1,6 +1,6 @@
 import type { Page, Route } from '@playwright/test'
 
-import { profile, profileId, recap } from './mockData'
+import { missionOverview, profile, profileId, recap } from './mockData'
 
 const corsHeaders = {
   'Access-Control-Allow-Credentials': 'true',
@@ -36,6 +36,23 @@ export async function mockApi(page: Page) {
     if (pathname === '/api/profiles') return json(route, [profile])
     if (pathname === `/api/profiles/${profileId}`) return json(route, profile)
     if (pathname === '/api/recap/generate') return json(route, recap, 201)
+    if (pathname === `/api/recap/${profileId}/2026/mission`) {
+      if (request.method() === 'GET') return json(route, missionOverview)
+      const { code } = request.postDataJSON() as { code: string }
+      const option = missionOverview.options.find((item) => item.code === code)
+      return json(route, {
+        ...missionOverview,
+        selected: option && {
+          ...option,
+          completed_at: null,
+          progress: 0,
+          progress_percent: 0,
+          selected_at: '2026-08-08T00:00:00Z',
+          status: 'active',
+          updated_at: '2026-08-08T00:00:00Z',
+        },
+      })
+    }
     if (pathname === '/api/recap/events') {
       await route.fulfill({ headers: corsHeaders, status: 204 })
       return

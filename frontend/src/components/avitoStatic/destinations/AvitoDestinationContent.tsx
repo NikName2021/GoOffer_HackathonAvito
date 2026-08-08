@@ -56,6 +56,10 @@ export function AvitoDestinationContent() {
     return <AvitoCatalogPage description="Подборка на основе ваших просмотров и любимых категорий." items={recommendations} title="Рекомендации для вас" />
   }
 
+  if (relativePath.startsWith('/delivery')) {
+    return <AvitoCatalogPage description="Товары, которые можно безопасно получить с Авито Доставкой." items={recommendations.filter((_, index) => index % 2 === 0)} title="Товары с Авито Доставкой" />
+  }
+
   if (relativePath === '/my/items' || relativePath === '/my/items/') {
     return <AvitoCatalogPage description="Активные, проданные и архивные объявления профиля." items={ownItems} title="Мои объявления" />
   }
