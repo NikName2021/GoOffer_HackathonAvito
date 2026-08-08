@@ -3,11 +3,11 @@ import { getProfileAccent, getProfileInitials } from '@/utils/profileAppearance'
 
 interface ProfileImageProps {
   profile: GetProfileResponse
-  size?: 'default' | 'large'
+  size?: 'default' | 'large' | 'small'
 }
 
 export function ProfileImage({ profile, size = 'default' }: ProfileImageProps) {
-  const sizeClass = size === 'large' ? 'size-16' : 'size-14'
+  const sizeClass = size === 'large' ? 'size-16' : size === 'small' ? 'size-11' : 'size-14'
 
   return (
     <span

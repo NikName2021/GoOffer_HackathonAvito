@@ -9,7 +9,7 @@ export function AppRouter() {
   const navigations = [
     { path: PATHS.HOME, element: <HomePage /> },
     { path: PATHS.CART, element: <CartPage /> },
-    { path: PATHS.AVITO, element: <AvitoPage /> },
+    { path: `${PATHS.AVITO}/*`, element: <AvitoPage /> },
   ] as const
 
   return (

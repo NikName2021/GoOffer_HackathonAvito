@@ -4,6 +4,7 @@ import { ChevronUp } from 'lucide-react'
 
 import { AvitoBusiness } from '@/components/avitoStatic/AvitoBusiness'
 import { AvitoCategories } from '@/components/avitoStatic/AvitoCategories'
+import { AvitoDestinationBanner } from '@/components/avitoStatic/AvitoDestinationBanner'
 import { AvitoFooter } from '@/components/avitoStatic/AvitoFooter'
 import { AvitoHeader } from '@/components/avitoStatic/AvitoHeader'
 import { AvitoProductGrid } from '@/components/avitoStatic/AvitoProductGrid'
@@ -17,6 +18,7 @@ export function AvitoPage() {
       <AvitoHeader />
       <main className="avito-static-container">
         <AvitoSearch />
+        <AvitoDestinationBanner />
         <div className="avito-static-catalog-layout">
           <div>
             <AvitoCategories />
