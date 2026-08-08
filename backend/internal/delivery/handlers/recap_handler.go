@@ -11,6 +11,7 @@ import (
 	"gooffer/backend/internal/delivery/dto"
 	"gooffer/backend/internal/usecase/generator"
 	apperrors "gooffer/backend/pkg/errors"
+	"gooffer/backend/pkg/metrics"
 
 	"github.com/google/uuid"
 )
@@ -60,6 +61,7 @@ func (h *RecapHandler) Generate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	metrics.IncRecapGenerated()
 	h.writeJSON(w, http.StatusCreated, dto.ToRecapResponse(recap))
 }
 
@@ -143,6 +145,7 @@ func (h *RecapHandler) GenerateAll(w http.ResponseWriter, r *http.Request) {
 			results = append(results, item{UserID: idStr, OK: false, Error: err.Error()})
 			continue
 		}
+		metrics.IncRecapGenerated()
 		results = append(results, item{UserID: idStr, OK: true})
 		okCount++
 	}

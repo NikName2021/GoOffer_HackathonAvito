@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Share2, RefreshCw } from 'lucide-react'
 
@@ -7,6 +7,7 @@ import { profileMeta } from '@/hooks/useProfiles'
 import { PersonaBadge } from '@/components/recap/PersonaBadge'
 import { EmptyState } from '@/components/recap/EmptyState'
 import { RecapStories } from '@/components/recap/RecapStories'
+import { GiftIntro } from '@/components/recap/GiftIntro'
 import { sharePath, PATHS } from '@/config/paths'
 import { RECAP_YEAR } from '@/constants/backendProfiles'
 import { withStory } from '@/utils/buildStory'
@@ -19,6 +20,9 @@ export function RecapPage() {
   const { data: recap, isLoading, isError, refetch } = useRecap(userId, year)
   const generate = useGenerateRecap()
   const [refreshError, setRefreshError] = useState<string | null>(null)
+  const [introDone, setIntroDone] = useState(false)
+
+  const finishIntro = useCallback(() => setIntroDone(true), [])
 
   async function regenerate() {
     setRefreshError(null)
@@ -52,19 +56,12 @@ export function RecapPage() {
         <Sidebar />
         <div className="flex flex-1 items-center justify-center px-5">
           <EmptyState
-            icon="📊"
             title="Итоги ещё не собраны"
-            description={
-              meta
-                ? `Для «${meta.name}» recap пока нет. Нажмите кнопку — соберём историю ${year} года.`
-                : `Сгенерируйте персональный recap за ${year} год.`
-            }
-            actionLabel={generate.isPending ? 'Генерируем…' : 'Собрать итоги'}
+            description="Сгенерируйте recap для этого профиля."
+            actionLabel={generate.isPending ? 'Генерируем…' : 'Сгенерировать'}
             onAction={() => regenerate()}
-            actionDisabled={generate.isPending}
             secondaryHref={PATHS.HOME}
             secondaryLabel="← К профилям"
-            tone="soft"
           />
         </div>
       </div>
@@ -72,13 +69,11 @@ export function RecapPage() {
   }
 
   const enriched = withStory(recap, meta?.name)
-  const { story } = enriched
+  const story = enriched.story
   const isQuietYear =
-    recap.total_views +
-      recap.total_messages +
-      recap.total_purchases +
-      recap.total_sales <
-    50
+    (recap.total_views ?? 0) < 50 &&
+    (recap.total_purchases ?? 0) === 0 &&
+    (recap.total_sales ?? 0) === 0
 
   return (
     <div className="flex min-h-dvh bg-[#f7f8fa]">
@@ -94,11 +89,7 @@ export function RecapPage() {
               <ArrowLeft className="h-4 w-4" />К профилям
             </Link>
             <div className="flex flex-wrap items-center gap-2">
-              <PersonaBadge
-                persona={story.persona}
-                profileType={meta?.profile_type}
-                size="compact"
-              />
+              <PersonaBadge persona={story.persona} />
               <button
                 type="button"
                 onClick={() => regenerate()}
@@ -113,7 +104,7 @@ export function RecapPage() {
                 className="inline-flex items-center gap-1.5 rounded-xl bg-[#00aaff] px-3 py-2 text-sm font-semibold text-white hover:bg-[#0090dd]"
               >
                 <Share2 className="h-4 w-4" />
-                Поделиться
+                Share
               </Link>
             </div>
           </div>
@@ -124,14 +115,18 @@ export function RecapPage() {
             </p>
           )}
 
-          <RecapStories
-            recap={enriched}
-            story={story}
-            year={year}
-            name={meta?.name}
-            shareHref={sharePath(userId, year)}
-            isQuietYear={isQuietYear}
-          />
+          {!introDone ? (
+            <GiftIntro name={meta?.name} year={year} onDone={finishIntro} />
+          ) : (
+            <RecapStories
+              recap={enriched}
+              story={story}
+              year={year}
+              name={meta?.name}
+              shareHref={sharePath(userId, year)}
+              isQuietYear={isQuietYear}
+            />
+          )}
         </div>
       </main>
     </div>

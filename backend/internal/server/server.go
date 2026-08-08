@@ -9,6 +9,7 @@ import (
 	"gooffer/backend/internal/delivery/handlers"
 	"gooffer/backend/internal/delivery/middleware"
 	"gooffer/backend/internal/usecase/auth"
+	"gooffer/backend/pkg/metrics"
 )
 
 type Server struct {
@@ -32,6 +33,8 @@ func New(deps Dependencies) *Server {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
+	mux.HandleFunc("GET /metrics", metrics.Handler)
+	mux.HandleFunc("GET /api/openapi.json", openAPIHandler)
 
 	if deps.AuthHandler != nil {
 		mux.HandleFunc("POST /api/auth/register", deps.AuthHandler.Register)
@@ -71,6 +74,13 @@ func New(deps Dependencies) *Server {
 	handler = middleware.Recovery(deps.Logger)(handler)
 	handler = middleware.Logger(deps.Logger)(handler)
 	handler = middleware.CORS(handler)
+
+	// счётчик всех HTTP-запросов
+	inner := handler
+	handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		metrics.IncHTTP()
+		inner.ServeHTTP(w, r)
+	})
 
 	return &Server{
 		logger: deps.Logger,

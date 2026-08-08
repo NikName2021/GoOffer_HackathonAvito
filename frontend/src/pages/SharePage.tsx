@@ -138,9 +138,12 @@ export function SharePage() {
           </p>
         )}
 
-        <p className="mb-4 text-center text-xs font-semibold uppercase tracking-wide text-[#6f7377]">
-          Публичная карточка · без id / user_id
-        </p>
+                <div className="mb-5 rounded-2xl border border-[#d6ebff] bg-[#f3faff] px-4 py-3 text-center">
+          <p className="text-sm font-semibold text-[#0077cc]">Публичная share-card</p>
+          <p className="mt-1 text-xs leading-5 text-[#6f7377]">
+            Без id, user_id, переписок и данных других пользователей. Можно делиться спокойно.
+          </p>
+        </div>
 
         <div
           ref={cardRef}

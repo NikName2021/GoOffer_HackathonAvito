@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import { ChevronLeft, ChevronRight, Share2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
-import type { Achievement, Recommendation, CategoryStat, Story, Recap } from '@/types/recap.type'
+import type { Achievement, Recommendation, Story, Recap } from '@/types/recap.type'
 import { StoryHero } from '@/components/recap/StoryHero'
 import { MetricCard } from '@/components/recap/MetricCard'
 import { AchievementBadge } from '@/components/recap/AchievementBadge'
 import { RecommendationCard } from '@/components/recap/RecommendationCard'
 import { PersonaBadge } from '@/components/recap/PersonaBadge'
+import { CategoryChart } from '@/components/recap/CategoryChart'
 
 type Slide = {
   id: string
@@ -88,7 +89,7 @@ export function RecapStories({
     },
   ]
 
-  if (top.length > 0) {
+    if (top.length > 0) {
     slides.push({
       id: 'categories',
       title: 'Категории',
@@ -96,19 +97,7 @@ export function RecapStories({
         <div>
           <h2 className="text-xl font-bold text-[#1f1f1f]">Топ категорий</h2>
           <p className="mt-1 text-sm text-[#6f7377]">Чем интересовались чаще всего</p>
-          <ul className="mt-5 space-y-2">
-            {top.map((c: CategoryStat, i: number) => (
-              <li
-                key={c.category}
-                className="flex items-center justify-between rounded-xl border border-[#e7e9eb] bg-white px-4 py-3 text-sm"
-              >
-                <span className="font-medium text-[#1f1f1f]">
-                  {i + 1}. {c.category}
-                </span>
-                <span className="text-[#6f7377]">{c.count}</span>
-              </li>
-            ))}
-          </ul>
+          <CategoryChart categories={top} />
           {story.insights && story.insights.length > 0 && (
             <ul className="mt-5 space-y-2">
               {story.insights.slice(0, 3).map((insight) => (
@@ -125,7 +114,6 @@ export function RecapStories({
       ),
     })
   }
-
   slides.push({
     id: 'achievements',
     title: 'Ачивки',
@@ -150,7 +138,7 @@ export function RecapStories({
     ),
   })
 
-  slides.push({
+    slides.push({
     id: 'cta',
     title: 'Дальше',
     body: (
@@ -159,8 +147,15 @@ export function RecapStories({
           <PersonaBadge persona={story.persona} size="compact" />
           <span className="text-sm text-[#6f7377]">{year}</span>
         </div>
-        <h2 className="text-xl font-bold text-[#1f1f1f]">Что сделать дальше</h2>
-        <p className="mt-1 text-sm text-[#6f7377]">Следующий шаг — вернуться в продукт</p>
+
+        <h2 className="text-xl font-bold text-[#1f1f1f]">Что сделать на Авито дальше</h2>
+        <p className="mt-1 text-sm leading-6 text-[#6f7377]">
+          Итоги — не конец. Выберите шаг, который возвращает в продукт.
+        </p>
+        <p className="mt-2 text-xs leading-5 text-[#9aa0a6]">
+          Без переписок, чужих профилей и точных покупок — только ваш безопасный next step.
+        </p>
+
         {recommendations.length > 0 ? (
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {recommendations.map((r: Recommendation) => (
@@ -172,13 +167,20 @@ export function RecapStories({
             Откройте интересную категорию на Авито — это уже следующий шаг.
           </div>
         )}
-        <Link
-          to={shareHref}
-          className="mt-8 flex w-full items-center justify-center gap-2 rounded-xl bg-[#00aaff] px-4 py-3.5 text-sm font-semibold text-white hover:bg-[#0090dd]"
-        >
-          <Share2 className="h-4 w-4" />
-          Поделиться карточкой
-        </Link>
+
+        <div className="mt-8 rounded-2xl border border-[#e7e9eb] bg-white p-4">
+          <p className="text-sm font-semibold text-[#1f1f1f]">Поделиться итогами</p>
+          <p className="mt-1 text-xs leading-5 text-[#6f7377]">
+            Публичная карточка без id и user_id — можно отправить друзьям.
+          </p>
+          <Link
+            to={shareHref}
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-[#00aaff] px-4 py-3.5 text-sm font-semibold text-white hover:bg-[#0090dd]"
+          >
+            <Share2 className="h-4 w-4" />
+            Открыть безопасный Share
+          </Link>
+        </div>
       </div>
     ),
   })
