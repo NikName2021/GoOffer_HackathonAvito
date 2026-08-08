@@ -11,6 +11,7 @@
 }
 
 .avito-static-page {
+  position: relative;
   width: 100%;
   min-width: 0;
   min-height: 100vh;
@@ -73,6 +74,12 @@
   gap: 18px;
 }
 
+.avito-static-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .avito-static-actions {
   gap: 13px;
   color: #000;
@@ -105,6 +112,43 @@
   background: #8bc34a;
   color: white;
   font-size: 22px;
+}
+
+.avito-static-profiles-link {
+  position: fixed;
+  z-index: 100;
+  top: 20px;
+  left: 50px;
+  display: grid;
+  width: 54px;
+  height: 54px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: #00aaff;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 9px 24px #00aaff47;
+  transition: background-color 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+}
+
+.avito-static-profiles-link:hover {
+  background: #0099e6;
+  box-shadow: 0 13px 30px #00aaff5c;
+  transform: translateY(-2px) scale(1.04);
+}
+
+.avito-static-profiles-link:focus-visible {
+  outline: 3px solid #00aaff4d;
+  outline-offset: 3px;
+}
+
+.avito-static-profiles-link svg {
+  width: 25px;
+  height: 25px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
 }
 
 .avito-static-search-row {
@@ -540,8 +584,13 @@
     display: none;
   }
 
+  .avito-static-nav-left {
+    gap: 0;
+  }
+
   .avito-static-actions {
-    width: 100%;
+    min-width: 0;
+    flex: 1;
     justify-content: flex-end;
     gap: 9px;
   }
@@ -560,6 +609,17 @@
     width: 36px;
     height: 36px;
     font-size: 17px;
+  }
+
+  .avito-static-profiles-link {
+    position: static;
+    transform: none;
+    width: 46px;
+    height: 46px;
+  }
+
+  .avito-static-profiles-link:hover {
+    transform: translateY(-1px) scale(1.04);
   }
 
   .avito-static-search-row {
