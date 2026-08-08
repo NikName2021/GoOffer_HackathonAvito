@@ -621,7 +621,7 @@ components:
           type: integer
           minimum: 0
           example: 300
-          description: Количество item-level сигналов без весовых коэффициентов.
+          description: Количество действий пользователя в категории без весовых коэффициентов.
     Achievement:
       type: object
       required: [slug, title, description, icon, category]
