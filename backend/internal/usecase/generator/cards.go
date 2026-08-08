@@ -65,7 +65,7 @@ func buildRecapCards(metrics ProfileMetrics, summary domain.RecapSummary, joined
 			Description:  "Категория выбрана последовательно: сначала по покупкам, затем по избранному, продажам и просмотрам.",
 			Value:        metrics.Combined.MainCategory,
 			Shareable:    true,
-			Reason:       "Есть хотя бы один подтверждённый сигнал интереса в категории.",
+			Reason:       "В категории есть подтверждённая активность пользователя.",
 			Presentation: presentation("statistic", "avito-blue", "compass"),
 			CTA:          categoryCTA(metrics.Combined.MainCategory),
 		})
@@ -357,7 +357,7 @@ func combinedCards(metrics ProfileMetrics, joinedAt time.Time) []domain.RecapCar
 			Description:  "Считаем категории с реальными просмотрами, избранным, покупками, продажами или объявлениями.",
 			Value:        formatCount(metrics.Combined.Categories, "категория", "категории", "категорий"),
 			Shareable:    true,
-			Reason:       "В профиле есть значимые сигналы больше чем в одной категории.",
+			Reason:       "В профиле есть активность более чем в одной категории.",
 			Presentation: presentation("orbit", "avito-blue", "categories"),
 			CTA:          &domain.RecapCardCTA{Label: "Удивить меня", Action: "open_recommendations"},
 		})
