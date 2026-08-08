@@ -8,7 +8,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func newMetrics() (http.Handler, func(http.Handler) http.Handler) {
+func newMetrics(extraCollectors ...prometheus.Collector) (http.Handler, func(http.Handler) http.Handler) {
 	registry := prometheus.NewRegistry()
 	requests := prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: "gooffer",
@@ -36,6 +36,7 @@ func newMetrics() (http.Handler, func(http.Handler) http.Handler) {
 		duration,
 		inFlight,
 	)
+	registry.MustRegister(extraCollectors...)
 
 	metricsHandler := promhttp.InstrumentMetricHandler(
 		registry,
