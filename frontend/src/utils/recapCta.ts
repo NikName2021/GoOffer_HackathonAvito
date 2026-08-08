@@ -16,34 +16,34 @@ export function getRecapCtaUrl(cta: RecapCardCTA, profileId: string) {
 
   switch (cta.action) {
     case "open_category":
-      return withProfile(`${PATHS.AVITO_ORIGINAL}/search`, profileId, {
+      return withProfile(`${PATHS.AVITO}/search`, profileId, {
         category: cta.params?.category?.trim() || "",
       });
     case "open_listing":
       return adId
         ? withProfile(
-            `${PATHS.AVITO_ORIGINAL}/items/${encodeURIComponent(adId)}`,
+            `${PATHS.AVITO}/items/${encodeURIComponent(adId)}`,
             profileId,
           )
-        : withProfile(`${PATHS.AVITO_ORIGINAL}/recommendations`, profileId);
+        : withProfile(`${PATHS.AVITO}/recommendations`, profileId);
     case "open_own_listing":
       return adId
         ? withProfile(
-            `${PATHS.AVITO_ORIGINAL}/my/items/${encodeURIComponent(adId)}`,
+            `${PATHS.AVITO}/my/items/${encodeURIComponent(adId)}`,
             profileId,
           )
-        : withProfile(`${PATHS.AVITO_ORIGINAL}/my/items`, profileId);
+        : withProfile(`${PATHS.AVITO}/my/items`, profileId);
     case "open_own_listings":
-      return withProfile(`${PATHS.AVITO_ORIGINAL}/my/items`, profileId);
+      return withProfile(`${PATHS.AVITO}/my/items`, profileId);
     case "open_favorites":
-      return withProfile(`${PATHS.AVITO_ORIGINAL}/favorites`, profileId);
+      return withProfile(`${PATHS.AVITO}/favorites`, profileId);
     case "open_chats":
-      return withProfile(`${PATHS.AVITO_ORIGINAL}/messages`, profileId);
+      return withProfile(`${PATHS.AVITO}/messages`, profileId);
     case "create_listing":
-      return withProfile(`${PATHS.AVITO_ORIGINAL}/create`, profileId);
+      return withProfile(`${PATHS.AVITO}/create`, profileId);
     case "open_recommendations":
-      return withProfile(`${PATHS.AVITO_ORIGINAL}/recommendations`, profileId);
+      return withProfile(`${PATHS.AVITO}/recommendations`, profileId);
     default:
-      return withProfile(PATHS.AVITO_ORIGINAL, profileId);
+      return withProfile(PATHS.AVITO, profileId);
   }
 }

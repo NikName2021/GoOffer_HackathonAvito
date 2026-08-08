@@ -11,7 +11,19 @@ export const profile = {
   id: profileId,
   joinedAt: '2020-01-01T00:00:00Z',
   name: 'Тестовый профиль',
-  ownAds: [],
+  ownAds: [{
+    adId: 'own-ad-1',
+    category: 'Электроника',
+    city: 'Краснодар',
+    contactsCount: 4,
+    favoritesCount: 7,
+    isArchived: false,
+    isSold: false,
+    price: 25_000,
+    publishedAt: '2026-02-01T10:00:00Z',
+    title: 'Игровая консоль',
+    viewCount: 42,
+  }],
   purchases: [],
   sales: [],
   stats: {
@@ -25,7 +37,17 @@ export const profile = {
     totalSpent: 1_000,
     totalViewCount: 10,
   },
-  views: [],
+  views: [{
+    adId: 'view-ad-1',
+    category: 'Электроника',
+    favoritedAt: '2026-03-10T11:00:00Z',
+    isFavorite: true,
+    isPurchased: false,
+    price: 12_990,
+    title: 'Беспроводные наушники',
+    viewCount: 8,
+    viewedAt: [{ time: '2026-03-10T10:00:00Z', type: 'watch' }],
+  }],
 }
 
 export const recap = {
