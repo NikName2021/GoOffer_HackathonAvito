@@ -1,4 +1,4 @@
-import { LoaderCircle } from 'lucide-react'
+import { LoaderCircle, Sparkles } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 
 import recapLogo from '@/assets/avitoNotBackground.svg'
@@ -21,6 +21,7 @@ export function AvitoYearRecapButton() {
             <strong>Итоги года</strong>
             <small>{profileQuery.data.name}</small>
           </span>
+          <Sparkles aria-hidden="true" className="avito-static-recap-sparkles" />
         </DialogTrigger>
       </RecapDialog>
     )
@@ -42,6 +43,7 @@ export function AvitoYearRecapButton() {
         <strong>Итоги года</strong>
         <small>{profileQuery.isError ? 'Профиль недоступен' : 'Выберите профиль'}</small>
       </span>
+      <Sparkles aria-hidden="true" className="avito-static-recap-sparkles" />
     </Link>
   )
 }

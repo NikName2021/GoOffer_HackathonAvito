@@ -47,6 +47,8 @@ export function getRecapDescription(card: RecapCardResponse, recap: RecapRespons
       return `Ваши объявления получили ${seller.likes_received} отметок.`
     case 'seller_contacts':
       return `Покупатели открыли контакты ${seller.contacts_received} раз.`
+    case 'category_mix':
+      return card.description.replace('значимых сигналов в профиле', 'вашей активности на Авито')
     default:
       return card.description
   }

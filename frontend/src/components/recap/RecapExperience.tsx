@@ -11,10 +11,31 @@ interface RecapExperienceProps {
   recap: RecapResponse
 }
 
+function getOpenedStorageKey(profileId: string, year: number) {
+  return `avito-recap-opened:${profileId}:${year}`
+}
+
+function wasRecapOpened(storageKey: string) {
+  if (typeof window === 'undefined') return false
+  try {
+    return window.localStorage.getItem(storageKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
 export function RecapExperience({ profile, recap }: RecapExperienceProps) {
-  const [opened, setOpened] = useState(false)
+  const storageKey = getOpenedStorageKey(profile.id, recap.year)
+  const [opened, setOpened] = useState(() => wasRecapOpened(storageKey))
   const reduceMotion = useReducedMotion()
-  const open = useCallback(() => setOpened(true), [])
+  const open = useCallback(() => {
+    try {
+      window.localStorage.setItem(storageKey, 'true')
+    } catch {
+      // The recap still opens when browser storage is unavailable.
+    }
+    setOpened(true)
+  }, [storageKey])
 
   return (
     <AnimatePresence initial={false} mode="wait">
