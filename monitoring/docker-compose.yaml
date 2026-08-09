@@ -86,6 +86,30 @@ services:
       - result_year
       - monitoring
 
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.19.1
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_URI: "postgres:5432/${POSTGRES_DATABASE}?sslmode=disable"
+      DATA_SOURCE_USER: ${POSTGRES_USER}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD}
+    expose:
+      - "9187"
+    networks:
+      - result_year
+      - monitoring
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.84.0
+    restart: unless-stopped
+    environment:
+      REDIS_ADDR: redis://redis:6379
+    expose:
+      - "9121"
+    networks:
+      - result_year
+      - monitoring
+
 volumes:
   grafana-data:
   loki-data:
