@@ -52,8 +52,8 @@ jobs:
           version: v2.11
           working-directory: backend
 
-  eslint:
-    name: ESLint
+  frontend-checks:
+    name: Frontend checks
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -73,8 +73,14 @@ jobs:
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
 
+      - name: Run tests
+        run: npm test -- --ci --runInBand
+
       - name: Run ESLint
         run: npm run lint
+
+      - name: Build frontend
+        run: npm run build
 
   compose-smoke-test:
     name: Docker Compose smoke test
@@ -82,7 +88,7 @@ jobs:
     needs:
       - go-tests
       - golangci-lint
-      - eslint
+      - frontend-checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
