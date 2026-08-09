@@ -1,4 +1,4 @@
-# Frontend — «Итоги года»
+# Frontend — "Итоги года"
 
 React + TypeScript + Vite. UI для backend GoOffer (кейс Avito «Итоги года»).
 
