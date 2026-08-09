@@ -76,7 +76,6 @@ func run(logger *slog.Logger) error {
 
 	userRepository := postgres.NewUserRepository(database)
 	authRepository := postgres.NewAuthRepository(database)
-	actionRepository := postgres.NewActionRepository(database)
 	recapStore := postgres.NewRecapRepository(database)
 	missionRepository := postgres.NewMissionRepository(database)
 	recapCache := redisrepo.NewRecapCache(redisClient)
@@ -95,7 +94,6 @@ func run(logger *slog.Logger) error {
 	authService := auth.New(authRepository, cfg.SessionTTL)
 	recapGenerator := generator.New(
 		userRepository,
-		actionRepository,
 		recapRepository,
 	)
 	missionService := missionusecase.New(userRepository, recapRepository, missionRepository)

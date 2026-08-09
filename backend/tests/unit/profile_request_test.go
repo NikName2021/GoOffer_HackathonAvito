@@ -119,3 +119,68 @@ func TestProfileRequestRejectsExcessiveActivityHistory(t *testing.T) {
 		t.Fatalf("ToDomain() error = %v, want activity limit error", err)
 	}
 }
+
+func TestProfileRequestActivityLimits(t *testing.T) {
+	t.Run("accepts exactly 10000 views", func(t *testing.T) {
+		views := make([]dto.ViewedAdRequest, 10_000)
+		for i := range views {
+			views[i] = validViewedAdRequest(fmt.Sprintf("view-%d", i), 1)
+		}
+		request := dto.ProfileRequest{
+			Name: "Профиль на границе", JoinedAt: "2020-01-01",
+			Views: views, OwnAds: []dto.OwnAdRequest{},
+		}
+		if _, err := request.ToDomain(); err != nil {
+			t.Fatalf("ToDomain() error = %v, want nil at exact limit", err)
+		}
+	})
+
+	t.Run("accepts exactly 10000 events", func(t *testing.T) {
+		request := dto.ProfileRequest{
+			Name: "История на границе", JoinedAt: "2020-01-01",
+			Views:  []dto.ViewedAdRequest{validViewedAdRequest("view-events", 10_000)},
+			OwnAds: []dto.OwnAdRequest{},
+		}
+		if _, err := request.ToDomain(); err != nil {
+			t.Fatalf("ToDomain() error = %v, want nil at exact event limit", err)
+		}
+	})
+
+	t.Run("rejects 10001 events", func(t *testing.T) {
+		request := dto.ProfileRequest{
+			Name: "Слишком много событий", JoinedAt: "2020-01-01",
+			Views:  []dto.ViewedAdRequest{validViewedAdRequest("view-events", 10_001)},
+			OwnAds: []dto.OwnAdRequest{},
+		}
+		_, err := request.ToDomain()
+		if err == nil || !strings.Contains(err.Error(), "viewedAt must contain no more than 10000 events") {
+			t.Fatalf("ToDomain() error = %v, want event limit error", err)
+		}
+	})
+}
+
+func TestProfileRequestRejectsDuplicateAdIDAcrossCollections(t *testing.T) {
+	request := dto.ProfileRequest{
+		Name: "Дубликат", JoinedAt: "2020-01-01",
+		Views: []dto.ViewedAdRequest{validViewedAdRequest("same-ad", 1)},
+		OwnAds: []dto.OwnAdRequest{{
+			AdRequest:   dto.AdRequest{AdID: "same-ad", Title: "Стул", Category: "Дом"},
+			PublishedAt: "2026-01-01",
+		}},
+	}
+	_, err := request.ToDomain()
+	if err == nil || !strings.Contains(err.Error(), "adId duplicates ownAds[0]") {
+		t.Fatalf("ToDomain() error = %v, want cross-collection duplicate error", err)
+	}
+}
+
+func validViewedAdRequest(id string, eventCount int) dto.ViewedAdRequest {
+	events := make([]dto.ViewedAdEventRequest, eventCount)
+	for i := range events {
+		events[i] = dto.ViewedAdEventRequest{Type: "watch", Time: "2026-08-01T12:00"}
+	}
+	return dto.ViewedAdRequest{
+		AdRequest: dto.AdRequest{AdID: id, Title: "Объявление", Category: "Категория"},
+		ViewedAt:  events,
+	}
+}

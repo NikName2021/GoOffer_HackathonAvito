@@ -25,7 +25,6 @@ type Config struct {
 	DatabaseUser    string
 	DatabasePass    string
 	DatabaseName    string
-	DatabaseSSLMode string
 	RedisURL        string
 	AllowedOrigins  []string
 	ShutdownTimeout time.Duration
@@ -44,7 +43,6 @@ func Load() (Config, error) {
 		DatabaseUser:    valueOrDefault("DB_USER", os.Getenv("POSTGRES_USER")),
 		DatabasePass:    valueOrDefault("DB_PASSWORD", os.Getenv("POSTGRES_PASSWORD")),
 		DatabaseName:    valueOrDefault("DB_NAME", os.Getenv("POSTGRES_DATABASE")),
-		DatabaseSSLMode: valueOrDefault("DB_SSLMODE", "disable"),
 		RedisURL:        valueOrDefault("REDIS_URL", "redis://localhost:6379"),
 		AllowedOrigins:  splitCSV(valueOrDefault("CORS_ORIGINS", "http://localhost,http://localhost:5173")),
 		ShutdownTimeout: defaultShutdownTimeout,
@@ -96,9 +94,6 @@ func (c Config) DatabaseURL() string {
 		Host:   fmt.Sprintf("%s:%d", c.DatabaseHost, c.DatabasePort),
 		Path:   c.DatabaseName,
 	}
-	query := u.Query()
-	query.Set("sslmode", c.DatabaseSSLMode)
-	u.RawQuery = query.Encode()
 	return u.String()
 }
 

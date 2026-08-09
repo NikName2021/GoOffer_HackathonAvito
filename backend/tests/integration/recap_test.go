@@ -61,19 +61,14 @@ func TestRecapAPI(t *testing.T) {
 		if err := json.NewDecoder(response.Body).Decode(&payload); err != nil {
 			t.Fatalf("decode share recap: %v", err)
 		}
-		if _, exists := payload["id"]; exists {
-			t.Fatal("share response contains id")
-		}
-		if _, exists := payload["user_id"]; exists {
-			t.Fatal("share response contains user_id")
-		}
+		assertShareJSONIsSafe(t, payload)
 		cards, ok := payload["cards"].([]any)
 		if !ok || len(cards) != 1 {
 			t.Fatalf("share cards = %#v, want one public card", payload["cards"])
 		}
 		card, ok := cards[0].(map[string]any)
-		if !ok || card["id"] != "year_overview" {
-			t.Fatalf("share card = %#v, want year_overview", cards[0])
+		if !ok || card["kind"] != "overview" || card["title"] != "Итоги" {
+			t.Fatalf("share card = %#v, want safe overview", cards[0])
 		}
 	})
 
@@ -119,4 +114,29 @@ func TestRecapAPI(t *testing.T) {
 			t.Fatalf("status = %d, want %d", response.Code, http.StatusNotFound)
 		}
 	})
+}
+
+func assertShareJSONIsSafe(t *testing.T, value any) {
+	t.Helper()
+	forbidden := map[string]struct{}{
+		"id": {}, "user_id": {}, "ad_id": {}, "image_url": {},
+		"shareable": {}, "reason": {}, "visualization": {}, "cta": {}, "params": {},
+	}
+	var visit func(any)
+	visit = func(current any) {
+		switch typed := current.(type) {
+		case map[string]any:
+			for key, nested := range typed {
+				if _, blocked := forbidden[key]; blocked {
+					t.Errorf("share JSON contains forbidden field %q", key)
+				}
+				visit(nested)
+			}
+		case []any:
+			for _, nested := range typed {
+				visit(nested)
+			}
+		}
+	}
+	visit(value)
 }
