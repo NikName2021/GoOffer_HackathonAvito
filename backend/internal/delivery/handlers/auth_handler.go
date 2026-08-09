@@ -40,6 +40,7 @@ type CredentialsRequest struct {
 type AccountResponse struct {
 	ID        string    `json:"id"`
 	Login     string    `json:"login"`
+	IsAdmin   bool      `json:"isAdmin"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
@@ -189,6 +190,7 @@ func toAccountResponse(account *domain.Account) AccountResponse {
 	return AccountResponse{
 		ID:        account.ID.String(),
 		Login:     account.Login,
+		IsAdmin:   account.IsAdmin,
 		CreatedAt: account.CreatedAt,
 	}
 }

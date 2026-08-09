@@ -22,6 +22,7 @@ import (
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
 	"gooffer/backend/internal/usecase/auth"
+	"gooffer/backend/internal/usecase/carddefinition"
 	"gooffer/backend/internal/usecase/generator"
 	missionusecase "gooffer/backend/internal/usecase/mission"
 	"gooffer/backend/internal/usecase/profile"
@@ -62,6 +63,7 @@ func TestRealApplicationFlow(t *testing.T) {
 
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	userRepository := postgres.NewUserRepository(pool)
+	cardDefinitionRepository := postgres.NewCardDefinitionRepository(pool)
 	recapRepository := redisrepo.NewCachedRecapRepository(
 		postgres.NewRecapRepository(pool),
 		redisrepo.NewRecapCache(redisClient),
@@ -70,14 +72,40 @@ func TestRealApplicationFlow(t *testing.T) {
 	handler := server.NewRouter(server.Dependencies{
 		Auth:           auth.New(postgres.NewAuthRepository(pool), time.Hour),
 		Profiles:       profile.New(logger, userRepository),
-		RecapGenerator: generator.New(userRepository, recapRepository),
+		RecapGenerator: generator.New(userRepository, recapRepository, cardDefinitionRepository),
 		Recaps:         recapRepository,
 		Missions: missionusecase.New(
 			userRepository,
 			recapRepository,
 			postgres.NewMissionRepository(pool),
 		),
+		AdminCards: carddefinition.New(cardDefinitionRepository),
 	}, server.Options{Logger: logger})
+	adminLogin := realRequest(
+		handler,
+		http.MethodPost,
+		"/api/auth/login",
+		[]byte(`{"login":"nikita","password":"avito2026"}`),
+		"",
+	)
+	if adminLogin.Code != http.StatusOK {
+		t.Fatalf("nikita login status = %d: %s", adminLogin.Code, adminLogin.Body.String())
+	}
+	adminCookies := adminLogin.Result().Cookies()
+	if len(adminCookies) != 1 {
+		t.Fatalf("nikita login cookies = %#v, want one session", adminCookies)
+	}
+	adminCookie := adminCookies[0].Name + "=" + adminCookies[0].Value
+	adminOptions := realRequest(
+		handler,
+		http.MethodGet,
+		"/api/admin/card-definitions/options",
+		nil,
+		adminCookie,
+	)
+	if adminOptions.Code != http.StatusOK {
+		t.Fatalf("nikita admin options status = %d: %s", adminOptions.Code, adminOptions.Body.String())
+	}
 
 	login := "flow-" + uuid.NewString()[:8]
 	defer func() {

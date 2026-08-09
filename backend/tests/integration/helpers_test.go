@@ -39,6 +39,59 @@ type fakeApplication struct {
 	panicProfiles  bool
 	credentials    map[string]fakeCredential
 	sessions       map[string]uuid.UUID
+	adminCards     *fakeAdminCardService
+}
+
+type fakeAdminCardService struct {
+	definitions []domain.CardDefinition
+}
+
+func (f *fakeAdminCardService) Create(
+	_ context.Context,
+	adminID uuid.UUID,
+	definition *domain.CardDefinition,
+) (*domain.CardDefinition, error) {
+	created := *definition
+	created.ID = uuid.New()
+	created.CreatedBy = adminID
+	created.CreatedAt = time.Now().UTC()
+	created.UpdatedAt = created.CreatedAt
+	f.definitions = append(f.definitions, created)
+	return &created, nil
+}
+
+func (f *fakeAdminCardService) List(context.Context) ([]domain.CardDefinition, error) {
+	return append([]domain.CardDefinition(nil), f.definitions...), nil
+}
+
+func (f *fakeAdminCardService) Update(
+	_ context.Context,
+	id uuid.UUID,
+	definition *domain.CardDefinition,
+) (*domain.CardDefinition, error) {
+	for index := range f.definitions {
+		if f.definitions[index].ID != id {
+			continue
+		}
+		updated := *definition
+		updated.ID = id
+		updated.CreatedBy = f.definitions[index].CreatedBy
+		updated.CreatedAt = f.definitions[index].CreatedAt
+		updated.UpdatedAt = time.Now().UTC()
+		f.definitions[index] = updated
+		return &updated, nil
+	}
+	return nil, apperrors.ErrNotFound
+}
+
+func (f *fakeAdminCardService) Delete(_ context.Context, id uuid.UUID) error {
+	for index := range f.definitions {
+		if f.definitions[index].ID == id {
+			f.definitions = append(f.definitions[:index], f.definitions[index+1:]...)
+			return nil
+		}
+	}
+	return apperrors.ErrNotFound
 }
 
 func (f *fakeApplication) RecordBusinessEvent(event string, ctaVisible bool) {
@@ -134,6 +187,7 @@ func newFakeApplication() *fakeApplication {
 	account := domain.Account{
 		ID:        testAccountID,
 		Login:     "nikita",
+		IsAdmin:   true,
 		CreatedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
 	}
 	return &fakeApplication{
@@ -143,7 +197,8 @@ func newFakeApplication() *fakeApplication {
 		credentials: map[string]fakeCredential{
 			"nikita": {account: account, password: "avito2026"},
 		},
-		sessions: map[string]uuid.UUID{"test-session": testAccountID},
+		sessions:   map[string]uuid.UUID{"test-session": testAccountID},
+		adminCards: &fakeAdminCardService{},
 	}
 }
 
@@ -390,6 +445,7 @@ func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 		Recaps:         application,
 		Missions:       application,
 		BusinessEvents: application,
+		AdminCards:     application.adminCards,
 	}, server.Options{
 		Logger:         logger,
 		AllowedOrigins: []string{"http://localhost:5173"},
