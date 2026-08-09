@@ -1,34 +1,39 @@
-GOOFFER BACKEND — CURRENT ARCHITECTURE
-======================================
+GOOFFER BACKEND — АКТУАЛЬНАЯ АРХИТЕКТУРА
+=========================================
 
-Transport
-  net/http ServeMux -> request-id/logger/recovery/CORS -> auth middleware
-  -> handlers -> explicit request/response DTO.
+Транспортный слой
+  net/http ServeMux -> request-id/logger/recovery/CORS -> middleware авторизации
+  -> обработчики -> отдельные DTO запросов и ответов.
 
-Use cases
-  auth       account registration, Argon2id passwords, hashed sessions
-  profile    owner-scoped CRUD over item-level viewed_ads/own_ads
-  generator  UTC-year metrics -> summary/cards/achievements -> recap save
-  mission    owner-scoped selection and progress from events after selection
+Сценарии использования
+  auth       регистрация аккаунта, пароли Argon2id, хешированные сессии
+  profile    CRUD профилей с проверкой владельца и данными viewed_ads/own_ads
+  generator  метрики за UTC-год -> сводка/карточки/достижения -> сохранение recap
+  mission    выбор миссии владельцем и расчёт прогресса по последующим событиям
 
-Persistence
-  PostgreSQL is the source of truth for accounts, sessions, profiles, recaps
-  and missions. Embedded SQL migrations run transactionally on startup.
-  Redis is a fail-open read-through cache for generated recaps only.
+Хранение данных
+  PostgreSQL — единственный постоянный источник данных для аккаунтов, сессий,
+  профилей, итогов и миссий. Встроенные SQL-миграции применяются транзакционно
+  при запуске приложения.
 
-Recap source of truth
-  User.Views (viewed_ads JSONB) and User.OwnAds (own_ads JSONB). The obsolete
-  actions/categories model is removed by migration 008 and has no repository
-  or generator dependency.
+  Redis — отказоустойчивый read-through-кэш только для сформированных итогов.
+  Ошибка Redis не блокирует чтение или запись через PostgreSQL.
 
-Share boundary
-  Full Recap -> ShareRecapResponse -> ShareRecapCardDTO allowlist. The share
-  endpoint is authenticated and owner-only; public token links are not in MVP.
+Источник данных для итогов
+  User.Views (viewed_ads JSONB) и User.OwnAds (own_ads JSONB). Устаревшая модель
+  actions/categories удаляется миграцией 008; репозитория и зависимости
+  генератора для неё больше нет.
 
-Dependency direction
-  delivery -> usecase ports/usecases -> domain
-  repository implementations -> usecase ports/domain
-  cmd/server wires concrete implementations.
+Граница безопасного экспорта
+  Полный Recap -> ShareRecapResponse -> allowlist ShareRecapCardDTO. Endpoint
+  share требует авторизации и доступен только владельцу. Публичные ссылки по
+  токену не входят в MVP.
 
-See backend/README.md for setup, contracts, generation rules, privacy, CI and
-known limitations. See backend/docs/swagger.yaml for the HTTP specification.
+Направление зависимостей
+  delivery -> сценарии и порты usecase -> domain
+  реализации repository -> порты usecase и domain
+  cmd/server связывает конкретные реализации.
+
+Запуск, контракты, правила генерации, приватность, CI и известные ограничения
+описаны в backend/README.md. HTTP-контракт находится в
+backend/docs/swagger.yaml.
