@@ -25,88 +25,6 @@
   backend/internal/delivery/dto/
   backend/tests/unit/
 
-[ОЖИДАЕТСЯ] BACKEND 2
--------------------------------------------------
-Зона ответственности: PostgreSQL, миграции, репозитории, тестовые профили
-
-Что нужно сделать:
-  - migrations/           - SQL миграции (up/down)
-  - repository/postgres/  - реализация репозиториев
-  - repository/redis/     - кэширование в Redis
-
-Интерфейсы для реализации (уже готовы):
-  backend/internal/usecase/ports/
-    - user_repository.go
-    - action_repository.go
-    - recap_repository.go
-    - cache.go
-
-[ОЖИДАЕТСЯ] BACKEND 3
----------------------------------------------------
-Зона ответственности:HTTP API, обработка ошибок, Docker, деплой
-
-Что нужно сделать:
-  - delivery/handlers/   - HTTP обработчики
-  - delivery/middleware/ - мидлвары
-  - server/              - настройка HTTP сервера
-  - tests/integration/   - интеграционные тесты
-  - Dockerfile           - сборка образа
-  - docs/                - Swagger документация
-
-API эндпоинты (уже спроектированы):
-  GET  /api/profiles                     - список тестовых профилей
-  GET  /api/profiles/{id}                - профиль по ID
-  POST /api/recap/generate               - генерация итогов
-  GET  /api/recap/{user_id}/{year}       - получить Recap
-  GET  /api/recap/{user_id}/{year}/share - share-card
-
-[ОЖИДАЕТСЯ] FRONTEND
-------------------------------------------------
-Зона ответственности: UI, интеграция с API
-
-Что нужно сделать:
-  - выбор профиля
-  - экран генерации
-  - отображение итогов
-  - Share-card
-
-Для фронтенда подготовлены форматы ответов API:
-  backend/internal/delivery/dto/
-    - profile_response.go
-    - recap_response.go
-
-Пример ответа /api/profiles:
-{
-    "id": "uuid",
-    "name": "Алексей",
-    "avatar": "https://...",
-    "profile_type": "seller",
-    "registered_at": "2026-01-01T00:00:00Z"
-}
-
-Пример ответа /api/recap/generate:
-{
-    "id": "uuid",
-    "user_id": "uuid",
-    "year": 2025,
-    "total_views": 1500,
-    "total_messages": 50,
-    "total_purchases": 10,
-    "total_sales": 5,
-    "top_categories": [
-        {"category": "Электроника", "count": 300},
-        {"category": "Авто", "count": 200},
-        {"category": "Книги", "count": 100}
-    ],
-    "achievements": [
-        {"slug": "curious", "title": "Любопытный", "icon": "👀"}
-    ],
-    "activity_days": 300,
-    "generated_at": "2026-01-01T00:00:00Z"
-}
-
-Если чего-то не хватает или есть лишнее, напишите — исправлю сразу.
-
 ============================================================================================================
 Место для Backend-2:
 
@@ -164,6 +82,7 @@ Docker (Backend 2):
 ============================================================================================================
 Место для Backend-3:
 
+Зона ответственности:HTTP API, обработка ошибок, Docker, деплой
 
 
 
