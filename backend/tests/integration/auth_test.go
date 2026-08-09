@@ -92,6 +92,13 @@ func TestAuthAPI(t *testing.T) {
 		if correct.Code != http.StatusOK {
 			t.Fatalf("correct login status = %d, want %d: %s", correct.Code, http.StatusOK, correct.Body.String())
 		}
+		var account handlers.AccountResponse
+		if err := json.NewDecoder(correct.Body).Decode(&account); err != nil {
+			t.Fatalf("decode nikita account: %v", err)
+		}
+		if !account.IsAdmin {
+			t.Fatal("nikita must be an administrator by default")
+		}
 	})
 }
 
