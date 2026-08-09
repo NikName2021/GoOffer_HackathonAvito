@@ -1,0 +1,8 @@
+extends:
+  - recommended
+
+rules:
+  # У проекта пока нет зафиксированной лицензии, поэтому не публикуем вымышленную.
+  info-license: off
+  # Для health, metrics и logout ответ 4xx не является частью контракта.
+  operation-4xx-response: off

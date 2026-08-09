@@ -10,15 +10,20 @@ servers:
   - url: /
 tags:
   - name: System
+    description: Диагностика доступности и метрики приложения.
   - name: Auth
+    description: Регистрация, вход, выход и получение текущего аккаунта.
   - name: Profiles
+    description: Управление профилями текущего аккаунта.
   - name: Recap
+    description: Генерация и просмотр персональных итогов года.
 paths:
   /health:
     get:
       tags: [System]
       summary: Проверка доступности сервиса
       operationId: health
+      security: []
       responses:
         "200":
           description: Сервис работает
@@ -36,6 +41,7 @@ paths:
       tags: [System]
       summary: Получить метрики приложения в формате Prometheus
       operationId: metrics
+      security: []
       responses:
         "200":
           description: Runtime, process и HTTP-метрики приложения
@@ -52,6 +58,7 @@ paths:
       tags: [Auth]
       summary: Зарегистрировать аккаунт
       operationId: register
+      security: []
       requestBody:
         required: true
         content:
@@ -80,6 +87,7 @@ paths:
       tags: [Auth]
       summary: Войти по логину и паролю
       operationId: login
+      security: []
       requestBody:
         required: true
         content:
@@ -108,6 +116,7 @@ paths:
       tags: [Auth]
       summary: Завершить текущую сессию
       operationId: logout
+      security: []
       responses:
         "204":
           description: Сессия завершена
@@ -651,15 +660,19 @@ components:
       properties:
         favoriteCategory: {type: string, nullable: true}
         mostExpensivePurchase:
+          type: object
           allOf: [{$ref: "#/components/schemas/ProfilePurchase"}]
           nullable: true
         leastExpensivePurchase:
+          type: object
           allOf: [{$ref: "#/components/schemas/ProfilePurchase"}]
           nullable: true
         mostExpensiveSale:
+          type: object
           allOf: [{$ref: "#/components/schemas/ProfileSale"}]
           nullable: true
         leastExpensiveSale:
+          type: object
           allOf: [{$ref: "#/components/schemas/ProfileSale"}]
           nullable: true
     ProfilePurchase:
@@ -686,6 +699,7 @@ components:
         soldAt: {type: string, format: date}
         viewCount: {type: integer, minimum: 0}
         review:
+          type: object
           allOf: [{$ref: "#/components/schemas/ProfileReview"}]
           nullable: true
     GenerateRecapRequest:
@@ -768,6 +782,7 @@ components:
           maxItems: 3
           items: {$ref: "#/components/schemas/MissionOption"}
         selected:
+          type: object
           allOf: [{$ref: "#/components/schemas/MissionState"}]
           nullable: true
     CategoryStat:
@@ -832,6 +847,7 @@ components:
           description: Покупки с buy.useAvitoDelivery=true.
         main_category: {type: string}
         largest_purchase:
+          type: object
           allOf: [{$ref: "#/components/schemas/RecapItem"}]
           nullable: true
     SellerRecapSummary:
@@ -874,6 +890,7 @@ components:
           nullable: true
         main_category: {type: string}
         star_listing:
+          type: object
           allOf: [{$ref: "#/components/schemas/RecapItem"}]
           nullable: true
     CombinedRecapSummary:
@@ -948,6 +965,7 @@ components:
           type: array
           items: {$ref: "#/components/schemas/RecapChartSegment"}
         highlight:
+          type: object
           allOf: [{$ref: "#/components/schemas/RecapChartHighlight"}]
           nullable: true
     RecapCardPresentation:
@@ -1017,9 +1035,11 @@ components:
           description: Объяснение, почему карточка вошла в итоговую последовательность.
         presentation: {$ref: "#/components/schemas/RecapCardPresentation"}
         visualization:
+          type: object
           allOf: [{$ref: "#/components/schemas/RecapVisualization"}]
           nullable: true
         cta:
+          type: object
           allOf: [{$ref: "#/components/schemas/RecapCardCTA"}]
           nullable: true
     RecapMetrics:
