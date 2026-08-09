@@ -43,8 +43,15 @@ jobs:
         shell: bash
         run: |
           coverage="$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')"
-          awk -v coverage="$coverage" 'BEGIN { if (coverage < 75) exit 1 }'
+          if [[ -z "$coverage" ]]; then
+            echo "::error::Unable to read total coverage from coverage.out"
+            exit 1
+          fi
           echo "Business-logic coverage: ${coverage}%"
+          if ! awk -v coverage="$coverage" 'BEGIN { exit !(coverage >= 75) }'; then
+            echo "::error::Business-logic coverage ${coverage}% is below the required 75%"
+            exit 1
+          fi
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4

@@ -3,35 +3,46 @@ package generator
 import (
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
 	"gooffer/backend/internal/domain"
 )
 
+const maxRecapCards = 9
+
+type configuredCard struct {
+	card      domain.RecapCard
+	sortOrder int
+}
+
 func buildConfiguredCards(
 	metrics ProfileMetrics,
 	definitions []domain.CardDefinition,
-) []domain.RecapCard {
-	cards := make([]domain.RecapCard, 0, len(definitions))
+) []configuredCard {
+	cards := make([]configuredCard, 0, len(definitions))
 	for _, definition := range definitions {
 		value, ok := analyzeConfiguredMetric(metrics, definition.Metric, definition.Analysis)
 		if !ok || !matchesConfiguredCondition(value, definition.ConditionOperator, definition.ConditionValue) {
 			continue
 		}
-		cards = append(cards, domain.RecapCard{
-			ID:          "custom_" + definition.ID.String(),
-			Kind:        configuredRecapKind(definition.Kind),
-			Eyebrow:     definition.Name,
-			Title:       definition.Title,
-			Description: definition.Description,
-			Value:       configuredValue(value, definition.ValueSuffix),
-			Shareable:   definition.Shareable,
-			Reason:      "Карточка создана администратором по настроенному правилу статистики.",
-			Presentation: domain.RecapCardPresentation{
-				Layout: definition.Layout,
-				Theme:  definition.Theme,
-				Icon:   definition.Icon,
+		cards = append(cards, configuredCard{
+			sortOrder: definition.SortOrder,
+			card: domain.RecapCard{
+				ID:          "custom_" + definition.ID.String(),
+				Kind:        configuredRecapKind(definition.Kind),
+				Eyebrow:     definition.Name,
+				Title:       definition.Title,
+				Description: definition.Description,
+				Value:       configuredValue(value, definition.ValueSuffix),
+				Shareable:   definition.Shareable,
+				Reason:      "Карточка создана администратором по настроенному правилу статистики.",
+				Presentation: domain.RecapCardPresentation{
+					Layout: definition.Layout,
+					Theme:  definition.Theme,
+					Icon:   definition.Icon,
+				},
 			},
 		})
 	}
@@ -48,31 +59,77 @@ func configuredRecapKind(kind domain.CardDefinitionKind) string {
 	return "combined"
 }
 
-func insertConfiguredCards(existing, configured []domain.RecapCard) []domain.RecapCard {
+func insertConfiguredCards(existing []domain.RecapCard, configured []configuredCard) []domain.RecapCard {
 	if len(configured) == 0 {
 		return existing
 	}
+	configured = append([]configuredCard(nil), configured...)
+	sort.SliceStable(configured, func(i, j int) bool {
+		return configured[i].sortOrder < configured[j].sortOrder
+	})
+
 	if len(existing) == 0 {
-		if len(configured) > 9 {
-			return configured[:9]
+		if len(configured) > maxRecapCards {
+			configured = configured[:maxRecapCards]
 		}
-		return configured
+		result := make([]domain.RecapCard, len(configured))
+		for i := range configured {
+			result[i] = configured[i].card
+		}
+		return result
 	}
 
-	// Обязательные обзор и финал сохраняются, а настроенные карточки вытесняют
-	// только менее приоритетные встроенные карточки. Общий лимит API — 9.
+	// Обзор занимает нулевую позицию, поэтому даже sort_order=0 вставляется
+	// сразу после него. При отсутствии финала сохраняем обзор и общий лимит.
+	if len(existing) == 1 {
+		if len(configured) > maxRecapCards-1 {
+			configured = configured[:maxRecapCards-1]
+		}
+		result := make([]domain.RecapCard, 1, 1+len(configured))
+		result[0] = existing[0]
+		for _, positioned := range configured {
+			result = append(result, positioned.card)
+		}
+		return result
+	}
+
+	// Обязательные обзор и финал сохраняются. Настроенные карточки вытесняют
+	// встроенные с конца, после чего занимают sort_order в общем списке.
 	if len(configured) > 7 {
 		configured = configured[:7]
 	}
-	builtInContent := existing[:len(existing)-1]
-	maxBuiltIn := 8 - len(configured)
-	if len(builtInContent) > maxBuiltIn {
-		builtInContent = builtInContent[:maxBuiltIn]
+	builtInContent := existing[1 : len(existing)-1]
+	maxBuiltInContent := maxRecapCards - 2 - len(configured)
+	if len(builtInContent) > maxBuiltInContent {
+		builtInContent = builtInContent[:maxBuiltInContent]
 	}
-	result := make([]domain.RecapCard, 0, len(builtInContent)+len(configured)+1)
+	result := make([]domain.RecapCard, 0, len(builtInContent)+len(configured)+2)
+	result = append(result, existing[0])
 	result = append(result, builtInContent...)
-	result = append(result, configured...)
 	result = append(result, existing[len(existing)-1])
+
+	// Репозиторий уже сортирует определения, но стабильная сортировка выше
+	// сохраняет корректность функции и для других реализаций порта. Нижняя
+	// граница не даёт карточкам поменять местами обзор, верхняя — финал.
+	nextConfiguredPosition := 1
+	for _, positioned := range configured {
+		finalPosition := len(result) - 1
+		position := positioned.sortOrder
+		if position < 1 {
+			position = 1
+		}
+		if position < nextConfiguredPosition {
+			position = nextConfiguredPosition
+		}
+		if position > finalPosition {
+			position = finalPosition
+		}
+
+		result = append(result, domain.RecapCard{})
+		copy(result[position+1:], result[position:])
+		result[position] = positioned.card
+		nextConfiguredPosition = position + 1
+	}
 	return result
 }
 
