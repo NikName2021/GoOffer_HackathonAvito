@@ -1,4 +1,7 @@
-import type { CreateProfileRequest } from "@/types/profileRequest.type";
+import type {
+  CreateOwnAdRequest,
+  CreateProfileRequest,
+} from "@/types/profileRequest.type";
 
 export function createActivityId(prefix: "own" | "view") {
   const id =
@@ -35,6 +38,49 @@ export function ensureActivityIds(
     views: profile.views.map((view) => ({
       ...view,
       adId: uniqueId(view.adId, "view"),
+    })),
+  };
+}
+
+function dateInputValue(value: unknown) {
+  if (typeof value !== "string") return "";
+  return /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : "";
+}
+
+function dateTimeInputValue(value: unknown) {
+  if (typeof value !== "string") return "";
+  return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(value) ? value.slice(0, 16) : "";
+}
+
+export function normalizeProfileForm(
+  profile: CreateProfileRequest,
+): CreateProfileRequest {
+  const normalized = ensureActivityIds(profile);
+  const joinedAt = dateInputValue(normalized.joinedAt);
+
+  return {
+    ...normalized,
+    joinedAt,
+    ownAds: normalized.ownAds.map((ad): CreateOwnAdRequest => {
+      const soldAt = ad.isSold ? dateInputValue(ad.soldAt) : "";
+      const publishedAt = dateInputValue(ad.publishedAt) || soldAt || joinedAt;
+
+      if (!ad.isSold) return { ...ad, publishedAt };
+      return {
+        ...ad,
+        publishedAt,
+        soldAt,
+        review: ad.review
+          ? { ...ad.review, createdAt: dateInputValue(ad.review.createdAt) }
+          : undefined,
+      };
+    }),
+    views: normalized.views.map((view) => ({
+      ...view,
+      viewedAt: view.viewedAt.map((event) => ({
+        ...event,
+        time: dateTimeInputValue(event.time),
+      })),
     })),
   };
 }

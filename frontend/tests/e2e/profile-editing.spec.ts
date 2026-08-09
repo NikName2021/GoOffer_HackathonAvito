@@ -3,10 +3,14 @@ import { expect, test } from "@playwright/test";
 import { mockApi } from "./mockApi";
 import { profile } from "./mockData";
 
-test("editing restores a missing hidden listing ID", async ({ page }) => {
+test("editing restores missing legacy listing fields", async ({ page }) => {
   const legacyProfile = {
     ...profile,
-    ownAds: profile.ownAds.map((ad) => ({ ...ad, adId: "" })),
+    ownAds: profile.ownAds.map((ad) => ({
+      ...ad,
+      adId: "",
+      publishedAt: "",
+    })),
   };
   await mockApi(page, { profileOverride: legacyProfile });
   await page.goto("/");
@@ -24,7 +28,8 @@ test("editing restores a missing hidden listing ID", async ({ page }) => {
   await page.locator('form button[type="submit"]').click();
 
   const body = (await updateRequest).postDataJSON() as {
-    ownAds: Array<{ adId: string }>;
+    ownAds: Array<{ adId: string; publishedAt: string }>;
   };
   expect(body.ownAds[0].adId).toMatch(/^own-/);
+  expect(body.ownAds[0].publishedAt).toBe("2020-01-01");
 });

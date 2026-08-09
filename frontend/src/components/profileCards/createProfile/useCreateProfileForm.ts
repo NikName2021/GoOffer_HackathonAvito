@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { createActivityId, ensureActivityIds } from "./activityId";
+import { createActivityId, normalizeProfileForm } from "./activityId";
 import type {
   CreateOwnAdRequest,
   CreateProfileRequest,
@@ -46,7 +46,7 @@ function createEmptyView(): CreateViewedAdRequest {
 
 export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
   const [profile, setProfile] = useState<CreateProfileRequest>(() =>
-    ensureActivityIds(initialProfile ?? createEmptyProfile()),
+    normalizeProfileForm(initialProfile ?? createEmptyProfile()),
   );
 
   function updateProfile(patch: Partial<CreateProfileRequest>) {

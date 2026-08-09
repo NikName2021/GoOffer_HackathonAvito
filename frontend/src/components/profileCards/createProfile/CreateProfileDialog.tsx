@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 
-import { ensureActivityIds } from "./activityId";
+import { normalizeProfileForm } from "./activityId";
 import { OwnAdsFormSection } from "./OwnAdsFormSection";
 import { ProfileFormSection } from "./ProfileFormSection";
 import { ProfileFormTabs } from "./ProfileFormTabs";
@@ -45,7 +45,7 @@ export function CreateProfileDialog({
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const profile = ensureActivityIds(form.profile);
+    const profile = normalizeProfileForm(form.profile);
     const validationError = validateCreateProfile(profile);
 
     if (validationError) {
