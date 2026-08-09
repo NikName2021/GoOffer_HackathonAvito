@@ -1,6 +1,12 @@
-import { BookOpenText, SlidersHorizontal } from "lucide-react";
+import {
+  BookOpenText,
+  PanelLeftClose,
+  PanelLeftOpen,
+  SlidersHorizontal,
+  UsersRound,
+} from "lucide-react";
 import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import favicon from "@/assets/avitoNotBackground.svg";
 import { AuthDialog } from "@/components/auth/AuthDialog";
@@ -8,75 +14,83 @@ import { PATHS } from "@/config/paths";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/store/hooks";
 import { ProfileAvatar } from "./ProfileAvatar";
+import { SidebarNavItem } from "./SidebarNavItem";
 
 export function Sidebar() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const account = useAppSelector((state) => state.auth.account);
   const displayName = account?.login ?? "Войти";
 
   return (
     <>
-      <aside className="sticky top-0 flex h-dvh w-[82px] shrink-0 flex-col border-r border-[#e6e7e8] bg-[#f5f5f5] px-3 py-6 lg:w-[236px] lg:px-5">
-        <Link className="flex items-center gap-3 px-2" to={PATHS.HOME}>
-          <img src={favicon} alt="Логотип" className="size-7" />
-          <span className="hidden text-base font-bold tracking-tight text-[#1f1f1f] lg:block">
-            Итоги года
-          </span>
+      <aside
+        className={cn(
+          "sticky top-0 flex h-dvh w-[76px] shrink-0 flex-col overflow-hidden border-r border-[#e6e7e8] bg-[#f5f5f5] text-[#1f1f1f] transition-[width] duration-300",
+          isCollapsed ? "lg:w-[80px]" : "lg:w-[264px]",
+        )}
+      >
+        <Link
+          aria-label="Итоги года"
+          className={cn(
+            "flex h-20 shrink-0 items-center border-b border-[#e6e7e8] px-5",
+            isCollapsed ? "lg:justify-center" : "lg:gap-3",
+          )}
+          to={PATHS.HOME}
+        >
+          <img src={favicon} alt="" className="size-8 shrink-0" />
+          {!isCollapsed && (
+            <span className="ml-3 hidden whitespace-nowrap text-lg font-bold tracking-tight lg:block">
+              Итоги года
+            </span>
+          )}
         </Link>
 
-        <nav aria-label="Боковая навигация" className="mt-12 space-y-2">
-          <NavLink
-            aria-label="Документация"
-            className={({ isActive }) =>
-              cn(
-                "flex w-full items-center justify-center gap-3 rounded-xl px-3 py-3 text-[#6f7377] transition hover:bg-white hover:text-[#1f1f1f] lg:justify-start",
-                isActive && "bg-white font-semibold text-[#00aaff] shadow-sm",
-              )
-            }
-            title="Документация"
+        <nav aria-label="Боковая навигация" className="space-y-2 px-3 py-7">
+          <SidebarNavItem
+            compact={isCollapsed}
+            end
+            icon={UsersRound}
+            label="Мои профили"
+            to={PATHS.HOME}
+          />
+          <SidebarNavItem
+            compact={isCollapsed}
+            icon={BookOpenText}
+            label="Документация"
             to={PATHS.DOCUMENTATION}
-          >
-            <BookOpenText
-              aria-hidden="true"
-              className="size-5"
-              strokeWidth={1.8}
-            />
-            <span className="hidden text-sm font-medium lg:block">
-              Документация
-            </span>
-          </NavLink>
+          />
           {account?.isAdmin && (
-            <NavLink
-              aria-label="Настройка итогов года"
-              className={({ isActive }) =>
-                cn(
-                  "flex w-full items-center justify-center gap-3 rounded-xl px-3 py-3 text-[#6f7377] transition hover:bg-white hover:text-[#1f1f1f] lg:justify-start",
-                  isActive && "bg-white font-semibold text-[#00aaff] shadow-sm",
-                )
-              }
-              reloadDocument
-              title="Настройка итогов года"
+            <SidebarNavItem
+              compact={isCollapsed}
+              icon={SlidersHorizontal}
+              label="Настройка итогов года"
               to={PATHS.RECAP_SETTINGS}
-            >
-              <SlidersHorizontal
-                aria-hidden="true"
-                className="size-5"
-                strokeWidth={1.8}
-              />
-              <span className="hidden text-sm font-medium lg:block">
-                Настройка итогов года
-              </span>
-            </NavLink>
+            />
           )}
         </nav>
 
-        <div className="mt-auto">
+        <div className="mt-auto border-t border-[#e6e7e8] p-3">
           <ProfileAvatar
+            compact={isCollapsed}
+            isAuth={Boolean(account)}
             name={displayName}
             onClick={() => setIsAuthOpen(true)}
-            isAuth={!!account}
           />
         </div>
+
+        <button
+          aria-label={isCollapsed ? "Развернуть меню" : "Свернуть меню"}
+          className="hidden h-14 shrink-0 items-center justify-center border-t border-[#e6e7e8] text-[#8a8d91] transition hover:bg-white hover:text-[#1f1f1f] focus-visible:outline-2 focus-visible:outline-inset focus-visible:outline-[#00aaff] lg:flex"
+          onClick={() => setIsCollapsed((current) => !current)}
+          type="button"
+        >
+          {isCollapsed ? (
+            <PanelLeftOpen aria-hidden="true" />
+          ) : (
+            <PanelLeftClose aria-hidden="true" />
+          )}
+        </button>
       </aside>
 
       <AuthDialog onOpenChange={setIsAuthOpen} open={isAuthOpen} />
