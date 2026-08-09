@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 
@@ -56,6 +57,16 @@ func TestAuthAPI(t *testing.T) {
 		if foreignProfile.Code != http.StatusNotFound {
 			t.Fatalf("foreign profile status = %d, want %d", foreignProfile.Code, http.StatusNotFound)
 		}
+		for _, path := range []string{
+			"/api/recap/" + testUserID.String() + "/2025",
+			"/api/recap/" + testUserID.String() + "/2025/share",
+			"/api/recap/" + testUserID.String() + "/2025/mission",
+		} {
+			foreign := performRequest(t, handler, http.MethodGet, path, nil, map[string]string{"Cookie": cookieHeader})
+			if foreign.Code != http.StatusNotFound {
+				t.Fatalf("foreign owner-only resource %s status = %d, want %d", path, foreign.Code, http.StatusNotFound)
+			}
+		}
 
 		logout := performRequest(t, handler, http.MethodPost, "/api/auth/logout", nil, map[string]string{"Cookie": cookieHeader})
 		if logout.Code != http.StatusNoContent {
@@ -82,4 +93,30 @@ func TestAuthAPI(t *testing.T) {
 			t.Fatalf("correct login status = %d, want %d: %s", correct.Code, http.StatusOK, correct.Body.String())
 		}
 	})
+}
+
+func TestProductionSessionCookieIsSecure(t *testing.T) {
+	application := newFakeApplication()
+	mux := http.NewServeMux()
+	handler := handlers.NewAuthHandler(application, nil, handlers.AuthHandlerOptions{
+		CookieName:   "gooffer_session",
+		CookieSecure: true,
+	})
+	handler.RegisterRoutes(mux)
+
+	request := httptest.NewRequest(
+		http.MethodPost,
+		"/api/auth/login",
+		bytes.NewBufferString(`{"login":"nikita","password":"avito2026"}`),
+	)
+	request.Header.Set("Content-Type", "application/json")
+	response := httptest.NewRecorder()
+	mux.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("login status = %d: %s", response.Code, response.Body.String())
+	}
+	cookies := response.Result().Cookies()
+	if len(cookies) != 1 || !cookies[0].Secure || !cookies[0].HttpOnly || cookies[0].SameSite != http.SameSiteLaxMode {
+		t.Fatalf("production session cookie = %#v, want Secure HttpOnly SameSite=Lax", cookies)
+	}
 }

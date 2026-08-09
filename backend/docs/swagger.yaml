@@ -2,7 +2,10 @@ openapi: 3.0.3
 info:
   title: Avito Recap API
   version: 1.0.0
-  description: API аккаунтов, пользовательских профилей и персональных «Итогов года».
+  description: |-
+    API аккаунтов, пользовательских профилей и персональных «Итогов года».
+    Все `/api/profiles`, `/api/recap` и mission endpoint доступны только владельцу
+    профиля по обязательной cookie `gooffer_session`. Публичных ссылок в MVP нет.
 servers:
   - url: /
 tags:
@@ -253,6 +256,7 @@ paths:
     post:
       tags: [Recap]
       summary: Сгенерировать итоги года
+      description: Генерация разрешена только для профиля текущего аккаунта. Повторный вызов атомарно заменяет сохранённый recap и запись Redis-кэша.
       operationId: generateRecap
       security:
         - cookieAuth: []
@@ -281,6 +285,7 @@ paths:
     get:
       tags: [Recap]
       summary: Получить ранее сгенерированные итоги
+      description: Доступ разрешён только владельцу профиля.
       operationId: getRecap
       security:
         - cookieAuth: []
@@ -306,7 +311,10 @@ paths:
     get:
       tags: [Recap]
       summary: Получить безопасную share-card
-      description: Ответ содержит только агрегаты и не раскрывает ID пользователя или recap. Доступ разрешён владельцу профиля.
+      description: |-
+        Аутентифицированный экспорт для PNG/текста, доступный только владельцу профиля.
+        Это не публичная ссылка. Карточки формируются по allowlist и не содержат ID,
+        CTA, технические причины, диаграммы, названия/изображения собственных объявлений.
       operationId: getShareRecap
       security:
         - cookieAuth: []
@@ -315,7 +323,7 @@ paths:
         - $ref: "#/components/parameters/Year"
       responses:
         "200":
-          description: Данные публичной карточки
+          description: Безопасные данные для экспорта владельцем
           content:
             application/json:
               schema:
@@ -414,6 +422,7 @@ components:
       type: apiKey
       in: cookie
       name: gooffer_session
+      description: Обязательная HttpOnly SameSite=Lax cookie; в production также Secure.
   parameters:
     ProfileID:
       name: id
@@ -471,6 +480,7 @@ components:
           format: date-time
     ProfileWrite:
       type: object
+      description: Полная замена профиля. Размер JSON-тела не должен превышать 32 MiB.
       additionalProperties: false
       required: [name, joinedAt, likes, chatsCount, views, ownAds]
       properties:
@@ -812,7 +822,9 @@ components:
         chats_count:
           type: integer
           minimum: 0
-          description: Текущий агрегированный снимок профиля; у исходного поля пока нет даты.
+          maximum: 0
+          deprecated: true
+          description: "Всегда 0 в годовых итогах: недатированный chatsCount исключён из расчёта."
         purchases_count: {type: integer, minimum: 0}
         avito_delivery_purchases:
           type: integer
@@ -840,12 +852,17 @@ components:
         listings_count:
           type: integer
           minimum: 0
-          description: Объявления с publishedAt в выбранном году; старые записи без даты считаются снимком.
+          description: Только объявления с датой публикации в выбранном году; недатированные записи исключаются.
         active_listings: {type: integer, minimum: 0}
         archived_listings: {type: integer, minimum: 0}
         sales_count: {type: integer, minimum: 0}
         listing_views: {type: integer, minimum: 0}
-        likes_received: {type: integer, minimum: 0}
+        likes_received:
+          type: integer
+          minimum: 0
+          maximum: 0
+          deprecated: true
+          description: "Всегда 0 в годовых итогах: недатированный likes исключён из расчёта."
         favorites_received: {type: integer, minimum: 0}
         contacts_received: {type: integer, minimum: 0}
         reviews_count: {type: integer, minimum: 0}
@@ -935,6 +952,7 @@ components:
           nullable: true
     RecapCardPresentation:
       type: object
+      additionalProperties: false
       required: [layout, theme, icon]
       properties:
         layout:
@@ -993,7 +1011,7 @@ components:
         image_url: {type: string, format: uri}
         shareable:
           type: boolean
-          description: Backend-флаг; публичный share endpoint сам исключает false-карточки.
+          description: Backend-флаг; share endpoint сам исключает false-карточки.
         reason:
           type: string
           description: Объяснение, почему карточка вошла в итоговую последовательность.
@@ -1029,8 +1047,10 @@ components:
         total_messages:
           type: integer
           minimum: 0
-          example: 50
-          description: Текущий chatsCount профиля; годовой timestamp пока отсутствует.
+          maximum: 0
+          example: 0
+          deprecated: true
+          description: Оставлено для совместимости и всегда равно 0; недатированные чаты не входят в годовой recap.
         total_favorites:
           type: integer
           minimum: 0
@@ -1088,8 +1108,24 @@ components:
             summary: {$ref: "#/components/schemas/ShareRecapSummary"}
             cards:
               type: array
-              description: Только карточки с shareable=true.
-              items: {$ref: "#/components/schemas/RecapCard"}
+              description: Только карточки с shareable=true, преобразованные через строгий allowlist.
+              items: {$ref: "#/components/schemas/ShareRecapCard"}
+    ShareRecapCard:
+      type: object
+      additionalProperties: false
+      required: [kind, eyebrow, title, description, value, presentation]
+      description: |-
+        Минимальный безопасный контракт экспорта. Название собственного объявления
+        заменяется нейтральным текстом; изображение, ID, CTA и диагностические поля запрещены.
+      properties:
+        kind:
+          type: string
+          enum: [overview, interest, buyer, seller, combined, chart, final]
+        eyebrow: {type: string, example: Главный интерес}
+        title: {type: string, example: Электроника}
+        description: {type: string}
+        value: {type: string, example: 12 находок}
+        presentation: {$ref: "#/components/schemas/RecapCardPresentation"}
     Error:
       type: object
       required: [error]

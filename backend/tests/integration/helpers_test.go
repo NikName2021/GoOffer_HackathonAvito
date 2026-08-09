@@ -122,7 +122,11 @@ func newFakeApplication() *fakeApplication {
 			Combined:    domain.CombinedRecapSummary{HasBuyerData: true, HasSellerData: true, Deals: 15},
 		},
 		Cards: []domain.RecapCard{
-			{ID: "year_overview", Kind: "overview", Title: "Итоги", Shareable: true},
+			{
+				ID: "year_overview", Kind: "overview", Title: "Итоги", ImageURL: "https://private.example/image.jpg",
+				Shareable: true, Reason: "internal reason", Visualization: &domain.RecapVisualization{Version: 1, Type: "bar"},
+				CTA: &domain.RecapCardCTA{Label: "Открыть", Action: "open_listing", Params: map[string]string{"ad_id": "private-ad"}},
+			},
 			{ID: "largest_purchase", Kind: "buyer", Title: "Крупная покупка", Shareable: false},
 		},
 		GeneratedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),

@@ -17,7 +17,6 @@ type Generator struct {
 
 func New(
 	userRepo ports.UserRepository,
-	_ ports.ActionRepository, // kept temporarily so existing application wiring stays compatible
 	recapRepo ports.RecapRepository,
 ) *Generator {
 	return &Generator{

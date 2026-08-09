@@ -43,19 +43,40 @@ type ShareRecapSummary struct {
 	Combined    domain.CombinedRecapSummary `json:"combined"`
 }
 
+// ShareRecapCardPresentationDTO is deliberately separate from the domain
+// model so adding a field to RecapCardPresentation cannot expand the public
+// share contract by accident.
+type ShareRecapCardPresentationDTO struct {
+	Layout string `json:"layout"`
+	Theme  string `json:"theme"`
+	Icon   string `json:"icon"`
+}
+
+// ShareRecapCardDTO is an allowlist for data that may be exported to an image
+// or copied as text. Navigation, identifiers and diagnostic fields belong only
+// to the authenticated full recap response.
+type ShareRecapCardDTO struct {
+	Kind         string                        `json:"kind"`
+	Eyebrow      string                        `json:"eyebrow"`
+	Title        string                        `json:"title"`
+	Description  string                        `json:"description"`
+	Value        string                        `json:"value"`
+	Presentation ShareRecapCardPresentationDTO `json:"presentation"`
+}
+
 type ShareRecapResponse struct {
-	Year           int                `json:"year"`
-	TotalViews     int                `json:"total_views"`
-	TotalMessages  int                `json:"total_messages"`
-	TotalFavorites int                `json:"total_favorites"`
-	TotalPurchases int                `json:"total_purchases"`
-	TotalSales     int                `json:"total_sales"`
-	TopCategories  []CategoryStatDTO  `json:"top_categories"`
-	Achievements   []AchievementDTO   `json:"achievements"`
-	ActivityDays   int                `json:"activity_days"`
-	Summary        ShareRecapSummary  `json:"summary"`
-	Cards          []domain.RecapCard `json:"cards"`
-	GeneratedAt    time.Time          `json:"generated_at"`
+	Year           int                 `json:"year"`
+	TotalViews     int                 `json:"total_views"`
+	TotalMessages  int                 `json:"total_messages"`
+	TotalFavorites int                 `json:"total_favorites"`
+	TotalPurchases int                 `json:"total_purchases"`
+	TotalSales     int                 `json:"total_sales"`
+	TopCategories  []CategoryStatDTO   `json:"top_categories"`
+	Achievements   []AchievementDTO    `json:"achievements"`
+	ActivityDays   int                 `json:"activity_days"`
+	Summary        ShareRecapSummary   `json:"summary"`
+	Cards          []ShareRecapCardDTO `json:"cards"`
+	GeneratedAt    time.Time           `json:"generated_at"`
 }
 
 func ToRecapResponse(recap *domain.Recap) RecapResponse {
@@ -102,10 +123,10 @@ func ToRecapResponse(recap *domain.Recap) RecapResponse {
 
 func ToShareRecapResponse(recap *domain.Recap) ShareRecapResponse {
 	full := ToRecapResponse(recap)
-	shareableCards := make([]domain.RecapCard, 0, len(full.Cards))
+	shareableCards := make([]ShareRecapCardDTO, 0, len(full.Cards))
 	for _, card := range full.Cards {
 		if card.Shareable {
-			shareableCards = append(shareableCards, card)
+			shareableCards = append(shareableCards, toShareRecapCard(card))
 		}
 	}
 	return ShareRecapResponse{
@@ -125,5 +146,26 @@ func ToShareRecapResponse(recap *domain.Recap) ShareRecapResponse {
 		},
 		Cards:       shareableCards,
 		GeneratedAt: full.GeneratedAt,
+	}
+}
+
+func toShareRecapCard(card domain.RecapCard) ShareRecapCardDTO {
+	title := card.Title
+	if card.ID == "star_listing" {
+		// A listing title can contain personal information entered by its owner.
+		// The private recap keeps the real title; exports use neutral copy.
+		title = "Ваше объявление стало звездой"
+	}
+	return ShareRecapCardDTO{
+		Kind:        card.Kind,
+		Eyebrow:     card.Eyebrow,
+		Title:       title,
+		Description: card.Description,
+		Value:       card.Value,
+		Presentation: ShareRecapCardPresentationDTO{
+			Layout: card.Presentation.Layout,
+			Theme:  card.Presentation.Theme,
+			Icon:   card.Presentation.Icon,
+		},
 	}
 }

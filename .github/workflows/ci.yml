@@ -32,6 +32,95 @@ jobs:
       - name: Run tests
         run: go test -mod=readonly ./...
 
+      - name: Measure business-logic coverage
+        run: >-
+          go test -mod=readonly
+          -coverpkg=./internal/usecase/...
+          -coverprofile=coverage.out
+          ./internal/usecase/... ./tests/unit/...
+
+      - name: Enforce 75% business-logic coverage
+        shell: bash
+        run: |
+          coverage="$(go tool cover -func=coverage.out | awk '/^total:/ {gsub("%", "", $3); print $3}')"
+          awk -v coverage="$coverage" 'BEGIN { if (coverage < 75) exit 1 }'
+          echo "Business-logic coverage: ${coverage}%"
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.out
+
+  postgres-integration:
+    name: PostgreSQL and Redis integration
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_USER: result_year
+          POSTGRES_PASSWORD: integration_password
+          POSTGRES_DB: result_year
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U result_year -d result_year"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:8.0-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USER: result_year
+      DB_PASSWORD: integration_password
+      DB_NAME: result_year
+      REDIS_URL: redis://127.0.0.1:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Run real repository and API flow tests
+        run: go test -mod=readonly -count=1 ./tests/integration/...
+
+  openapi:
+    name: OpenAPI validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Validate Swagger
+        run: npx --yes @redocly/cli@1.34.3 lint docs/swagger.yaml
+
   golangci-lint:
     name: golangci-lint
     runs-on: ubuntu-latest
@@ -46,10 +135,14 @@ jobs:
           go-version-file: backend/go.mod
           cache-dependency-path: backend/go.sum
 
+      - name: Read pinned golangci-lint version
+        id: golangci-version
+        run: echo "version=$(cat backend/.golangci-version)" >> "$GITHUB_OUTPUT"
+
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.11
+          version: ${{ steps.golangci-version.outputs.version }}
           working-directory: backend
 
   frontend-checks:
@@ -87,6 +180,8 @@ jobs:
     if: github.event_name == 'push'
     needs:
       - go-tests
+      - postgres-integration
+      - openapi
       - golangci-lint
       - frontend-checks
     runs-on: ubuntu-latest

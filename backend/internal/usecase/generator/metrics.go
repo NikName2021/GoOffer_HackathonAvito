@@ -11,29 +11,24 @@ import (
 // achievement rules.
 type UserMetrics struct {
 	TotalViews     int
-	TotalMessages  int
-	TotalFavorites int
 	TotalPurchases int
 	TotalSales     int
-	TopCategories  []domain.CategoryStat
 	ActivityDays   int
 }
 
-// ProfileMetrics is calculated from the profile payload that the backend
-// already stores. Dated buyer/listing/sale/review facts are filtered by Year.
-// Values without a date (chats, likes and legacy listings) are treated as a
-// profile snapshot and the generated card copy avoids calling them annual.
+// ProfileMetrics contains only activity that can be attributed to Year.
+// Undated profile snapshots such as chatsCount, likes and listings without
+// publishedAt remain available through profile CRUD but do not enter a recap.
 type ProfileMetrics struct {
-	Year                    int
-	Buyer                   domain.BuyerRecapSummary
-	Seller                  domain.SellerRecapSummary
-	Combined                domain.CombinedRecapSummary
-	TopCategories           []domain.CategoryStat
-	CategoryStats           []domain.CategoryStat
-	ActivityDays            int
-	Monthly                 [12]MonthlyActivity
-	StarListingViews        int
-	SellerListingsAreAnnual bool
+	Year             int
+	Buyer            domain.BuyerRecapSummary
+	Seller           domain.SellerRecapSummary
+	Combined         domain.CombinedRecapSummary
+	TopCategories    []domain.CategoryStat
+	CategoryStats    []domain.CategoryStat
+	ActivityDays     int
+	Monthly          [12]MonthlyActivity
+	StarListingViews int
 }
 
 type MonthlyActivity struct {
@@ -56,11 +51,7 @@ type categoryMetric struct {
 }
 
 func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
-	metrics := ProfileMetrics{
-		Year:                    year,
-		TopCategories:           []domain.CategoryStat{},
-		SellerListingsAreAnnual: true,
-	}
+	metrics := ProfileMetrics{Year: year, TopCategories: []domain.CategoryStat{}}
 	categories := make(map[string]*categoryMetric)
 	activeDays := make(map[string]struct{})
 	var largestPurchase *domain.RecapItem
@@ -101,18 +92,11 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 		}
 	}
 
-	metrics.Buyer.ChatsCount = user.ChatsCount
 	metrics.Buyer.LargestPurchase = largestPurchase
 
 	for _, ad := range user.OwnAds {
 		category := categoryFor(categories, ad.Category)
 		listingInYear := inYear(ad.PublishedAt, year)
-		if ad.PublishedAt.IsZero() {
-			// Existing JSONB rows created before publishedAt was introduced are
-			// retained as a snapshot until the profile is updated.
-			listingInYear = true
-			metrics.SellerListingsAreAnnual = false
-		}
 		if listingInYear {
 			metrics.Seller.ListingsCount++
 			metrics.Seller.ListingViews += ad.ViewCount
@@ -134,10 +118,8 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 				starListing = &selected
 				starListingViews = ad.ViewCount
 			}
-			if !ad.PublishedAt.IsZero() {
-				addActiveDay(activeDays, ad.PublishedAt)
-				metrics.Monthly[int(ad.PublishedAt.UTC().Month())-1].Listings++
-			}
+			addActiveDay(activeDays, ad.PublishedAt)
+			metrics.Monthly[int(ad.PublishedAt.UTC().Month())-1].Listings++
 		}
 
 		if ad.IsSold && ad.SoldAt != nil && inYear(*ad.SoldAt, year) {
@@ -153,7 +135,6 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 		}
 	}
 
-	metrics.Seller.LikesReceived = user.Likes
 	metrics.Seller.StarListing = starListing
 	metrics.StarListingViews = starListingViews
 	if metrics.Seller.ReviewsCount > 0 {
@@ -162,11 +143,9 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 	}
 
 	metrics.Buyer.HasData = metrics.Buyer.ViewedAdsCount > 0 ||
-		metrics.Buyer.FavoritesCount > 0 || metrics.Buyer.PurchasesCount > 0 ||
-		metrics.Buyer.ChatsCount > 0
+		metrics.Buyer.FavoritesCount > 0 || metrics.Buyer.PurchasesCount > 0
 	metrics.Seller.HasData = metrics.Seller.ListingsCount > 0 || metrics.Seller.SalesCount > 0 ||
-		metrics.Seller.LikesReceived > 0 || metrics.Seller.FavoritesReceived > 0 ||
-		metrics.Seller.ContactsReceived > 0
+		metrics.Seller.FavoritesReceived > 0 || metrics.Seller.ContactsReceived > 0
 	metrics.Buyer.MainCategory = selectCategory(categories, hasBuyerSignals, buyerCategoryLess)
 	metrics.Seller.MainCategory = selectCategory(categories, hasSellerSignals, sellerCategoryLess)
 	metrics.Combined = domain.CombinedRecapSummary{
@@ -187,14 +166,9 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 
 func (metrics ProfileMetrics) achievementMetrics() *UserMetrics {
 	return &UserMetrics{
-		TotalViews: metrics.Buyer.TotalViews,
-		// chatsCount has no timestamp in the current profile contract, so it
-		// must not unlock an achievement that claims to be annual.
-		TotalMessages:  0,
-		TotalFavorites: metrics.Buyer.FavoritesCount,
+		TotalViews:     metrics.Buyer.TotalViews,
 		TotalPurchases: metrics.Buyer.PurchasesCount,
 		TotalSales:     metrics.Seller.SalesCount,
-		TopCategories:  metrics.TopCategories,
 		ActivityDays:   metrics.ActivityDays,
 	}
 }
