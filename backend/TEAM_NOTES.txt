@@ -11,7 +11,7 @@
 Зона ответственности: архитектура, домен, бизнес-логика, юнит-тесты
 
 Что сделано:
-  - domain/          - все сущности (User, Action, Achievement, Recap, Category)
+  - domain/          - сущности User, Account, Achievement, Recap, Mission и CardDefinition
   - usecase/ports/   - интерфейсы репозиториев (ждут реализации)
   - usecase/generator/ - бизнес-логика генерации итогов
   - usecase/profile/ - работа с профилями
@@ -37,8 +37,10 @@
 Интерфейсы для реализации (уже готовы):
   backend/internal/usecase/ports/
     - user_repository.go
-    - action_repository.go
     - recap_repository.go
+    - auth_repository.go
+    - mission_repository.go
+    - card_definition_repository.go
     - cache.go
 
 [ОЖИДАЕТСЯ] BACKEND 3
@@ -115,10 +117,10 @@ API эндпоинты (уже спроектированы):
 Зона ответственности: миграции, PostgreSQL-репозитории, Redis-кэш
 
 Что сделано:
-  - migrations/001_init.*           — таблицы users, categories, actions, recaps
-  - migrations/002_seed_*           — 4 тестовых профиля с actions за 2025
-  - migrations/003-005              — детали профиля, авторизация и CRUD
-  - repository/postgres/            — UserRepository, ActionRepository, RecapRepository
+  - migrations/001-009              — профили, авторизация, recap, миссии и админские карточки
+  - migrations/002_seed_*           — 4 тестовых профиля с item-level данными
+  - migrations/008                  — удаление устаревших actions/categories
+  - repository/postgres/            — User, Auth, Recap, Mission и CardDefinition repositories
   - repository/redis/               — кэши recap и auth-сессий (JSON + TTL)
   - internal/config/config.go       — загрузка настроек PostgreSQL
   - pkg/errors/errors.go            — ErrNotFound и др.
@@ -148,8 +150,8 @@ UUID тестовых профилей:
 Для Backend 3 (подключение репозиториев):
   pool, _ := postgres.NewPool(ctx, cfg.DatabaseURL())
   userRepo := postgres.NewUserRepository(pool)
-  actionRepo := postgres.NewActionRepository(pool)
   recapRepo := postgres.NewRecapRepository(pool)
+  cardDefinitionRepo := postgres.NewCardDefinitionRepository(pool)
 
 Docker (Backend 2):
   - backend/Dockerfile — multi-stage сборка server
