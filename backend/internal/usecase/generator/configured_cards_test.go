@@ -123,6 +123,47 @@ func TestInsertConfiguredCardsKeepsEqualAndReservedPositionsStable(t *testing.T)
 	assertCardOrder(t, result, want)
 }
 
+func TestInsertConfiguredCardsHandlesMissingBuiltInBoundaries(t *testing.T) {
+	t.Run("configured cards without built-ins are sorted and capped", func(t *testing.T) {
+		configured := make([]configuredCard, maxRecapCards+2)
+		for i := range configured {
+			configured[i] = configuredCard{
+				card:      domain.RecapCard{ID: fmt.Sprintf("custom_%02d", i)},
+				sortOrder: len(configured) - i,
+			}
+		}
+
+		result := insertConfiguredCards(nil, configured)
+		if len(result) != maxRecapCards {
+			t.Fatalf("cards = %d, want %d", len(result), maxRecapCards)
+		}
+		if result[0].ID != "custom_10" || result[len(result)-1].ID != "custom_02" {
+			t.Fatalf("unexpected sorted cards: first=%q last=%q", result[0].ID, result[len(result)-1].ID)
+		}
+	})
+
+	t.Run("overview remains first when finale is absent", func(t *testing.T) {
+		configured := make([]configuredCard, maxRecapCards+1)
+		for i := range configured {
+			configured[i] = configuredCard{card: domain.RecapCard{ID: fmt.Sprintf("custom_%d", i)}}
+		}
+
+		result := insertConfiguredCards(
+			[]domain.RecapCard{{ID: "year_overview"}},
+			configured,
+		)
+		if len(result) != maxRecapCards || result[0].ID != "year_overview" {
+			t.Fatalf("overview-only deck = %#v", result)
+		}
+	})
+
+	t.Run("deck is unchanged without configured cards", func(t *testing.T) {
+		existing := []domain.RecapCard{{ID: "year_overview"}, {ID: "next_step"}}
+		result := insertConfiguredCards(existing, nil)
+		assertCardOrder(t, result, []string{"year_overview", "next_step"})
+	})
+}
+
 func assertCardOrder(t *testing.T, cards []domain.RecapCard, want []string) {
 	t.Helper()
 	if len(cards) != len(want) {
