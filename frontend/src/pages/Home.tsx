@@ -1,9 +1,7 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 
 import { AddProfileButton } from '@/components/profileCards/AddProfileButton'
-import { CreateProfileDialog } from '@/components/profileCards/createProfile/CreateProfileDialog'
 import { DeleteProfileDialog } from '@/components/profileCards/DeleteProfileDialog'
-import { BulkProfilesImportButton } from '@/components/profileCards/importProfiles/BulkProfilesImportButton'
 import { ProfileCard } from '@/components/profileCards/ProfileCard'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import {
@@ -16,6 +14,18 @@ import {
 import { useAppSelector } from '@/store/hooks'
 import type { CreateProfileRequest } from '@/types/profileRequest.type'
 import type { GetProfileDetailsResponse, GetProfileResponse } from '@/types/profileResponse.type'
+
+const CreateProfileDialog = lazy(() =>
+  import('@/components/profileCards/createProfile/CreateProfileDialog').then((module) => ({
+    default: module.CreateProfileDialog,
+  })),
+)
+
+const BulkProfilesImportButton = lazy(() =>
+  import('@/components/profileCards/importProfiles/BulkProfilesImportButton').then((module) => ({
+    default: module.BulkProfilesImportButton,
+  })),
+)
 
 export function HomePage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
@@ -60,7 +70,11 @@ export function HomePage() {
           </header>
 
           <section aria-label="Тестовые профили" className="mt-9 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-            {account && profilesQuery.isSuccess && <BulkProfilesImportButton accountId={account.id} />}
+            {account && profilesQuery.isSuccess && (
+              <Suspense fallback={<ProfilesNotice text="Загружаем импорт профилей…" />}>
+                <BulkProfilesImportButton accountId={account.id} />
+              </Suspense>
+            )}
             {!account && <ProfilesNotice text="Войдите в аккаунт через профиль в левом нижнем углу." />}
             {account && profilesQuery.isPending && <ProfilesNotice text="Загружаем профили…" />}
             {account && profilesQuery.isError && (
@@ -81,14 +95,18 @@ export function HomePage() {
         </div>
       </main>
 
-      <CreateProfileDialog
-        initialProfile={editingProfile ? toProfileRequest(editingProfile) : undefined}
-        key={editingProfile?.id ?? (isCreateDialogOpen ? 'create' : 'closed')}
-        mode={editingProfile ? 'edit' : 'create'}
-        onOpenChange={closeProfileForm}
-        onSubmit={handleProfileSubmit}
-        open={isCreateDialogOpen || Boolean(editingProfile)}
-      />
+      {(isCreateDialogOpen || editingProfileId) && (
+        <Suspense fallback={null}>
+          <CreateProfileDialog
+            initialProfile={editingProfile ? toProfileRequest(editingProfile) : undefined}
+            key={editingProfile?.id ?? 'create'}
+            mode={editingProfile ? 'edit' : 'create'}
+            onOpenChange={closeProfileForm}
+            onSubmit={handleProfileSubmit}
+            open={isCreateDialogOpen || Boolean(editingProfile)}
+          />
+        </Suspense>
+      )}
       <DeleteProfileDialog
         error={deleteProfileMutation.error instanceof Error ? deleteProfileMutation.error.message : undefined}
         isDeleting={deleteProfileMutation.isPending}
