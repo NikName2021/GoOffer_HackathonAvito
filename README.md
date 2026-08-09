@@ -1,0 +1,272 @@
+# GoOffer — персональные итоги года на Авито
+
+GoOffer — full-stack прототип для формирования персональной истории пользователя по его активности на Авито. Пользователь регистрируется, создаёт или импортирует профили с историей просмотров и собственных объявлений, а сервис рассчитывает итоги выбранного года и показывает их как интерактивную историю с карточками, графиками, достижениями и миссией на следующий год.
+
+Проект разработан в рамках хакатона. Все данные в репозитории и примеры JSON являются демонстрационными.
+
+## Возможности
+
+- регистрация и вход с серверной сессией в `HttpOnly` cookie;
+- создание, просмотр, редактирование и удаление профилей;
+- массовый импорт профилей и активности из JSON;
+- расчёт покупательских и продавательских метрик за выбранный год;
+- генерация упорядоченных recap-карточек, достижений и графиков на бэкенде;
+- анимированный просмотр итогов в формате stories;
+- формирование PNG-карточки для публикации без приватных данных;
+- выбор миссии на следующий год и автоматический расчёт её прогресса;
+- сбор технических и продуктовых метрик;
+- unit-, integration- и end-to-end-тесты, линтеры и CI smoke test.
+
+## Быстрый запуск через Docker
+
+### Требования
+
+- Git;
+- Docker с поддержкой Docker Compose v2.
+
+### Запуск
+
+```bash
+git clone https://github.com/NikName2021/GoOffer_HackathonAvito.git
+cd GoOffer_HackathonAvito
+cp .env.example .env
+docker network create result_year
+docker compose --env-file .env up -d --build
+```
+
+Сеть `result_year` создаётся один раз. Если она уже существует, повторять команду `docker network create` не нужно.
+
+После запуска доступны:
+
+| Сервис | Адрес |
+|---|---|
+| Веб-приложение | <http://localhost> |
+| Backend API | <http://localhost:8000/api> |
+| Swagger UI | <http://localhost:8000/docs/> |
+| OpenAPI YAML | <http://localhost:8000/docs/swagger.yaml> |
+| Health check | <http://localhost:8000/health> |
+| Prometheus-метрики | <http://localhost:8000/metrics> |
+
+При первом старте бэкенд сам применит встроенные SQL-миграции и добавит демонстрационные данные.
+
+Просмотр логов и остановка приложения:
+
+```bash
+docker compose logs -f
+docker compose down
+```
+
+Чтобы также удалить данные из именованных томов PostgreSQL и Redis, используйте `docker compose down -v`. Эта команда необратимо удаляет локальные данные проекта.
+
+## Локальная разработка
+
+### Бэкенд
+
+Запустите PostgreSQL и Redis:
+
+```bash
+docker network create result_year
+docker compose --env-file .env up -d postgres redis
+```
+
+Затем в отдельном терминале:
+
+```bash
+cd backend
+set -a
+source ../.env
+set +a
+go mod download
+go run ./cmd/server
+```
+
+Бэкенд использует Go 1.22 и запускается на <http://localhost:8000>. Значения `DB_HOST=localhost` и `DB_PORT=5446` уже заданы в `.env.example` для такого режима.
+
+### Фронтенд
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Dev-сервер будет доступен на <http://localhost:5173>. По умолчанию фронтенд обращается к `http://localhost:8000/api`; другой адрес можно задать переменной `VITE_BASE_API_URL`.
+
+### Проверки
+
+Бэкенд:
+
+```bash
+cd backend
+go test -mod=readonly ./...
+make lint
+```
+
+Фронтенд:
+
+```bash
+cd frontend
+npm ci
+npm test -- --ci --runInBand
+npm run lint
+npm run build
+npx playwright install chromium
+npm run test:e2e
+```
+
+E2E-тесты сами поднимают Vite на порту `4173` и подменяют ответы API, поэтому работающий бэкенд для них не требуется.
+
+## Мониторинг
+
+Основное приложение должно быть запущено в сети `result_year`. После этого стек наблюдаемости запускается отдельно:
+
+```bash
+cp monitoring/.env.example monitoring/.env
+docker compose --env-file monitoring/.env -f monitoring/docker-compose.yaml up -d
+```
+
+Grafana будет доступна на <http://localhost:3000>. Логин и пароль задаются в `monitoring/.env`; в примере используются `admin` / `admin`.
+
+Стек собирает:
+
+- HTTP-, runtime-, PostgreSQL pool- и Redis cache-метрики бэкенда;
+- продуктовые события просмотра итогов, CTA, публикации и миссий;
+- метрики Nginx, PostgreSQL и Redis через отдельные exporters;
+- логи Docker-контейнеров через Grafana Alloy и Loki;
+- временные ряды через vmagent и VictoriaMetrics.
+
+Остановка мониторинга:
+
+```bash
+docker compose --env-file monitoring/.env -f monitoring/docker-compose.yaml down
+```
+
+## Используемые технологии
+
+| Область | Технологии |
+|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, Base UI / shadcn, Redux Toolkit, TanStack Query, Axios, Recharts, Motion |
+| Backend | Go 1.22, стандартный `net/http`, pgx/v5, go-redis, `slog`, Argon2id, Prometheus client |
+| Хранение данных | PostgreSQL 17, Redis 8 |
+| Инфраструктура | Docker, Docker Compose, multi-stage Docker builds, Nginx |
+| Наблюдаемость | Grafana, Loki, Grafana Alloy, VictoriaMetrics, vmagent, Nginx/PostgreSQL/Redis exporters |
+| Тестирование | Go `testing`, Jest, Testing Library, Playwright |
+| Контроль качества | golangci-lint, ESLint, TypeScript compiler, GitHub Actions |
+
+## Архитектура и структура проекта
+
+Бэкенд следует принципам Clean Architecture: HTTP-обработчики зависят от use case-интерфейсов, бизнес-логика — от портов репозиториев, а PostgreSQL и Redis подключаются как внешние адаптеры. Фронтенд разделён на API-клиенты, страницы, функциональные компоненты, хуки, Redux-состояние и типы.
+
+```text
+.
+├── .github/workflows/ci.yml       # CI: тесты, линтеры, сборка и Compose smoke test
+├── backend/
+│   ├── cmd/server/                # точка входа и сборка зависимостей
+│   ├── docs/                      # OpenAPI-спецификация и Swagger UI
+│   ├── internal/
+│   │   ├── config/                # переменные окружения и таймауты
+│   │   ├── delivery/              # HTTP handlers, middleware и DTO
+│   │   ├── domain/                # бизнес-сущности
+│   │   ├── observability/         # технические и продуктовые метрики
+│   │   ├── repository/            # PostgreSQL- и Redis-адаптеры
+│   │   ├── server/                # маршрутизация и HTTP-сервер
+│   │   └── usecase/               # сценарии, генератор итогов, auth и missions
+│   ├── migrations/                # встроенные SQL-миграции и seed-данные
+│   └── tests/                     # unit- и integration-тесты
+├── frontend/
+│   ├── public/                    # favicon и примеры импортируемых JSON
+│   ├── src/
+│   │   ├── api/                   # клиенты backend API
+│   │   ├── components/            # auth, profiles, recap, sidebar и UI-kit
+│   │   ├── hooks/                 # React Query-хуки
+│   │   ├── pages/                 # страницы профилей и Avito simulation
+│   │   ├── store/                 # Redux store и auth-состояние
+│   │   ├── types/                 # TypeScript-модели API
+│   │   └── utils/                 # форматирование, share image и recap-логика
+│   └── tests/                     # Jest unit и Playwright E2E
+├── monitoring/                    # Grafana, Loki, Alloy и VictoriaMetrics
+├── docker/config/nginx/           # раздача SPA и reverse proxy для `/api`
+├── docker-compose.yaml            # локальный full-stack
+├── docker-compose.prod.yaml       # production-вариант Compose
+└── .env.example                   # пример конфигурации
+```
+
+## Основные API-маршруты
+
+| Метод и путь | Назначение |
+|---|---|
+| `POST /api/auth/register` | регистрация и создание сессии |
+| `POST /api/auth/login` | вход |
+| `POST /api/auth/logout` | завершение сессии |
+| `GET /api/auth/me` | текущий аккаунт |
+| `GET, POST /api/profiles` | список и создание профилей |
+| `GET, PUT, DELETE /api/profiles/{id}` | чтение, изменение и удаление профиля |
+| `POST /api/recap/generate` | генерация итогов |
+| `GET /api/recap/{user_id}/{year}` | получение сохранённых итогов |
+| `GET /api/recap/{user_id}/{year}/share` | безопасная версия данных для share-card |
+| `POST /api/recap/events` | регистрация продуктового события |
+| `GET, PUT /api/recap/{user_id}/{year}/mission` | чтение и выбор миссии |
+
+Кроме auth-маршрутов, прикладные маршруты `/api/*` требуют активную сессию. Полная схема запросов и ответов находится в [Swagger UI](http://localhost:8000/docs/).
+
+## Особенности реализации
+
+- **Backend-driven recap.** Бэкенд возвращает не только числа, но и упорядоченные карточки с текстами, темой, layout, CTA и версионированной спецификацией графиков. Фронтенд остаётся универсальным рендерером истории.
+- **Расчёт из исходной активности.** Итоги формируются из просмотров, лайков, покупок, собственных объявлений, контактов, продаж и отзывов выбранного профиля за конкретный год.
+- **Надёжное кэширование.** PostgreSQL является источником истины, а Redis хранит recap на 24 часа. Ошибка Redis логируется, но не делает API недоступным: чтение продолжает работать через PostgreSQL.
+- **Автоматические миграции.** `*.up.sql` встраиваются в бинарник через `go:embed`, применяются транзакционно при старте и защищены advisory lock от параллельного запуска.
+- **Безопасная авторизация.** Пароли хэшируются Argon2id; в БД хранится SHA-256-хэш случайного session token, а клиент получает его только в `HttpOnly`, `SameSite=Lax` cookie.
+- **Контроль данных для публикации.** Share endpoint возвращает только разрешённые карточки и агрегаты; PNG размером 1080×1350 генерируется на клиенте через Canvas API.
+- **Миссия на следующий год.** Пользователь выбирает одну из целей, а её прогресс вычисляется по новой активности профиля и сохраняется в PostgreSQL.
+- **Наблюдаемость.** Помимо стандартных Go/process/HTTP-метрик собираются cache hit/miss/error, состояние пула PostgreSQL и бизнес-события recap-воронки.
+- **Защитный HTTP-слой.** Реализованы CORS, request ID, структурированные JSON-логи, recovery middleware, лимиты тела запроса, строгий JSON decoder и graceful shutdown.
+- **Автоматические проверки.** GitHub Actions запускает Go-тесты, golangci-lint, Jest, ESLint, frontend build и smoke test всего Docker Compose-стека.
+
+## История коммитов
+
+На момент подготовки README в ветке `main` — **115 коммитов**, из них **81 без merge-коммитов**. История разработки охватывает 3–9 августа 2026 года и сохранена в Git без squash.
+
+Ключевые этапы:
+
+| Дата | Коммит | Изменение |
+|---|---|---|
+| 03.08.2026 | `87f6077` | начальная версия фронтенда |
+| 04.08.2026 | `430acb5`, `ab89056` | каркас и первая реализация Clean Architecture-бэкенда |
+| 04.08.2026 | `ea51ef4` | контейнеризация full-stack приложения |
+| 04.08.2026 | `6e034d3` | авторизованный API профилей и recap, интеграция с UI |
+| 05.08.2026 | `7b4ea02`, `8cd9850` | PostgreSQL/Redis-слой, миграции и их автозапуск |
+| 05.08.2026 | `642f085` | CRUD профилей и вычисляемая аналитика |
+| 06.08.2026 | `7b269ea` | генерация итоговых карточек из данных профиля |
+| 06.08.2026 | `1ed0f7e`, `04d2c0d` | Prometheus endpoint и первый стек мониторинга |
+| 07.08.2026 | `d6d6d12`, `551b614` | транзакционная регистрация и подключение Redis-кэша |
+| 08.08.2026 | `61878c1`, `77d8e90` | backend-driven графики и их отображение |
+| 08.08.2026 | `5e39fe2` | frontend unit- и E2E-тесты |
+| 08.08.2026 | `fe1dbd8` | миссии на следующий год с прогрессом |
+| 09.08.2026 | `3b5b34b` | PostgreSQL- и Redis-exporters |
+| 09.08.2026 | `c90016b` | финальные frontend-проверки в CI |
+
+Полную историю можно посмотреть командами:
+
+```bash
+git log --graph --decorate --oneline --all
+git shortlog -sne --no-merges HEAD
+```
+
+## Команда и распределение ответственности
+
+Количество коммитов в таблице рассчитано по `main` без merge-коммитов. Оно приведено как ориентир и не является оценкой значимости вклада.
+
+| Участник | Коммиты | Зона ответственности и вклад |
+|---|---:|---|
+| `NickRayF` | 48 | Frontend: структура React-приложения, UI/UX и адаптивность, авторизация, CRUD и JSON-импорт профилей, Avito simulation, анимации recap, графики, share-card, missions, аналитические события, Jest и Playwright-тесты |
+| `NikName2021` | 23 | Backend/API и интеграция, Docker/Nginx и окружение, CI, генерация карточек и графиков, missions, Prometheus-метрики, Grafana/Loki/Alloy/VictoriaMetrics, exporters, линтеры и production Compose |
+| `Mukam21` / `Мукам Усманов` | 5 | Начальная Clean Architecture: доменные модели, use cases, порты репозиториев, DTO, генератор итогов, конфигурация и первые unit-тесты |
+| `Valya` | 5 | Data layer: SQL-миграции, PostgreSQL-репозитории, Redis-кэш, автоматическое применение миграций, транзакционная регистрация, подключение кэша и метрики PostgreSQL/Redis |
+
+
+## Дополнительная документация
+
+- [OpenAPI-спецификация](backend/docs/swagger.yaml)
+- [Подробная схема бэкенда](backend/ARCHITECTURE.txt)
+- [Внутренние заметки команды](backend/TEAM_NOTES.txt)
+- [Пример массового импорта профилей](frontend/public/examples/profiles-bulk-example.json)

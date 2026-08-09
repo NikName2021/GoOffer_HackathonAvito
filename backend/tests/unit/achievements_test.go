@@ -32,7 +32,6 @@ func TestAssignAchievements_Curious(t *testing.T) {
 func TestAssignAchievements_NoAchievements(t *testing.T) {
 	metrics := &generator.UserMetrics{
 		TotalViews:     100,
-		TotalMessages:  10,
 		TotalPurchases: 2,
 		TotalSales:     1,
 		ActivityDays:   50,
@@ -48,7 +47,6 @@ func TestAssignAchievements_NoAchievements(t *testing.T) {
 func TestAssignAchievements_AllAchievements(t *testing.T) {
 	metrics := &generator.UserMetrics{
 		TotalViews:     1500,
-		TotalMessages:  100,
 		TotalPurchases: 15,
 		TotalSales:     10,
 		ActivityDays:   350,
@@ -57,17 +55,16 @@ func TestAssignAchievements_AllAchievements(t *testing.T) {
 	achievements := generator.AssignAchievements(metrics)
 
 	expectedSlugs := map[string]struct{}{
-		"curious":          {},
-		"explorer":         {},
-		"social_butterfly": {},
-		"seller_master":    {},
-		"shopaholic":       {},
-		"veteran":          {},
-		"enthusiast":       {},
+		"curious":       {},
+		"explorer":      {},
+		"seller_master": {},
+		"shopaholic":    {},
+		"veteran":       {},
+		"enthusiast":    {},
 	}
 
-	if len(achievements) != 7 {
-		t.Errorf("expected 7 achievements, got %d", len(achievements))
+	if len(achievements) != 6 {
+		t.Errorf("expected 6 achievements, got %d", len(achievements))
 	}
 
 	for _, ach := range achievements {

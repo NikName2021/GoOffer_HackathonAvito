@@ -36,10 +36,9 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 	defer pool.Close()
 
 	userRepo := postgres.NewUserRepository(pool)
-	actionRepo := postgres.NewActionRepository(pool)
 	recapRepo := postgres.NewRecapRepository(pool)
 
-	gen := generator.New(userRepo, actionRepo, recapRepo)
+	gen := generator.New(userRepo, recapRepo)
 
 	accountID := uuid.MustParse("99999999-9999-4999-8999-999999999999")
 	annaID := uuid.MustParse("11111111-1111-4111-8111-111111111111")

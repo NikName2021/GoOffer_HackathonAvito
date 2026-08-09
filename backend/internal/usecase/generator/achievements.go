@@ -23,8 +23,6 @@ func checkCondition(ach domain.Achievement, metrics *UserMetrics) bool {
 		return metrics.TotalViews >= 500
 	case "explorer":
 		return metrics.TotalViews >= 1000
-	case "social_butterfly":
-		return metrics.TotalMessages >= 50
 	case "seller_master":
 		return metrics.TotalSales >= 5
 	case "shopaholic":

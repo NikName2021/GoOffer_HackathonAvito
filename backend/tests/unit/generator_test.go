@@ -49,22 +49,6 @@ func (m *mockUserRepo) Delete(_ context.Context, _, id uuid.UUID) error {
 	return m.err
 }
 
-type mockActionRepo struct {
-	actions map[string][]domain.Action
-	err     error
-}
-
-func (m *mockActionRepo) GetByUserAndYear(ctx context.Context, userID uuid.UUID, year int) ([]domain.Action, error) {
-	if m.err != nil {
-		return nil, m.err
-	}
-	key := userID.String() + ":" + string(rune(year))
-	if actions, ok := m.actions[key]; ok {
-		return actions, nil
-	}
-	return []domain.Action{}, nil
-}
-
 type mockRecapRepo struct {
 	recaps map[string]domain.Recap
 	err    error
@@ -101,6 +85,7 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	favoritedAt := time.Date(year, time.March, 10, 18, 20, 0, 0, time.UTC)
 	firstViewedAt := time.Date(year, time.March, 9, 12, 0, 0, 0, time.UTC)
 	soldAt := time.Date(year, time.June, 18, 0, 0, 0, 0, time.UTC)
+	reviewedAt := soldAt.Add(24 * time.Hour)
 	publishedAt := time.Date(year, time.May, 1, 0, 0, 0, 0, time.UTC)
 	usedDelivery := true
 
@@ -136,19 +121,16 @@ func TestGenerator_Execute_Success(t *testing.T) {
 						ContactsCount:  4,
 						IsSold:         true,
 						SoldAt:         &soldAt,
+						Review:         &domain.Review{Comment: "Всё отлично", Rating: 5, CreatedAt: reviewedAt},
 					},
 				},
 			},
 		},
 	}
 
-	actionRepo := &mockActionRepo{
-		err: errors.New("actions must not be requested"),
-	}
-
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, actionRepo, recapRepo)
+	gen := generator.New(userRepo, recapRepo)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -161,8 +143,8 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	if recap.TotalViews != 2 {
 		t.Errorf("expected 2 views, got %d", recap.TotalViews)
 	}
-	if recap.TotalMessages != 1 {
-		t.Errorf("expected 1 message, got %d", recap.TotalMessages)
+	if recap.TotalMessages != 0 {
+		t.Errorf("expected undated messages to be excluded, got %d", recap.TotalMessages)
 	}
 	if recap.TotalPurchases != 1 || recap.TotalSales != 1 {
 		t.Fatalf("purchases/sales = %d/%d, want 1/1", recap.TotalPurchases, recap.TotalSales)
@@ -172,6 +154,10 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	}
 	if recap.Summary.Seller.FavoritesReceived != 8 || recap.Summary.Seller.ContactsReceived != 4 {
 		t.Fatalf("seller engagement = %#v", recap.Summary.Seller)
+	}
+	if recap.Summary.Seller.ReviewsCount != 1 || recap.Summary.Seller.AverageRating == nil ||
+		*recap.Summary.Seller.AverageRating != 5 {
+		t.Fatalf("review after sale = %#v, want one five-star review", recap.Summary.Seller)
 	}
 	if !recap.Summary.Combined.HasBuyerData || !recap.Summary.Combined.HasSellerData {
 		t.Fatalf("combined summary = %#v, want both sides", recap.Summary.Combined)
@@ -223,13 +209,9 @@ func TestGenerator_Execute_EmptyProfile(t *testing.T) {
 		},
 	}
 
-	actionRepo := &mockActionRepo{
-		actions: map[string][]domain.Action{},
-	}
-
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, actionRepo, recapRepo)
+	gen := generator.New(userRepo, recapRepo)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -256,10 +238,9 @@ func TestGenerator_UserNotFound(t *testing.T) {
 		err:   errors.New("user not found"),
 	}
 
-	actionRepo := &mockActionRepo{actions: make(map[string][]domain.Action)}
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, actionRepo, recapRepo)
+	gen := generator.New(userRepo, recapRepo)
 
 	_, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -307,11 +288,9 @@ func TestCalculateMetrics(t *testing.T) {
 		},
 	}
 
-	actionRepo := &mockActionRepo{actions: map[string][]domain.Action{}}
-
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, actionRepo, recapRepo)
+	gen := generator.New(userRepo, recapRepo)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -321,8 +300,8 @@ func TestCalculateMetrics(t *testing.T) {
 	if recap.TotalViews != 2 {
 		t.Errorf("expected 2 views, got %d", recap.TotalViews)
 	}
-	if recap.TotalMessages != 1 {
-		t.Errorf("expected 1 message, got %d", recap.TotalMessages)
+	if recap.TotalMessages != 0 {
+		t.Errorf("expected undated messages to be excluded, got %d", recap.TotalMessages)
 	}
 	if recap.TotalPurchases != 1 {
 		t.Errorf("expected 1 purchase, got %d", recap.TotalPurchases)
@@ -367,11 +346,9 @@ func TestAssignAchievements(t *testing.T) {
 		},
 	}
 
-	actionRepo := &mockActionRepo{actions: map[string][]domain.Action{}}
-
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, actionRepo, recapRepo)
+	gen := generator.New(userRepo, recapRepo)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -381,5 +358,62 @@ func TestAssignAchievements(t *testing.T) {
 
 	if len(recap.Achievements) == 0 {
 		t.Error("expected achievements, got none")
+	}
+}
+
+func TestGeneratorUsesUTCYearBoundaries(t *testing.T) {
+	userID := uuid.New()
+	withinAtStart := time.Date(2025, time.December, 31, 23, 30, 0, 0, time.FixedZone("UTC-2", -2*60*60))
+	withinAtEnd := time.Date(2027, time.January, 1, 1, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
+	outside := time.Date(2026, time.January, 1, 1, 30, 0, 0, time.FixedZone("UTC+2", 2*60*60))
+	userRepo := &mockUserRepo{users: map[uuid.UUID]domain.User{
+		userID: {
+			ID: userID,
+			Views: []domain.ViewedAd{{
+				Ad: domain.Ad{AdID: "timezone", Title: "Часы", Category: "Хобби"},
+				ViewedAt: []domain.ViewedAdEvent{
+					{Type: domain.ViewedAdEventWatch, Time: withinAtStart},
+					{Type: domain.ViewedAdEventWatch, Time: withinAtEnd},
+					{Type: domain.ViewedAdEventWatch, Time: outside},
+				},
+			}},
+		},
+	}}
+	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
+
+	recap, err := generator.New(userRepo, recapRepo).Execute(
+		context.Background(), generatorAccountID, userID, 2026,
+	)
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if recap.TotalViews != 2 || recap.ActivityDays != 2 {
+		t.Fatalf("views/activity days = %d/%d, want 2/2 by UTC boundaries", recap.TotalViews, recap.ActivityDays)
+	}
+}
+
+func TestGeneratorExcludesUndatedSnapshotsFromAnnualRecap(t *testing.T) {
+	userID := uuid.New()
+	userRepo := &mockUserRepo{users: map[uuid.UUID]domain.User{
+		userID: {
+			ID: userID, ChatsCount: 80, Likes: 120,
+			OwnAds: []domain.OwnAd{{Ad: domain.Ad{Title: "Без даты", Category: "Дом", ViewCount: 500}}},
+		},
+	}}
+	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
+
+	recap, err := generator.New(userRepo, recapRepo).Execute(
+		context.Background(), generatorAccountID, userID, 2026,
+	)
+	if err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if recap.TotalMessages != 0 || recap.Summary.Buyer.HasData || recap.Summary.Seller.HasData {
+		t.Fatalf("undated snapshots affected annual recap: %#v", recap.Summary)
+	}
+	for _, achievement := range recap.Achievements {
+		if achievement.Slug == "social_butterfly" {
+			t.Fatal("undated chats unlocked annual achievement")
+		}
 	}
 }

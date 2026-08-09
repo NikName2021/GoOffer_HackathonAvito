@@ -173,6 +173,29 @@ func TestCachedRecapRepositorySaveUpdatesCache(t *testing.T) {
 	}
 }
 
+func TestCachedRecapRepositorySaveReplacesStaleValue(t *testing.T) {
+	ctx := context.Background()
+	userID := uuid.New()
+	cache := newFakeCache()
+	stale := &domain.Recap{ID: uuid.New(), UserID: userID, Year: 2026, TotalViews: 1}
+	if err := cache.Set(ctx, recapCacheKey(userID, 2026), stale, RecapTTL); err != nil {
+		t.Fatalf("prime cache: %v", err)
+	}
+	repository := NewCachedRecapRepository(&fakeRecapSource{}, cache, nil)
+	fresh := &domain.Recap{ID: uuid.New(), UserID: userID, Year: 2026, TotalViews: 99}
+
+	if err := repository.Save(ctx, fresh); err != nil {
+		t.Fatalf("save fresh recap: %v", err)
+	}
+	loaded, err := repository.GetByUserAndYear(ctx, userID, 2026)
+	if err != nil {
+		t.Fatalf("read fresh recap: %v", err)
+	}
+	if loaded.ID != fresh.ID || loaded.TotalViews != 99 {
+		t.Fatalf("cached recap = %#v, want fresh recap %#v", loaded, fresh)
+	}
+}
+
 func TestCachedRecapRepositoryFailsOpenOnCacheError(t *testing.T) {
 	ctx := context.Background()
 	userID := uuid.New()

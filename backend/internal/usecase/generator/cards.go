@@ -120,7 +120,7 @@ func buyerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Description:  fmt.Sprintf("К этим объявлениям вы обратились %s.", formatCount(metrics.Buyer.TotalViews, "раз", "раза", "раз")),
 			Value:        formatCount(metrics.Buyer.ViewedAdsCount, "объявление", "объявления", "объявлений"),
 			Shareable:    true,
-			Reason:       "Есть watch-события в выбранном году; для старых профилей используется lastViewedAt.",
+			Reason:       "В выбранном году вы открывали эти объявления.",
 			Presentation: presentation("statistic", "avito-blue", "eye"),
 			CTA:          &domain.RecapCardCTA{Label: "Посмотреть свежие варианты", Action: "open_recommendations"},
 		})
@@ -131,7 +131,7 @@ func buyerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Kind:         "buyer",
 			Eyebrow:      "Безопасные сделки",
 			Title:        "Авито Доставка была рядом",
-			Description:  "Считаем покупки, у которых buy-событие отмечено useAvitoDelivery=true.",
+			Description:  "Эти покупки приехали к вам с Авито Доставкой.",
 			Value:        formatCount(metrics.Buyer.AvitoDeliveryPurchases, "покупка", "покупки", "покупок"),
 			Shareable:    true,
 			Reason:       "Есть подтверждённые покупки с использованием Авито Доставки.",
@@ -147,7 +147,7 @@ func buyerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Description:  "Иногда лучший выбор начинается с паузы и возможности спокойно сравнить варианты.",
 			Value:        formatCount(metrics.Buyer.FavoritesCount, "находка", "находки", "находок"),
 			Shareable:    true,
-			Reason:       "Есть избранные объявления с favoritedAt в выбранном году.",
+			Reason:       "В выбранном году вы добавляли объявления в избранное.",
 			Presentation: presentation("statistic", "avito-red", "heart"),
 			CTA:          &domain.RecapCardCTA{Label: "Вернуться в избранное", Action: "open_favorites"},
 		})
@@ -159,27 +159,13 @@ func buyerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Kind:         "buyer",
 			Eyebrow:      "Крупная находка года",
 			Title:        purchase.Title,
-			Description:  "Самая крупная подтверждённая покупка года. Эта карточка не попадает в публичный share-ответ.",
+			Description:  "Самая крупная подтверждённая покупка года.",
 			Value:        formatMoney(purchase.Price),
 			ImageURL:     purchase.ImageURL,
 			Shareable:    false,
-			Reason:       "Выбрана покупка с максимальной ценой среди purchasedAt выбранного года.",
+			Reason:       "Это самая дорогая из подтверждённых покупок года.",
 			Presentation: presentation("product", "avito-purple", "trophy"),
 			CTA:          listingCTA(purchase.AdID, purchase.Category, "open_listing", "Открыть объявление"),
-		})
-	}
-	if metrics.Buyer.ChatsCount > 0 {
-		cards = append(cards, domain.RecapCard{
-			ID:           "chats",
-			Kind:         "buyer",
-			Eyebrow:      "Диалоги",
-			Title:        "Вы не боялись уточнять",
-			Description:  "Это текущее агрегированное число диалогов профиля — без содержания и имён собеседников.",
-			Value:        formatCount(metrics.Buyer.ChatsCount, "диалог", "диалога", "диалогов"),
-			Shareable:    false,
-			Reason:       "В профиле заполнено агрегированное поле chatsCount.",
-			Presentation: presentation("statistic", "avito-blue", "message"),
-			CTA:          &domain.RecapCardCTA{Label: "Открыть сообщения", Action: "open_chats"},
 		})
 	}
 	if metrics.Buyer.PurchasesCount > 1 {
@@ -211,9 +197,6 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			metrics.Seller.ActiveListings,
 			metrics.Seller.ArchivedListings,
 		)
-		if !metrics.SellerListingsAreAnnual {
-			description = fmt.Sprintf("Сейчас активно %d, в архиве — %d. Для старых записей без publishedAt это снимок профиля.", metrics.Seller.ActiveListings, metrics.Seller.ArchivedListings)
-		}
 		cards = append(cards, domain.RecapCard{
 			ID:           "seller_portfolio",
 			Kind:         "seller",
@@ -222,7 +205,7 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Description:  description,
 			Value:        formatCount(metrics.Seller.ListingsCount, "объявление", "объявления", "объявлений"),
 			Shareable:    true,
-			Reason:       "В профиле есть хотя бы одно ownAds.",
+			Reason:       "В выбранном году вы публиковали объявления.",
 			Presentation: presentation("statistic", "avito-green", "megaphone"),
 			CTA:          &domain.RecapCardCTA{Label: "Разместить новое", Action: "create_listing"},
 		})
@@ -230,9 +213,6 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 	if metrics.Seller.StarListing != nil {
 		listing := metrics.Seller.StarListing
 		description := fmt.Sprintf("Самое просматриваемое среди объявлений, опубликованных в %d году.", metrics.Year)
-		if !metrics.SellerListingsAreAnnual {
-			description = "Самое просматриваемое объявление среди тех, которые сейчас есть в профиле."
-		}
 		cards = append(cards, domain.RecapCard{
 			ID:           "star_listing",
 			Kind:         "seller",
@@ -242,7 +222,7 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Value:        formatCount(max(metrics.StarListingViews, 0), "просмотр", "просмотра", "просмотров"),
 			ImageURL:     listing.ImageURL,
 			Shareable:    true,
-			Reason:       "Выбрано ownAds с максимальным viewCount.",
+			Reason:       "Это самое просматриваемое из ваших объявлений года.",
 			Presentation: presentation("product", "avito-purple", "star"),
 			CTA:          listingCTA(listing.AdID, listing.Category, "open_own_listing", "Открыть объявление"),
 		})
@@ -256,22 +236,18 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Description:  "Считаем объявления с подтверждённой датой продажи в выбранном году.",
 			Value:        formatCount(metrics.Seller.SalesCount, "продажа", "продажи", "продаж"),
 			Shareable:    true,
-			Reason:       "Есть ownAds с isSold и soldAt в выбранном году.",
+			Reason:       "В выбранном году состоялись подтверждённые продажи.",
 			Presentation: presentation("statistic", "avito-green", "recycle"),
 			CTA:          &domain.RecapCardCTA{Label: "Дать вещи вторую жизнь", Action: "create_listing"},
 		})
 	}
 	if metrics.Seller.ListingViews > 0 {
-		description := fmt.Sprintf("Сумма viewCount объявлений, опубликованных в %d году.", metrics.Year)
-		if !metrics.SellerListingsAreAnnual {
-			description = "Сумма viewCount всех объявлений в текущем профиле."
-		}
 		cards = append(cards, domain.RecapCard{
 			ID:           "listing_views",
 			Kind:         "seller",
 			Eyebrow:      "Внимание покупателей",
 			Title:        "Ваши объявления заметили",
-			Description:  description,
+			Description:  fmt.Sprintf("Столько просмотров собрали объявления, опубликованные в %d году.", metrics.Year),
 			Value:        formatCount(metrics.Seller.ListingViews, "просмотр", "просмотра", "просмотров"),
 			Shareable:    true,
 			Reason:       "У собственных объявлений есть просмотры.",
@@ -284,22 +260,10 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Kind:         "seller",
 			Eyebrow:      "Магнит для избранного",
 			Title:        "Ваши предложения нравятся",
-			Description:  fmt.Sprintf("Сумма favoritesCount объявлений, опубликованных в %d году.", metrics.Year),
+			Description:  fmt.Sprintf("Столько раз сохраняли объявления, опубликованные в %d году.", metrics.Year),
 			Value:        formatCount(metrics.Seller.FavoritesReceived, "добавление", "добавления", "добавлений"),
 			Shareable:    true,
-			Reason:       "У собственных объявлений favoritesCount больше нуля.",
-			Presentation: presentation("statistic", "avito-red", "heart"),
-		})
-	} else if metrics.Seller.LikesReceived > 0 {
-		cards = append(cards, domain.RecapCard{
-			ID:           "seller_likes_legacy",
-			Kind:         "seller",
-			Eyebrow:      "Магнит для избранного",
-			Title:        "Ваши предложения нравятся",
-			Description:  "Для старого профиля используем агрегированное поле likes.",
-			Value:        formatCount(metrics.Seller.LikesReceived, "отметка", "отметки", "отметок"),
-			Shareable:    true,
-			Reason:       "В старом профиле likes больше нуля, а favoritesCount ещё не заполнен.",
+			Reason:       "Покупатели добавляли ваши объявления года в избранное.",
 			Presentation: presentation("statistic", "avito-red", "heart"),
 		})
 	}
@@ -309,10 +273,10 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Kind:         "seller",
 			Eyebrow:      "Начало разговора",
 			Title:        "Ваши объявления вызывали вопросы",
-			Description:  fmt.Sprintf("Сумма contactsCount объявлений, опубликованных в %d году.", metrics.Year),
+			Description:  fmt.Sprintf("Столько раз покупатели связывались по объявлениям %d года.", metrics.Year),
 			Value:        formatCount(metrics.Seller.ContactsReceived, "контакт", "контакта", "контактов"),
 			Shareable:    true,
-			Reason:       "У собственных объявлений contactsCount больше нуля.",
+			Reason:       "Покупатели связывались с вами по объявлениям года.",
 			Presentation: presentation("statistic", "avito-blue", "message"),
 			CTA:          &domain.RecapCardCTA{Label: "Открыть свои объявления", Action: "open_own_listings"},
 		})
@@ -326,7 +290,7 @@ func sellerCards(metrics ProfileMetrics) []domain.RecapCard {
 			Description:  fmt.Sprintf("Средняя оценка по %s выбранного года.", formatCount(metrics.Seller.ReviewsCount, "отзыву", "отзывам", "отзывам")),
 			Value:        fmt.Sprintf("%.1f из 5", *metrics.Seller.AverageRating),
 			Shareable:    true,
-			Reason:       "Есть отзывы с createdAt в выбранном году.",
+			Reason:       "В выбранном году после сделок появились отзывы.",
 			Presentation: presentation("statistic", "avito-orange", "review"),
 		})
 	}
