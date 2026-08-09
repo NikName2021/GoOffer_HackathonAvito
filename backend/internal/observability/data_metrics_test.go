@@ -9,6 +9,40 @@ import (
 	dto "github.com/prometheus/client_model/go"
 )
 
+func TestBusinessMetrics(t *testing.T) {
+	metrics := NewBusinessMetrics()
+	metrics.RecordBusinessEvent("recap_opened", false)
+	metrics.RecordBusinessEvent("slide_viewed", false)
+	metrics.RecordBusinessEvent("slide_viewed", true)
+	metrics.RecordBusinessEvent("mission_selected", false)
+	metrics.RecordBusinessEvent("unknown_event", true)
+
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(metrics.Collectors()...)
+	families, err := registry.Gather()
+	if err != nil {
+		t.Fatalf("gather metrics: %v", err)
+	}
+
+	events := metricFamily(t, families, "gooffer_business_events_total")
+	if counterValue(events, "event", "recap_opened") != 1 {
+		t.Fatal("recap_opened counter was not incremented")
+	}
+	if counterValue(events, "event", "slide_viewed") != 2 {
+		t.Fatal("slide_viewed counter has an unexpected value")
+	}
+	if counterValue(events, "event", "unknown_event") != 0 {
+		t.Fatal("unknown event created a metric label")
+	}
+	if counterValue(events, "event", "mission_selected") != 1 {
+		t.Fatal("mission_selected counter was not incremented")
+	}
+	ctaImpressions := metricFamily(t, families, "gooffer_business_cta_impressions_total")
+	if ctaImpressions.Metric[0].GetCounter().GetValue() != 1 {
+		t.Fatal("CTA impression counter has an unexpected value")
+	}
+}
+
 func TestRecapCacheMetrics(t *testing.T) {
 	metrics := NewRecapCacheMetrics()
 	metrics.Hit()

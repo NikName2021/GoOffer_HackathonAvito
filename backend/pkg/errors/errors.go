@@ -11,4 +11,5 @@ var (
 	ErrLoginTaken         = errors.New("login already taken")
 	ErrInvalidCredentials = errors.New("invalid credentials")
 	ErrUnauthorized       = errors.New("authentication required")
+	ErrInvalidMission     = errors.New("invalid mission")
 )

@@ -27,11 +27,29 @@ type RecapReader interface {
 	GetByUserAndYear(ctx context.Context, userID uuid.UUID, year int) (*domain.Recap, error)
 }
 
+type BusinessEventRecorder interface {
+	RecordBusinessEvent(event string, ctaVisible bool)
+}
+
+var allowedBusinessEvents = map[string]struct{}{
+	"recap_opened":        {},
+	"gift_opened":         {},
+	"slide_viewed":        {},
+	"recap_completed":     {},
+	"share_created":       {},
+	"cta_clicked":         {},
+	"mission_viewed":      {},
+	"mission_selected":    {},
+	"mission_completed":   {},
+	"mission_cta_clicked": {},
+}
+
 type RecapHandler struct {
-	generator RecapGenerator
-	reader    RecapReader
-	profiles  ProfileService
-	logger    *slog.Logger
+	generator      RecapGenerator
+	reader         RecapReader
+	profiles       ProfileService
+	businessEvents BusinessEventRecorder
+	logger         *slog.Logger
 }
 
 type GenerateRecapRequest struct {
@@ -39,17 +57,30 @@ type GenerateRecapRequest struct {
 	Year   int       `json:"year"`
 }
 
+type TrackRecapEventRequest struct {
+	Event      string `json:"event"`
+	CTAVisible bool   `json:"cta_visible,omitempty"`
+}
+
 func NewRecapHandler(
 	generator RecapGenerator,
 	reader RecapReader,
 	profiles ProfileService,
+	businessEvents BusinessEventRecorder,
 	logger *slog.Logger,
 ) *RecapHandler {
-	return &RecapHandler{generator: generator, reader: reader, profiles: profiles, logger: logger}
+	return &RecapHandler{
+		generator:      generator,
+		reader:         reader,
+		profiles:       profiles,
+		businessEvents: businessEvents,
+		logger:         logger,
+	}
 }
 
 func (h *RecapHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/recap/generate", h.Generate)
+	mux.HandleFunc("POST /api/recap/events", h.TrackEvent)
 	mux.HandleFunc("GET /api/recap/{user_id}/{year}", h.Get)
 	mux.HandleFunc("GET /api/recap/{user_id}/{year}/share", h.Share)
 }
@@ -101,6 +132,33 @@ func (h *RecapHandler) Share(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, dto.ToShareRecapResponse(recap))
+}
+
+func (h *RecapHandler) TrackEvent(w http.ResponseWriter, r *http.Request) {
+	_, ok := middleware.AccountIDFromContext(r.Context())
+	if !ok {
+		writeError(w, r, http.StatusUnauthorized, "unauthorized", "authentication required")
+		return
+	}
+
+	request, err := decodeTrackEventRequest(w, r)
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_event", err.Error())
+		return
+	}
+	if _, ok := allowedBusinessEvents[request.Event]; !ok {
+		writeError(w, r, http.StatusBadRequest, "invalid_event", "event is not supported")
+		return
+	}
+	if request.CTAVisible && request.Event != "slide_viewed" {
+		writeError(w, r, http.StatusBadRequest, "invalid_event", "cta_visible is only supported for slide_viewed")
+		return
+	}
+
+	if h.businessEvents != nil {
+		h.businessEvents.RecordBusinessEvent(request.Event, request.CTAVisible)
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *RecapHandler) recapFromPath(w http.ResponseWriter, r *http.Request) (*domain.Recap, bool) {
@@ -157,6 +215,24 @@ func decodeGenerateRequest(w http.ResponseWriter, r *http.Request) (GenerateReca
 			return request, errors.New("request body is required")
 		}
 		return request, errors.New("request body must be valid JSON with user_id and year")
+	}
+	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
+		return request, errors.New("request body must contain a single JSON object")
+	}
+	return request, nil
+}
+
+func decodeTrackEventRequest(w http.ResponseWriter, r *http.Request) (TrackRecapEventRequest, error) {
+	var request TrackRecapEventRequest
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBodyBytes)
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+
+	if err := decoder.Decode(&request); err != nil {
+		if errors.Is(err, io.EOF) {
+			return request, errors.New("request body is required")
+		}
+		return request, errors.New("request body must be valid JSON with event")
 	}
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return request, errors.New("request body must contain a single JSON object")
