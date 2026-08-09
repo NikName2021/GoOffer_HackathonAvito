@@ -6,6 +6,10 @@ if [ ! -f .env ]; then
   python3 create_env.py
 fi
 
+# я предлагаю для этой части кода
+# Проверка наличия .env для фронтенда
+# TODO: путь ./spa/ устарел — заменить на frontend/
+# Иначе деплой ищет несуществующий каталог.
 if [ ! -f ./spa/.env]; then
   cp ./spa/.env.example ./spa/.env
 fi

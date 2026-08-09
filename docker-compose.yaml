@@ -84,7 +84,11 @@ volumes:
   uploads:
   backend_logs:
 
+
+# Было: external: true — жюри/новичок должен вручную
+#   docker network create result_year
+# Лучше: убрать external, пусть Compose создаёт сеть сам.
 networks:
   result_year:
-    external: true
+    #external: true     #← сеть должна УЖЕ существовать
     driver: bridge
