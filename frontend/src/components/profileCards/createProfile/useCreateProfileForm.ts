@@ -1,102 +1,116 @@
-import { useState } from 'react'
+import { useState } from "react";
 
+import { createActivityId, ensureActivityIds } from "./activityId";
 import type {
   CreateOwnAdRequest,
   CreateProfileRequest,
   CreateViewedAdRequest,
-} from '@/types/profileRequest.type'
+} from "@/types/profileRequest.type";
 
 function createEmptyProfile(): CreateProfileRequest {
   return {
-    name: '',
-    joinedAt: '',
+    name: "",
+    joinedAt: "",
     likes: 0,
     chatsCount: 0,
     ownAds: [],
     views: [],
-  }
-}
-
-function createAdId(prefix: 'own' | 'view') {
-  const id = typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`
-  return `${prefix}-${id}`
+  };
 }
 
 function createEmptyOwnAd(): CreateOwnAdRequest {
   return {
-    adId: createAdId('own'),
-    title: '',
-    category: '',
+    adId: createActivityId("own"),
+    title: "",
+    category: "",
     price: 0,
     viewCount: 0,
-    publishedAt: '',
+    publishedAt: "",
     favoritesCount: 0,
     contactsCount: 0,
     isArchived: false,
     isSold: false,
-  }
+  };
 }
 
 function createEmptyView(): CreateViewedAdRequest {
   return {
-    adId: createAdId('view'),
-    title: '',
-    category: '',
+    adId: createActivityId("view"),
+    title: "",
+    category: "",
     price: 0,
     viewCount: 0,
-    viewedAt: [{ type: 'watch', time: '' }],
-  }
+    viewedAt: [{ type: "watch", time: "" }],
+  };
 }
 
 export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
-  const [profile, setProfile] = useState<CreateProfileRequest>(() => initialProfile ?? createEmptyProfile())
+  const [profile, setProfile] = useState<CreateProfileRequest>(() =>
+    ensureActivityIds(initialProfile ?? createEmptyProfile()),
+  );
 
   function updateProfile(patch: Partial<CreateProfileRequest>) {
-    setProfile((current) => ({ ...current, ...patch }))
+    setProfile((current) => ({ ...current, ...patch }));
   }
 
   function addOwnAd() {
-    setProfile((current) => ({ ...current, ownAds: [...current.ownAds, createEmptyOwnAd()] }))
+    setProfile((current) => ({
+      ...current,
+      ownAds: [...current.ownAds, createEmptyOwnAd()],
+    }));
   }
 
   function importOwnAds(ads: CreateOwnAdRequest[]) {
-    setProfile((current) => ({ ...current, ownAds: [...current.ownAds, ...ads] }))
+    setProfile((current) => ({
+      ...current,
+      ownAds: [...current.ownAds, ...ads],
+    }));
   }
 
   function updateOwnAd(index: number, ad: CreateOwnAdRequest) {
     setProfile((current) => ({
       ...current,
-      ownAds: current.ownAds.map((item, itemIndex) => (itemIndex === index ? ad : item)),
-    }))
+      ownAds: current.ownAds.map((item, itemIndex) =>
+        itemIndex === index ? ad : item,
+      ),
+    }));
   }
 
   function removeOwnAd(index: number) {
     setProfile((current) => ({
       ...current,
       ownAds: current.ownAds.filter((_, itemIndex) => itemIndex !== index),
-    }))
+    }));
   }
 
   function addView() {
-    setProfile((current) => ({ ...current, views: [...current.views, createEmptyView()] }))
+    setProfile((current) => ({
+      ...current,
+      views: [...current.views, createEmptyView()],
+    }));
   }
 
   function importViews(views: CreateViewedAdRequest[]) {
-    setProfile((current) => ({ ...current, views: [...current.views, ...views] }))
+    setProfile((current) => ({
+      ...current,
+      views: [...current.views, ...views],
+    }));
   }
 
   function updateView(index: number, view: CreateViewedAdRequest) {
     setProfile((current) => ({
       ...current,
-      views: current.views.map((item, itemIndex) => (itemIndex === index ? view : item)),
-    }))
+      views: current.views.map((item, itemIndex) =>
+        itemIndex === index ? view : item,
+      ),
+    }));
   }
 
   function removeView(index: number) {
     setProfile((current) => ({
       ...current,
       views: current.views.filter((_, itemIndex) => itemIndex !== index),
-    }))
+    }));
   }
 
   return {
@@ -111,5 +125,5 @@ export function useCreateProfileForm(initialProfile?: CreateProfileRequest) {
     updateOwnAd,
     updateProfile,
     updateView,
-  }
+  };
 }

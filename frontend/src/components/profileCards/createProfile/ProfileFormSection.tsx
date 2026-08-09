@@ -33,14 +33,14 @@ export function ProfileFormSection({ onChange, profile }: ProfileFormSectionProp
           value={profile.joinedAt}
         />
         <FormField
-          label="Количество лайков"
+          label="Количество лайков профиля"
           min="0"
           onChange={(event) => onChange({ likes: event.target.valueAsNumber || 0 })}
           type="number"
           value={profile.likes}
         />
         <FormField
-          label="Количество чатов"
+          label="Количество чатов профиля"
           min="0"
           onChange={(event) => onChange({ chatsCount: event.target.valueAsNumber || 0 })}
           type="number"
