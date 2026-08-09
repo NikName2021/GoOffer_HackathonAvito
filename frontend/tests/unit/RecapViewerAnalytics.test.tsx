@@ -19,6 +19,9 @@ jest.mock('motion/react', () => ({
 jest.mock('@/components/recap/RecapSlide', () => ({
   RecapSlide: ({ card }: { card: { title: string } }) => <div>{card.title}</div>,
 }))
+jest.mock('@/components/recap/mission/RecapMissionSlide', () => ({
+  RecapMissionSlide: () => <div>Миссия на следующий год</div>,
+}))
 jest.mock('@/components/recap/RecapSharePreview', () => ({
   RecapSharePreview: () => null,
 }))
