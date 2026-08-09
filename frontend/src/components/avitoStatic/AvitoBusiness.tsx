@@ -1,4 +1,5 @@
-import { AVITO_BUSINESS } from '@/constants/avitoStatic'
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
+import { AVITO_BUSINESS, AVITO_IMAGE_FALLBACK } from '@/constants/avitoStatic'
 
 export function AvitoBusiness() {
   return (
@@ -8,7 +9,12 @@ export function AvitoBusiness() {
       <div className="avito-static-business-grid">
         {AVITO_BUSINESS.map(([label, image]) => (
           <div key={label}>
-            <img alt="" src={image} />
+            <ImageWithFallback
+              alt=""
+              fallbackSrc={AVITO_IMAGE_FALLBACK}
+              loading="lazy"
+              src={image}
+            />
             <span>{label}</span>
           </div>
         ))}

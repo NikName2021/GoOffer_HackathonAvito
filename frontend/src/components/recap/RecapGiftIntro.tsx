@@ -3,6 +3,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useEffect, useState } from "react";
 
 import { RecapGiftParcel } from "./RecapGiftParcel";
+import { ImageWithFallback } from "@/components/ui/image-with-fallback";
 import type { GetProfileResponse } from "@/types/profileResponse.type";
 
 const confettiColors = ["#00aaff", "#965eeb", "#00c565", "#ff4053", "#ff9f1a"];
@@ -67,7 +68,7 @@ export function RecapGiftIntro({ onOpen, profile, year }: RecapGiftIntroProps) {
         >
           <span className="grid size-8 place-items-center overflow-hidden rounded-full bg-[#00c565] text-xs font-black">
             {profile.avatarUrl ? (
-              <img
+              <ImageWithFallback
                 alt=""
                 className="size-full object-cover"
                 src={profile.avatarUrl}

@@ -1,5 +1,8 @@
 import { Heart, PackageOpen } from 'lucide-react'
 
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
+import { AVITO_IMAGE_FALLBACK } from '@/constants/avitoStatic'
+
 export interface AvitoCatalogItem {
   id: string
   image?: string
@@ -28,7 +31,16 @@ export function AvitoCatalogPage({ description, items, title }: AvitoCatalogPage
           {items.map((item) => (
             <article className="avito-mock-card" key={item.id}>
               <div className="avito-mock-card-image">
-                {item.image ? <img alt="" src={item.image} /> : <PackageOpen aria-hidden="true" />}
+                {item.image ? (
+                  <ImageWithFallback
+                    alt={item.title}
+                    fallbackSrc={AVITO_IMAGE_FALLBACK}
+                    loading="lazy"
+                    src={item.image}
+                  />
+                ) : (
+                  <PackageOpen aria-hidden="true" />
+                )}
                 <Heart aria-hidden="true" className="avito-mock-card-heart" />
               </div>
               <h2>{item.title}</h2>

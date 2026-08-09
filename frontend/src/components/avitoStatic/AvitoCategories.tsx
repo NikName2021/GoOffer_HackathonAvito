@@ -1,4 +1,5 @@
-import { AVITO_CATEGORIES } from '@/constants/avitoStatic'
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
+import { AVITO_CATEGORIES, AVITO_IMAGE_FALLBACK } from '@/constants/avitoStatic'
 
 export function AvitoCategories() {
   return (
@@ -6,7 +7,12 @@ export function AvitoCategories() {
       {AVITO_CATEGORIES.map((category) => (
         <article className="avito-static-category" key={category.label}>
           <span>{category.label}</span>
-          <img alt={category.label} src={category.image} />
+          <ImageWithFallback
+            alt={category.label}
+            fallbackSrc={AVITO_IMAGE_FALLBACK}
+            loading="lazy"
+            src={category.image}
+          />
         </article>
       ))}
     </div>
