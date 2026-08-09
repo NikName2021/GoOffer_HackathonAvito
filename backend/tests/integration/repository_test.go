@@ -102,6 +102,7 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 	if len(user.Views) < 6 || len(user.OwnAds) < 3 {
 		t.Fatalf("profile %q has only %d viewed and %d own ads", user.Name, len(user.Views), len(user.OwnAds))
 	}
+	totalEvents := 0
 	adIDs := make(map[string]struct{}, len(user.Views)+len(user.OwnAds))
 	for _, view := range user.Views {
 		if view.AdID == "" {
@@ -111,6 +112,10 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 			t.Fatalf("profile %q contains duplicate adId %q", user.Name, view.AdID)
 		}
 		adIDs[view.AdID] = struct{}{}
+		if view.ImageURL == "" {
+			t.Fatalf("profile %q viewed ad %q has no image", user.Name, view.AdID)
+		}
+		totalEvents += len(view.ViewedAt)
 		watchCount := 0
 		var lastWatch time.Time
 		var likeAt, buyAt *time.Time
@@ -156,6 +161,9 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 			t.Fatalf("profile %q contains duplicate adId %q", user.Name, ad.AdID)
 		}
 		adIDs[ad.AdID] = struct{}{}
+		if ad.ImageURL == "" {
+			t.Fatalf("profile %q own ad %q has no image", user.Name, ad.AdID)
+		}
 		if ad.IsSold {
 			if ad.SoldAt == nil || ad.SoldAt.Before(ad.PublishedAt) || !ad.IsArchived {
 				t.Fatalf("profile %q ad %q has an invalid sale timeline", user.Name, ad.AdID)
@@ -167,14 +175,18 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 			t.Fatalf("profile %q unsold ad %q contains sale data", user.Name, ad.AdID)
 		}
 	}
+	if totalEvents < 50 {
+		t.Fatalf("profile %q has only %d item-level events", user.Name, totalEvents)
+	}
 }
 
 func assertSharedSeedTransactions(t *testing.T, users []domain.User) {
 	t.Helper()
 	type transaction struct {
-		title string
-		price int64
-		date  string
+		title    string
+		imageURL string
+		price    int64
+		date     string
 	}
 	sales := make(map[string]transaction)
 	purchases := make(map[string]transaction)
@@ -183,13 +195,13 @@ func assertSharedSeedTransactions(t *testing.T, users []domain.User) {
 			if len(ad.AdID) < len("shared-") || ad.AdID[:len("shared-")] != "shared-" || !ad.IsSold || ad.SoldAt == nil {
 				continue
 			}
-			sales[ad.AdID] = transaction{title: ad.Title, price: ad.Price, date: ad.SoldAt.UTC().Format("2006-01-02")}
+			sales[ad.AdID] = transaction{title: ad.Title, imageURL: ad.ImageURL, price: ad.Price, date: ad.SoldAt.UTC().Format("2006-01-02")}
 		}
 		for _, view := range user.Views {
 			if len(view.AdID) < len("shared-") || view.AdID[:len("shared-")] != "shared-" || !view.IsPurchased || view.PurchasedAt == nil {
 				continue
 			}
-			purchases[view.AdID] = transaction{title: view.Title, price: view.Price, date: view.PurchasedAt.UTC().Format("2006-01-02")}
+			purchases[view.AdID] = transaction{title: view.Title, imageURL: view.ImageURL, price: view.Price, date: view.PurchasedAt.UTC().Format("2006-01-02")}
 		}
 	}
 	if len(sales) != 8 || len(purchases) != 8 {

@@ -1,182 +1,124 @@
------------------------------------------------------------------
-Файл TEAM_NOTES.txt создан для улучшения работы внутри команды
------------------------------------------------------------------
+GOOFFER BACKEND — АКТУАЛЬНЫЕ ЗАМЕТКИ КОМАНДЫ
+================================================
 
-======================================================================================================
+Назначение файла
+  Краткая карта текущего backend для совместной разработки. Это не backlog и
+  не API-контракт. Подробные правила находятся в backend/README.md, публичный
+  HTTP-контракт — в backend/docs/swagger.yaml, архитектурные границы — в
+  backend/ARCHITECTURE.txt.
 
-Ветка: backend-1-architecture
+Текущее состояние
+  Backend реализован на Go 1.22 и стандартном net/http. PostgreSQL является
+  постоянным источником истины, Redis — необязательным кэшем готовых recap.
+  Все прикладные /api-маршруты требуют cookie-сессию; административные маршруты
+  дополнительно требуют account.is_admin=true.
 
-[ГОТОВО] BACKEND 1 (МУКАМ)
---------------------------------------------------------------------------
-Зона ответственности: архитектура, домен, бизнес-логика, юнит-тесты
+Основные модули
+  internal/domain/
+    Account, User, Recap, Achievement, Mission и CardDefinition.
 
-Что сделано:
-  - domain/          - сущности User, Account, Achievement, Recap, Mission и CardDefinition
-  - usecase/ports/   - интерфейсы репозиториев (ждут реализации)
-  - usecase/generator/ - бизнес-логика генерации итогов
-  - usecase/profile/ - работа с профилями
-  - delivery/dto/    - DTO для фронтенда
-  - tests/unit/      - юнит-тесты (все проходят)
-  - config/          - конфигурация
+  internal/usecase/
+    auth            регистрация, вход, выход и сессии;
+    profile         CRUD профилей с проверкой владельца;
+    generator       годовые метрики, summary, cards, charts и achievements;
+    mission         выбор миссии и расчёт прогресса;
+    carddefinition  административные правила дополнительных карточек;
+    ports           интерфейсы внешних хранилищ.
 
-Файлы для просмотра:
-  backend/internal/domain/
-  backend/internal/usecase/
-  backend/internal/delivery/dto/
-  backend/tests/unit/
+  internal/repository/
+    postgres        аккаунты, сессии, профили, recap, missions и card definitions;
+    redis           cache-aside для recap с TTL 24 часа.
 
-[ОЖИДАЕТСЯ] BACKEND 2
--------------------------------------------------
-Зона ответственности: PostgreSQL, миграции, репозитории, тестовые профили
+  internal/delivery/
+    handlers        auth, profiles, recap, missions и admin card definitions;
+    middleware      request ID, logger, recovery, CORS, auth и admin guard;
+    dto             отдельные модели запросов, обычных ответов и share allowlist.
 
-Что нужно сделать:
-  - migrations/           - SQL миграции (up/down)
-  - repository/postgres/  - реализация репозиториев
-  - repository/redis/     - кэширование в Redis
+  internal/observability/ и internal/server/
+    Prometheus-метрики, бизнес-события, маршрутизация и HTTP lifecycle.
 
-Интерфейсы для реализации (уже готовы):
-  backend/internal/usecase/ports/
-    - user_repository.go
-    - recap_repository.go
-    - auth_repository.go
-    - mission_repository.go
-    - card_definition_repository.go
-    - cache.go
+Источник данных recap
+  Единственный источник пользовательской активности — User.Views (viewed_ads)
+  и User.OwnAds (own_ads) в JSONB профиля. Просмотры, лайки и покупки являются
+  item-level событиями с UTC-временем. Устаревшие actions/categories удалены
+  миграцией 008 и не используются генератором.
 
-[ОЖИДАЕТСЯ] BACKEND 3
----------------------------------------------------
-Зона ответственности:HTTP API, обработка ошибок, Docker, деплой
+Миграции
+  001_init                         базовые users/categories/actions/recaps;
+  002_seed_test_profiles           исходные демонстрационные профили;
+  003_profile_details              расширенные поля профиля;
+  004_auth                         accounts, sessions и владелец профиля;
+  005_profile_crud                 own_ads/viewed_ads для CRUD;
+  006_recap_cards                  backend-driven карточки recap;
+  007_recap_missions               миссии следующего года;
+  008_remove_legacy_actions        удаление старого источника actions/categories;
+  009_admin_card_definitions       администратор и правила дополнительных карточек;
+  010_enrich_seed_profiles         шесть связанных реалистичных персон;
+  011_add_seed_activity_and_images 50+ событий на профиль и фото объявлений.
 
-Что нужно сделать:
-  - delivery/handlers/   - HTTP обработчики
-  - delivery/middleware/ - мидлвары
-  - server/              - настройка HTTP сервера
-  - tests/integration/   - интеграционные тесты
-  - Dockerfile           - сборка образа
-  - docs/                - Swagger документация
+  *.up.sql встраиваются через go:embed и применяются транзакционно в
+  лексикографическом порядке. Версии записываются в schema_migrations, а
+  advisory lock защищает от параллельного применения. Уже опубликованную
+  миграцию не переписываем: любое изменение схемы или данных получает новый
+  последовательный номер и обратный *.down.sql.
 
-API эндпоинты (уже спроектированы):
-  GET  /api/profiles                     - список тестовых профилей
-  GET  /api/profiles/{id}                - профиль по ID
-  POST /api/recap/generate               - генерация итогов
-  GET  /api/recap/{user_id}/{year}       - получить Recap
-  GET  /api/recap/{user_id}/{year}/share - share-card
+Демонстрационный аккаунт
+  login:    nikita
+  password: avito2026
+  is_admin: true
 
-[ОЖИДАЕТСЯ] FRONTEND
-------------------------------------------------
-Зона ответственности: UI, интеграция с API
+Демонстрационные профили
+  11111111-1111-4111-8111-111111111111  Анна Смирнова
+  22222222-2222-4222-8222-222222222222  Михаил Орлов
+  33333333-3333-4333-8333-333333333333  Елена Коваль
+  44444444-4444-4444-8444-444444444444  Даниил Волков
+  55555555-5555-4555-8555-555555555555  Софья Белова
+  66666666-6666-4666-8666-666666666666  Артём Лебедев
 
-Что нужно сделать:
-  - выбор профиля
-  - экран генерации
-  - отображение итогов
-  - Share-card
+  Для демо используем 2026 год. Между профилями есть восемь сделок с общими
+  shared-* adId; покупка и продажа совпадают по названию, цене, изображению и
+  календарной дате.
 
-Для фронтенда подготовлены форматы ответов API:
-  backend/internal/delivery/dto/
-    - profile_response.go
-    - recap_response.go
+Важные инварианты
+  - профиль и recap доступны только владельцу;
+  - чужой или отсутствующий ресурс возвращается как 404 без раскрытия наличия;
+  - PostgreSQL записывается раньше Redis, ошибка кэша не ломает основной API;
+  - share строится из сохранённого recap через allowlist и не содержит id,
+    user_id, ad_id, image_url, reason, visualization, CTA или params;
+  - годовые показатели считаются только из датированных событий выбранного
+    UTC-года; недатированные likes/chats остаются только в profile API;
+  - overview всегда является первой встроенной карточкой, next_step — финалом;
+  - полный recap содержит не более девяти карточек.
 
-Пример ответа /api/profiles:
-{
-    "id": "uuid",
-    "name": "Алексей",
-    "avatar": "https://...",
-    "profile_type": "seller",
-    "registered_at": "2026-01-01T00:00:00Z"
-}
+Локальный запуск
+  Из корня:
+    cp .env.example .env
+    docker network create result_year
+    docker compose --env-file .env up -d --build --wait
 
-Пример ответа /api/recap/generate:
-{
-    "id": "uuid",
-    "user_id": "uuid",
-    "year": 2025,
-    "total_views": 1500,
-    "total_messages": 50,
-    "total_purchases": 10,
-    "total_sales": 5,
-    "top_categories": [
-        {"category": "Электроника", "count": 300},
-        {"category": "Авто", "count": 200},
-        {"category": "Книги", "count": 100}
-    ],
-    "achievements": [
-        {"slug": "curious", "title": "Любопытный", "icon": "👀"}
-    ],
-    "activity_days": 300,
-    "generated_at": "2026-01-01T00:00:00Z"
-}
+  Backend через go run:
+    docker compose --env-file .env up -d postgres redis
+    cd backend
+    DB_HOST=localhost DB_PORT=5446 \
+    DB_USER=result_year DB_PASSWORD=result_year_dev_password DB_NAME=result_year \
+    REDIS_URL=redis://localhost:6379 go run ./cmd/server
 
-Если чего-то не хватает или есть лишнее, напишите — исправлю сразу.
+Проверки перед merge
+  cd backend
+  go test -mod=readonly ./...
+  make lint
+  make coverage
 
-============================================================================================================
-Место для Backend-2:
+  Реальная интеграция:
+    DB_HOST=localhost DB_PORT=5446 \
+    DB_USER=result_year DB_PASSWORD=result_year_dev_password DB_NAME=result_year \
+    REDIS_URL=redis://localhost:6379 make test-integration
 
-[ГОТОВО] BACKEND 2
---------------------------------------------------------------------------
-Зона ответственности: миграции, PostgreSQL-репозитории, Redis-кэш
-
-Что сделано:
-  - migrations/001-009              — профили, авторизация, recap, миссии и админские карточки
-  - migrations/002_seed_*           — 4 тестовых профиля с item-level данными
-  - migrations/008                  — удаление устаревших actions/categories
-  - repository/postgres/            — User, Auth, Recap, Mission и CardDefinition repositories
-  - repository/redis/               — кэши recap и auth-сессий (JSON + TTL)
-  - internal/config/config.go       — загрузка настроек PostgreSQL
-  - pkg/errors/errors.go            — ErrNotFound и др.
-  - go.mod                          — зависимости pgx и redis
-
-UUID тестовых профилей:
-  11111111-1111-4111-8111-111111111111 — Анна
-  22222222-2222-4222-8222-222222222222 — Михаил
-  33333333-3333-4333-8333-333333333333 — Елена
-  44444444-4444-4444-8444-444444444444 — Даниил
-
-Запуск миграций:
-  Автоматически при старте backend через встроенный migrations.Apply.
-  Применённые файлы регистрируются в schema_migrations.
-
-  Вручную (локально без Docker backend):
-  docker compose --env-file .env up -d postgres redis
-  PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/001_init.up.sql
-  PGPASSWORD=result_year_dev_password psql -h localhost -p 5446 -U result_year -d result_year -f migrations/002_seed_test_profiles.up.sql
-
-  Полный стек:
-  docker compose --env-file .env up --build
-
-Интеграционный тест:
-  DB_PORT=5446 go test ./tests/integration/... -v
-
-Для Backend 3 (подключение репозиториев):
-  pool, _ := postgres.NewPool(ctx, cfg.DatabaseURL())
-  userRepo := postgres.NewUserRepository(pool)
-  recapRepo := postgres.NewRecapRepository(pool)
-  cardDefinitionRepo := postgres.NewCardDefinitionRepository(pool)
-
-Docker (Backend 2):
-  - backend/Dockerfile — multi-stage сборка server
-  - миграции встраиваются в server через go:embed
-
-============================================================================================================
-
-
-
-
-
-============================================================================================================
-Место для Backend-3:
-
-
-
-
-
-
-
-
-
-
-
-
-
-============================================================================================================
-Место для Frontend:
+Правила совместной работы
+  - изменения HTTP-запросов и ответов синхронизируем со Swagger и DTO;
+  - не добавляем бизнес-логику в handlers или PostgreSQL-адаптеры;
+  - новые зависимости usecase выражаем портом, конкретную реализацию связываем
+    только в cmd/server;
+  - не используем Redis как источник истины;
+  - seed предназначен для демо и должен быть отделён перед строгим production;
+  - перед передачей изменений запускаем gofmt, tests, lint и diff check.
