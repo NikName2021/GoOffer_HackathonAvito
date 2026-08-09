@@ -18,7 +18,8 @@ async function json(route: Route, body: unknown, status = 200) {
   })
 }
 
-export async function mockApi(page: Page) {
+export async function mockApi(page: Page, { isAdmin = false }: { isAdmin?: boolean } = {}) {
+  const definitions: Record<string, unknown>[] = []
   await page.route('http://localhost:8000/api/**', async (route) => {
     const request = route.request()
     const pathname = new URL(request.url()).pathname
@@ -31,8 +32,43 @@ export async function mockApi(page: Page) {
       return json(route, {
         createdAt: '2026-01-01T00:00:00Z',
         id: 'account-1',
+        isAdmin,
         login: 'tester',
       })
+    if (pathname === '/api/admin/card-definitions/options') {
+      return json(route, {
+        analyses: ['total', 'monthly_average', 'monthly_max'],
+        conditions: ['always', 'gt', 'gte', 'lt', 'lte', 'eq'],
+        kinds: ['statistic', 'highlight'],
+        layouts: ['statistic', 'hero'],
+        metrics: ['total_views', 'favorites', 'purchases', 'sales', 'deals'],
+        monthly_metrics: ['total_views', 'favorites', 'purchases', 'sales'],
+      })
+    }
+    if (pathname === '/api/admin/card-definitions') {
+      if (request.method() === 'GET') return json(route, { items: definitions })
+      const body = request.postDataJSON() as Record<string, unknown>
+      const created = {
+        ...body,
+        created_at: '2026-08-09T00:00:00Z',
+        created_by: 'account-1',
+        id: 'definition-1',
+        updated_at: '2026-08-09T00:00:00Z',
+      }
+      definitions.push(created)
+      return json(route, created, 201)
+    }
+    if (pathname.startsWith('/api/admin/card-definitions/')) {
+      const id = pathname.split('/').at(-1)
+      const index = definitions.findIndex((definition) => definition.id === id)
+      if (request.method() === 'DELETE') {
+        definitions.splice(index, 1)
+        return route.fulfill({ headers: corsHeaders, status: 204 })
+      }
+      const updated = { ...definitions[index], ...request.postDataJSON(), id }
+      definitions[index] = updated
+      return json(route, updated)
+    }
     if (pathname === '/api/profiles') return json(route, [profile])
     if (pathname === `/api/profiles/${profileId}`) return json(route, profile)
     if (pathname === '/api/recap/generate') return json(route, recap, 201)

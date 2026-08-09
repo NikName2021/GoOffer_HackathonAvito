@@ -8,7 +8,7 @@ export function loadStoredAccount(): AuthAccount | null {
     if (!storedValue) return null
 
     const account = JSON.parse(storedValue) as Partial<AuthAccount>
-    if (!account.id || !account.login || !account.createdAt) return null
+    if (!account.id || !account.login || typeof account.isAdmin !== 'boolean' || !account.createdAt) return null
     return account as AuthAccount
   } catch {
     return null

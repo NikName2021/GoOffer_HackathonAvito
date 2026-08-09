@@ -6,6 +6,7 @@ export interface AuthCredentials {
 export interface AuthAccount {
   id: string
   login: string
+  isAdmin: boolean
   createdAt: string
 }
 

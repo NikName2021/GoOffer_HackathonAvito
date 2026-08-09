@@ -4,6 +4,7 @@ import process from 'node:process'
 export default defineConfig({
   expect: { timeout: 7_000 },
   fullyParallel: true,
+  workers: 2,
   outputDir: 'test-results',
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
