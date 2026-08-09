@@ -12,7 +12,7 @@ MVP веб-приложения: **тестовый профиль → гене�
 |------|------------|
 | Backend | Go, `net/http`, PostgreSQL, Redis, Docker Compose |
 | Frontend | React, TypeScript, Vite, React Query, Tailwind |
-| Качество | unit + integration тесты, golangci-lint, ESLint |
+| Качество | unit + integration тесты (Go), Vitest (frontend), golangci-lint, ESLint |
 
 ---
 
@@ -37,12 +37,16 @@ docker compose up --build
 |--------|-----|
 | Backend API | http://localhost:8000 |
 | Health | http://localhost:8000/health |
-| Frontend (если в compose) | http://localhost |
+| Frontend (compose profile `full`) | http://localhost |
 | Frontend (dev) | http://localhost:5173 |
 
 ```bash
 curl -s http://localhost:8000/health
 curl -s http://localhost:8000/api/profiles
+```
+
+```bash
+docker compose --profile full up --build   # + frontend в compose
 ```
 
 ### Только frontend (dev)
@@ -54,11 +58,16 @@ npm install
 npm run dev
 ```
 
-Vite proxy: `/api` → `http://127.0.0.1:8000`.
+Vite proxy: `/api` → `http://127.0.0.1:8000` (удобно для cookie).
 
-### Auth (опционально)
+### Auth
 
-По умолчанию recap-демо **без логина** (`AUTH_REQUIRED=false`).
+По умолчанию просмотр recap **без логина** (`AUTH_REQUIRED=false`).  
+**Создание и удаление профилей** — только после входа.
+
+| Login | Password |
+|-------|----------|
+| `demo` | `demo123` |
 
 ```bash
 curl -s -c /tmp/c.txt -X POST http://127.0.0.1:8000/api/auth/login \
@@ -68,7 +77,7 @@ curl -s -c /tmp/c.txt -X POST http://127.0.0.1:8000/api/auth/login \
 
 ---
 
-## Сценарий для жюри (5 минут)
+## Сценарий для жюри (5–7 минут)
 
 1. Главная — **5 тестовых профилей** с persona-badge  
 2. **«Итоги 2025»** → generate → экран recap (story, цифры, ачивки, CTA)  
@@ -76,22 +85,31 @@ curl -s -c /tmp/c.txt -X POST http://127.0.0.1:8000/api/auth/login \
 4. **Share** — карточка без `id`/`user_id`, скачать **PNG**  
 5. Отметить **2 профиля** → **Сравнить** (разные правила генерации)  
 6. **Перегенерировать все** — удобно перед демо  
-7. (опционально) Войти: `demo` / `demo123`
+7. **Войти** (`demo` / `demo123`):  
+   - **«+ Добавить профиль»** — имя, тип поведения, опциональный URL фото  
+   - без фото — **абстрактный аватар** (не фото людей)  
+   - у созданного профиля — **удаление** (seed-пятёрку с UI не удаляем)  
+8. Собрать итоги для только что созданного профиля  
 
 ---
 
 ## API
 
-| Метод | Путь | Описание |
-|-------|------|----------|
-| `GET` | `/health` | Healthcheck |
-| `GET` | `/api/profiles` | Тестовые профили |
-| `GET` | `/api/profiles/{id}` | Профиль |
-| `POST` | `/api/recap/generate` | `{"user_id","year"}` → recap |
-| `GET` | `/api/recap/{user_id}/{year}` | Личный recap |
-| `GET` | `/api/recap/{user_id}/{year}/share` | Share без идентификаторов |
-| `POST` | `/api/recap/generate-all?year=2025` | Пересчёт всех профилей |
-| `POST` | `/api/auth/login` | Сессия (cookie) |
+| Метод | Путь | Auth | Описание |
+|-------|------|------|----------|
+| `GET` | `/health` | — | Healthcheck |
+| `GET` | `/api/profiles` | опц. | Список профилей |
+| `GET` | `/api/profiles/{id}` | опц. | Профиль |
+| `POST` | `/api/profiles` | **да** | Создать профиль + демо-активность |
+| `DELETE` | `/api/profiles/{id}` | **да** | Удалить профиль |
+| `POST` | `/api/recap/generate` | опц. | `{"user_id","year"}` → recap |
+| `GET` | `/api/recap/{user_id}/{year}` | опц. | Личный recap |
+| `GET` | `/api/recap/{user_id}/{year}/share` | опц. | Share без идентификаторов |
+| `POST` | `/api/recap/generate-all?year=2025` | опц. | Пересчёт всех |
+| `POST` | `/api/auth/login` | — | Сессия (cookie) |
+| `POST` | `/api/auth/register` | — | Регистрация |
+| `POST` | `/api/auth/logout` | — | Выход |
+| `GET` | `/api/auth/me` | cookie | Текущий аккаунт |
 
 ```bash
 curl -s -X POST http://localhost:8000/api/recap/generate \
@@ -101,6 +119,16 @@ curl -s -X POST http://localhost:8000/api/recap/generate \
 
 В ответе: `total_*`, `top_categories`, `achievements`, `recommendations`, `story`.  
 В share — **без** `id` и `user_id`.
+
+### Create (после login)
+
+```bash
+curl -s -b /tmp/c.txt -X POST http://localhost:8000/api/profiles \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Мукам","profile_type":"universal","year":2025}'
+```
+
+`profile_type`: `seller` | `buyer` | `veteran` | `newbie` | `universal`.
 
 ---
 
@@ -123,7 +151,12 @@ curl -s -X POST http://localhost:8000/api/recap/generate \
 - Share PNG (`html-to-image`)  
 - Перегенерация всех recap одной кнопкой  
 - Полировка UI: empty states, persona-badge, микрокопирайт  
-- Опциональный auth (cookie session)
+- Опциональный auth (cookie session)  
+- **Создание профиля после входа** + seed демо-активности  
+- **Аватар:** свой URL или абстрактная генерация (не фото людей)  
+- **Удаление** созданных профилей (seed защищены на UI)  
+
+Основной путь «профиль → итоги → share/CTA» работает и **без** логина.
 
 ---
 
@@ -131,14 +164,20 @@ curl -s -X POST http://localhost:8000/api/recap/generate \
 
 ```bash
 cd backend
-go test ./tests/... -count=1
+go test ./tests/unit/... -count=1
+go test ./tests/integration/... -count=1
 golangci-lint run ./...
 ```
 
 ```bash
 cd frontend
+npm test
 npm run lint
+npm run build
 ```
+
+Backend: generator, achievements, story, recommendations, share, handlers, auth.  
+Frontend: buildStory, formatterNumber, PersonaBadge (Vitest).
 
 ---
 
@@ -160,9 +199,11 @@ README.md         ← этот файл
 - Тестовые профили и seed, не продакшен-события Avito  
 - Share URL может содержать `user_id` (тело ответа обезличено)  
 - Рекомендации — продуктовые CTA, не deep-link на конкретные объявления  
+- Удаление seed-профилей с UI отключено  
 
 ---
 
 ## License
 
 Учебный / хакатонный MVP. Не является официальным продуктом Avito.
+```

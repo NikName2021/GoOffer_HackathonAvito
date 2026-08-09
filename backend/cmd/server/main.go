@@ -71,7 +71,7 @@ func main() {
 	accountRepo := postgres.NewAccountRepository(pool)
 	sessionRepo := postgres.NewSessionRepository(pool)
 
-	profileService := profile.New(logger, userRepo)
+	profileService := profile.New(logger, userRepo, actionRepo)
 	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
 	authService := auth.New(accountRepo, sessionRepo)
 

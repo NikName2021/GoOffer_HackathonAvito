@@ -1,19 +1,33 @@
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
-import { Sparkles, GitCompare, RefreshCw } from 'lucide-react'
+import { Sparkles, GitCompare, RefreshCw, Plus, Trash2 } from 'lucide-react'
 
 import { useProfiles, profileMeta } from '@/hooks/useProfiles'
 import { useGenerateRecap } from '@/hooks/useRecap'
+import { useDeleteProfile } from '@/hooks/useDeleteProfile'
 import { generateAllRecaps } from '@/api/recap'
 import { RECAP_YEAR } from '@/constants/backendProfiles'
 import { recapPath, comparePath } from '@/config/paths'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { PersonaBadge } from '@/components/recap/PersonaBadge'
+import { CreateProfileDialog } from '@/components/profile/CreateProfileDialog'
+import { useMe } from '@/hooks/useAuth'
+
+const SEED_IDS = new Set([
+  '11111111-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222222',
+  '33333333-3333-3333-3333-333333333333',
+  '44444444-4444-4444-4444-444444444444',
+  '55555555-5555-5555-5555-555555555555',
+])
 
 export function HomePage() {
   const navigate = useNavigate()
   const { data, isLoading, isError } = useProfiles()
   const profiles = data ?? []
+  const { data: me } = useMe()
+  const del = useDeleteProfile()
+  const [createOpen, setCreateOpen] = useState(false)
   const generate = useGenerateRecap()
   const [loadingId, setLoadingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -59,6 +73,18 @@ export function HomePage() {
       setRegenAllMsg('Не удалось пересчитать все итоги. Проверьте backend.')
     } finally {
       setRegenAllLoading(false)
+    }
+  }
+
+  async function handleDelete(id: string, name: string) {
+    if (!confirm(`Удалить профиль «${name}»?`)) return
+    setError(null)
+    try {
+      await del.mutateAsync(id)
+      setSelected((prev) => prev.filter((x) => x !== id))
+    } catch (e) {
+      console.error(e)
+      setError('Не удалось удалить профиль')
     }
   }
 
@@ -136,6 +162,7 @@ export function HomePage() {
                   const busy = loadingId === profile.id
                   const isSelected = selected.includes(profile.id)
                   const type = profile.profile_type || meta?.profile_type
+                  const canDelete = Boolean(me) && !SEED_IDS.has(profile.id)
 
                   return (
                     <article
@@ -146,6 +173,18 @@ export function HomePage() {
                           : 'border-[#e5e7eb]'
                       }`}
                     >
+                      {canDelete && (
+                        <button
+                          type="button"
+                          title="Удалить профиль"
+                          disabled={del.isPending}
+                          onClick={() => handleDelete(profile.id, profile.name)}
+                          className="absolute right-12 top-4 flex h-6 w-6 items-center justify-center rounded-md text-[#9ca3af] hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+
                       <button
                         type="button"
                         onClick={() => toggleSelect(profile.id)}
@@ -159,11 +198,11 @@ export function HomePage() {
                         ✓
                       </button>
 
-                      <div className="flex items-center gap-3 pr-8">
+                      <div className="flex items-center gap-3 pr-14">
                         <img
-                          src={profile.avatar || meta?.avatar || 'https://i.pravatar.cc/150'}
+                          src={profile.avatar || meta?.avatar || 'https://api.dicebear.com/9.x/shapes/svg?seed=fallback'}
                           alt=""
-                          className="h-14 w-14 rounded-full object-cover"
+                          className="h-14 w-14 rounded-full object-cover bg-[#f3f4f6]"
                         />
                         <div>
                           <h2 className="font-bold">{profile.name}</h2>
@@ -187,14 +226,32 @@ export function HomePage() {
                     </article>
                   )
                 })}
+
+            {me && (
+              <button
+                type="button"
+                onClick={() => setCreateOpen(true)}
+                className="flex min-h-[14rem] flex-col items-center justify-center gap-3 rounded-3xl border-2 border-dashed border-[#d1d5db] bg-[#fafafa] p-5 text-[#6f7377] transition hover:border-[#00aaff] hover:bg-[#f0f9ff] hover:text-[#00aaff]"
+              >
+                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-current">
+                  <Plus className="h-6 w-6" strokeWidth={2} />
+                </span>
+                <span className="text-sm font-semibold">Добавить профиль</span>
+                <span className="max-w-[12rem] text-center text-xs opacity-80">
+                  Создать тестовый профиль с демо-активностью
+                </span>
+              </button>
+            )}
           </section>
 
-          {!isLoading && profiles && profiles.length === 0 && (
+          {!isLoading && profiles.length === 0 && (
             <p className="mt-10 text-center text-sm text-[#6f7377]">
               Профилей нет. Проверьте seed-миграции backend.
             </p>
           )}
         </div>
+
+        <CreateProfileDialog open={createOpen} onClose={() => setCreateOpen(false)} />
       </main>
     </div>
   )

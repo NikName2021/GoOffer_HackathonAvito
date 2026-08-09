@@ -53,4 +53,5 @@ function Button({
   )
 }
 
-export { Button, buttonVariants }
+// ✅ ТОЛЬКО ЭКСПОРТ КОМПОНЕНТА
+export { Button }

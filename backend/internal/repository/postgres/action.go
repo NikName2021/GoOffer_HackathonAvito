@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gooffer/backend/internal/domain"
 
@@ -60,4 +61,77 @@ func (r *ActionRepository) GetByUserAndYear(ctx context.Context, userID uuid.UUI
 		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 	return actions, nil
+}
+
+type seedTemplate struct {
+	views, messages, favorites, purchases, sales, daySpan int
+	categoryID                                            uuid.UUID
+}
+
+func templateFor(profileType string) seedTemplate {
+	electronics := uuid.MustParse("cccccccc-cccc-cccc-cccc-cccccccccccc")
+	realty := uuid.MustParse("bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")
+	hobby := uuid.MustParse("22222222-2222-2222-2222-bbbbbbbbbbbb")
+	auto := uuid.MustParse("aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")
+
+	switch profileType {
+	case "seller":
+		return seedTemplate{620, 40, 30, 3, 12, 200, electronics}
+	case "buyer":
+		return seedTemplate{900, 50, 120, 14, 1, 180, realty}
+	case "veteran":
+		return seedTemplate{1100, 60, 80, 10, 6, 300, hobby}
+	case "newbie":
+		return seedTemplate{40, 3, 4, 0, 0, 20, electronics}
+	case "universal":
+		return seedTemplate{700, 45, 70, 8, 7, 150, auto}
+	default:
+		return seedTemplate{200, 15, 20, 2, 2, 60, electronics}
+	}
+}
+
+func (r *ActionRepository) SeedDemoActivity(ctx context.Context, userID uuid.UUID, profileType string, year int) error {
+	t := templateFor(profileType)
+	base := time.Date(year, 1, 15, 12, 0, 0, 0, time.UTC)
+
+	type batch struct {
+		typ   string
+		count int
+	}
+	batches := []batch{
+		{"view", t.views},
+		{"message", t.messages},
+		{"favorite", t.favorites},
+		{"purchase", t.purchases},
+		{"sale", t.sales},
+	}
+
+	const q = `INSERT INTO actions (id, user_id, type, category_id, created_at) VALUES ($1, $2, $3, $4, $5)`
+
+	for _, b := range batches {
+		if b.count <= 0 {
+			continue
+		}
+		n := b.count
+		step := 1
+		if n > 40 {
+			step = n / 40
+			if step < 1 {
+				step = 1
+			}
+		}
+		inserted := 0
+		for i := 0; i < n && inserted < 40; i += step {
+			dayOffset := 0
+			if t.daySpan > 0 {
+				dayOffset = (inserted * t.daySpan) / 40
+			}
+			ts := base.AddDate(0, 0, dayOffset)
+			if _, err := r.db.Exec(ctx, q, uuid.New(), userID, b.typ, t.categoryID, ts); err != nil {
+				return fmt.Errorf("seed action %s: %w", b.typ, err)
+			}
+			inserted++
+		}
+	}
+	return nil
 }

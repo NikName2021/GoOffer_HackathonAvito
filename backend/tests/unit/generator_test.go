@@ -332,3 +332,20 @@ func TestAssignAchievements(t *testing.T) {
 		t.Error("expected achievements, got none")
 	}
 }
+
+func (m *mockUserRepo) Create(ctx context.Context, user *domain.User) error {
+	if m.users == nil {
+		m.users = map[uuid.UUID]domain.User{}
+	}
+	m.users[user.ID] = *user
+	return nil
+}
+
+func (m *mockUserRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	delete(m.users, id)
+	return nil
+}
+
+func (m *mockActionRepo) SeedDemoActivity(ctx context.Context, userID uuid.UUID, profileType string, year int) error {
+	return nil
+}

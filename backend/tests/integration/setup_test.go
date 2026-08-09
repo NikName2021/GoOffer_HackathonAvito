@@ -217,6 +217,39 @@ func (c *memCache) Delete(_ context.Context, key string) error {
 	return nil
 }
 
+func (r *memUserRepo) Create(_ context.Context, user *domain.User) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if user.ID == uuid.Nil {
+		user.ID = uuid.New()
+	}
+	r.users[user.ID] = *user
+	return nil
+}
+
+func (r *memUserRepo) Delete(_ context.Context, id uuid.UUID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, ok := r.users[id]; !ok {
+		return fmt.Errorf("user not found")
+	}
+	delete(r.users, id)
+	return nil
+}
+
+func (r *memActionRepo) SeedDemoActivity(_ context.Context, userID uuid.UUID, profileType string, year int) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	counts := map[domain.ActionType]int{
+		domain.ActionView:     100,
+		domain.ActionMessage:  10,
+		domain.ActionFavorite: 10,
+	}
+	r.actions[userID] = buildActions(userID, counts, "Электроника", 30)
+	_, _ = profileType, year
+	return nil
+}
+
 type testApp struct {
 	handler http.Handler
 }
@@ -230,7 +263,7 @@ func newTestApp(t *testing.T) *testApp {
 	recapRepo := newMemRecapRepo()
 	cache := newMemCache()
 
-	profileSvc := profile.New(logger, userRepo)
+	profileSvc := profile.New(logger, userRepo, actionRepo)
 	gen := generator.New(logger, userRepo, actionRepo, recapRepo, cache)
 
 	profileHandler := handlers.NewProfileHandler(logger, profileSvc)

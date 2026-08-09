@@ -35,3 +35,19 @@ export async function generateAllRecaps(year: number) {
     results: { user_id: string; ok: boolean; error?: string }[]
   }
 }
+
+export type CreateProfilePayload = {
+  name: string
+  profile_type: string
+  avatar?: string
+  year?: number
+}
+
+export async function createProfile(payload: CreateProfilePayload): Promise<ApiProfile> {
+  const { data } = await apiClient.post<ApiProfile>('/profiles', payload)
+  return data
+}
+
+export async function deleteProfile(id: string): Promise<void> {
+  await apiClient.delete(`/profiles/${id}`)
+}

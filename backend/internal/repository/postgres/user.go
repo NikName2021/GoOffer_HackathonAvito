@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gooffer/backend/internal/domain"
 
@@ -35,7 +36,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id uuid.UUID) (*domain.Use
 }
 
 func (r *UserRepository) ListProfiles(ctx context.Context) ([]domain.User, error) {
-	query := `SELECT id, name, avatar, registered_at, profile_type FROM users ORDER BY name`
+	query := `SELECT id, name, avatar, registered_at, profile_type FROM users ORDER BY registered_at, name`
 	rows, err := r.db.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list profiles: %w", err)
@@ -54,4 +55,34 @@ func (r *UserRepository) ListProfiles(ctx context.Context) ([]domain.User, error
 		return nil, fmt.Errorf("rows iteration error: %w", err)
 	}
 	return users, nil
+}
+
+func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
+	if user.ID == uuid.Nil {
+		user.ID = uuid.New()
+	}
+	if user.RegisteredAt.IsZero() {
+		user.RegisteredAt = time.Now().UTC()
+	}
+	query := `
+		INSERT INTO users (id, name, avatar, registered_at, profile_type)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err := r.db.Exec(ctx, query, user.ID, user.Name, user.Avatar, user.RegisteredAt, user.ProfileType)
+	if err != nil {
+		return fmt.Errorf("failed to create user: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepository) Delete(ctx context.Context, id uuid.UUID) error {
+	// users → CASCADE на actions/recaps из миграции
+	cmd, err := r.db.Exec(ctx, `DELETE FROM users WHERE id = $1`, id)
+	if err != nil {
+		return fmt.Errorf("failed to delete user: %w", err)
+	}
+	if cmd.RowsAffected() == 0 {
+		return fmt.Errorf("user not found")
+	}
+	return nil
 }

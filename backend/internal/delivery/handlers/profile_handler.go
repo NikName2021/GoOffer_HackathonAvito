@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"gooffer/backend/internal/delivery/dto"
+	"gooffer/backend/internal/delivery/middleware"
 	"gooffer/backend/internal/usecase/profile"
 	apperrors "gooffer/backend/pkg/errors"
 
@@ -49,6 +50,64 @@ func (h *ProfileHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.writeJSON(w, http.StatusOK, dto.ToProfileResponse(user))
+}
+
+type createProfileRequest struct {
+	Name        string `json:"name"`
+	ProfileType string `json:"profile_type"`
+	Avatar      string `json:"avatar,omitempty"`
+	Year        int    `json:"year,omitempty"`
+}
+
+func (h *ProfileHandler) Create(w http.ResponseWriter, r *http.Request) {
+	if _, ok := middleware.AccountFromContext(r.Context()); !ok {
+		h.writeError(w, apperrors.Unauthorized("authentication required"))
+		return
+	}
+
+	var req createProfileRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		h.writeError(w, apperrors.BadRequest("invalid json body"))
+		return
+	}
+
+	user, err := h.service.Create(r.Context(), profile.CreateInput{
+		Name:        req.Name,
+		ProfileType: req.ProfileType,
+		Avatar:      req.Avatar,
+		Year:        req.Year,
+	})
+	if err != nil {
+		msg := err.Error()
+		if strings.Contains(msg, "required") || strings.Contains(msg, "invalid") || strings.Contains(msg, "too long") {
+			h.writeError(w, apperrors.BadRequest(msg))
+			return
+		}
+		h.writeError(w, apperrors.Internal("failed to create profile", err))
+		return
+	}
+	h.writeJSON(w, http.StatusCreated, dto.ToProfileResponse(user))
+}
+
+func (h *ProfileHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	if _, ok := middleware.AccountFromContext(r.Context()); !ok {
+		h.writeError(w, apperrors.Unauthorized("authentication required"))
+		return
+	}
+	id, err := uuid.Parse(r.PathValue("id"))
+	if err != nil {
+		h.writeError(w, apperrors.BadRequest("invalid profile id"))
+		return
+	}
+	if err := h.service.Delete(r.Context(), id); err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			h.writeError(w, apperrors.NotFound("profile not found"))
+			return
+		}
+		h.writeError(w, apperrors.Internal("failed to delete profile", err))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *ProfileHandler) writeJSON(w http.ResponseWriter, status int, v any) {

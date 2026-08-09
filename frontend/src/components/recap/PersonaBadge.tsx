@@ -1,5 +1,7 @@
 import type { CSSProperties } from 'react'
 
+// ✅ Добавляем комментарий для ESLint
+// eslint-disable-next-line react-refresh/only-export-components
 export const PERSONA_META: Record<
   string,
   { label: string; emoji: string; bg: string; text: string; border: string }

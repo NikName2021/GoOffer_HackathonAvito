@@ -60,6 +60,16 @@ func (handlerCache) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
+func (handlerUserRepo) Create(ctx context.Context, user *domain.User) error { return nil }
+
+func (handlerUserRepo) Delete(ctx context.Context, id uuid.UUID) error {
+	return nil
+}
+
+func (handlerActionRepo) SeedDemoActivity(ctx context.Context, userID uuid.UUID, profileType string, year int) error {
+	return nil
+}
+
 func newTestRecapHandler(t *testing.T) *handlers.RecapHandler {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelError}))

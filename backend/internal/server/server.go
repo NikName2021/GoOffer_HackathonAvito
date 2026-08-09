@@ -43,6 +43,15 @@ func New(deps Dependencies) *Server {
 		mux.HandleFunc("GET /api/auth/me", deps.AuthHandler.Me)
 	}
 
+	if deps.AuthService != nil {
+		require := middleware.RequireAuth(deps.AuthService, deps.Logger)
+		mux.Handle("POST /api/profiles", require(http.HandlerFunc(deps.ProfileHandler.Create)))
+		mux.Handle("DELETE /api/profiles/{id}", require(http.HandlerFunc(deps.ProfileHandler.Delete)))
+	} else {
+		mux.HandleFunc("POST /api/profiles", deps.ProfileHandler.Create)
+		mux.HandleFunc("DELETE /api/profiles/{id}", deps.ProfileHandler.Delete)
+	}
+
 	profileList := http.HandlerFunc(deps.ProfileHandler.List)
 	profileGet := http.HandlerFunc(deps.ProfileHandler.GetByID)
 	recapGen := http.HandlerFunc(deps.RecapHandler.Generate)
