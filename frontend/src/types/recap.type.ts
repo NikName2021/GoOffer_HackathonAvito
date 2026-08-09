@@ -150,6 +150,16 @@ export interface ShareRecapSummary {
   combined: CombinedRecapSummary
 }
 
-export interface ShareRecapResponse extends Omit<RecapResponse, 'id' | 'user_id' | 'summary'> {
+export interface ShareRecapCardResponse {
+  kind: RecapCardResponse['kind']
+  eyebrow: string
+  title: string
+  description: string
+  value: string
+  presentation: RecapCardPresentation
+}
+
+export interface ShareRecapResponse extends Omit<RecapResponse, 'id' | 'user_id' | 'summary' | 'cards'> {
   summary: ShareRecapSummary
+  cards: ShareRecapCardResponse[]
 }

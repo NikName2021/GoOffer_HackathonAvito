@@ -3,6 +3,7 @@ import { lazy, Suspense, useState } from 'react'
 import { AddProfileButton } from '@/components/profileCards/AddProfileButton'
 import { DeleteProfileDialog } from '@/components/profileCards/DeleteProfileDialog'
 import { ProfileCard } from '@/components/profileCards/ProfileCard'
+import { ProfilesNotice } from '@/components/profileCards/ProfilesNotice'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import {
   useCreateProfile,
@@ -63,7 +64,9 @@ export function HomePage() {
         <div className="mx-auto max-w-[1120px]">
           <header>
             <p className="text-sm font-semibold text-[#00aaff]">Авито · 2026</p>
-            <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-[#1f1f1f] sm:text-4xl">Чьи итоги посмотрим?</h1>
+            <h1 className="mt-2 text-3xl font-bold tracking-[-0.03em] text-[#1f1f1f] sm:text-4xl">
+              Чьи итоги посмотрим?
+            </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#6f7377] sm:text-base">
               Выберите тестовый профиль, чтобы собрать персональную историю года на основе его активности.
             </p>
@@ -78,15 +81,28 @@ export function HomePage() {
             {!account && <ProfilesNotice text="Войдите в аккаунт через профиль в левом нижнем углу." />}
             {account && profilesQuery.isPending && <ProfilesNotice text="Загружаем профили…" />}
             {account && profilesQuery.isError && (
-              <ProfilesNotice actionLabel="Повторить" onAction={() => void profilesQuery.refetch()} text={profilesQuery.error.message} />
+              <ProfilesNotice
+                actionLabel="Повторить"
+                onAction={() => void profilesQuery.refetch()}
+                text={profilesQuery.error.message}
+              />
             )}
             {editingProfileQuery.isError && (
-              <ProfilesNotice actionLabel="Повторить" onAction={() => void editingProfileQuery.refetch()} text={editingProfileQuery.error.message} />
+              <ProfilesNotice
+                actionLabel="Повторить"
+                onAction={() => void editingProfileQuery.refetch()}
+                text={editingProfileQuery.error.message}
+              />
             )}
             {account && profilesQuery.isSuccess && (
               <>
                 {profiles.map((profile) => (
-                  <ProfileCard key={profile.id} onDelete={setProfileToDelete} onEdit={setEditingProfileId} profile={profile} />
+                  <ProfileCard
+                    key={profile.id}
+                    onDelete={setProfileToDelete}
+                    onEdit={setEditingProfileId}
+                    profile={profile}
+                  />
                 ))}
                 <AddProfileButton onClick={() => setIsCreateDialogOpen(true)} />
               </>
@@ -130,23 +146,4 @@ function toProfileRequest(profile: GetProfileDetailsResponse): CreateProfileRequ
     ownAds: profile.ownAds,
     views: profile.views,
   }
-}
-
-interface ProfilesNoticeProps {
-  actionLabel?: string
-  onAction?: () => void
-  text: string
-}
-
-function ProfilesNotice({ actionLabel, onAction, text }: ProfilesNoticeProps) {
-  return (
-    <div className="col-span-full rounded-3xl border border-[#e7e9eb] bg-[#f7fcff] px-6 py-8 text-center">
-      <p className="text-sm text-[#6f7377]">{text}</p>
-      {actionLabel && onAction && (
-        <button className="mt-3 text-sm font-semibold text-[#00aaff] hover:text-[#0099e6]" onClick={onAction} type="button">
-          {actionLabel}
-        </button>
-      )}
-    </div>
-  )
 }

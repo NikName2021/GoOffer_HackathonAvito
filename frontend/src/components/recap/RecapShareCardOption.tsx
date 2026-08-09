@@ -2,7 +2,7 @@ import { Check } from 'lucide-react'
 
 import { RecapIcon } from './RecapIcon'
 import { cn } from '@/lib/utils'
-import type { RecapCardResponse } from '@/types/recap.type'
+import type { ShareRecapCardResponse } from '@/types/recap.type'
 
 const themes: Record<string, { accent: string; surface: string }> = {
   'avito-blue': { accent: 'text-[#00aaff]', surface: 'from-[#e5f6ff] to-[#f7fcff]' },
@@ -13,7 +13,7 @@ const themes: Record<string, { accent: string; surface: string }> = {
 }
 
 interface RecapShareCardOptionProps {
-  card: RecapCardResponse
+  card: ShareRecapCardResponse
   onToggle: () => void
   selected: boolean
 }
@@ -32,13 +32,24 @@ export function RecapShareCardOption({ card, onToggle, selected }: RecapShareCar
       onClick={onToggle}
       type="button"
     >
-      <span className={cn('grid size-10 place-items-center rounded-2xl bg-white shadow-sm [&_svg]:!size-5', theme.accent)}>
+      <span
+        className={cn('grid size-10 place-items-center rounded-2xl bg-white shadow-sm [&_svg]:!size-5', theme.accent)}
+      >
         <RecapIcon name={card.presentation.icon} />
       </span>
-      <span className={cn('absolute top-4 right-4 grid size-7 place-items-center rounded-full border bg-white transition', selected ? 'border-[#00aaff] text-[#00aaff]' : 'border-[#dfe1e3] text-transparent')}>
+      <span
+        className={cn(
+          'absolute top-4 right-4 grid size-7 place-items-center rounded-full border bg-white transition',
+          selected ? 'border-[#00aaff] text-[#00aaff]' : 'border-[#dfe1e3] text-transparent',
+        )}
+      >
         <Check aria-hidden="true" className="size-4" />
       </span>
-      {card.eyebrow && <span className="mt-4 block text-[10px] font-bold tracking-[0.12em] text-[#8a8d91] uppercase">{card.eyebrow}</span>}
+      {card.eyebrow && (
+        <span className="mt-4 block text-[10px] font-bold tracking-[0.12em] text-[#8a8d91] uppercase">
+          {card.eyebrow}
+        </span>
+      )}
       <strong className="mt-1 block pr-5 text-base leading-5 font-black text-[#1f1f1f]">{card.title}</strong>
       {card.value && <span className={cn('mt-3 block text-xl font-black', theme.accent)}>{card.value}</span>}
     </button>

@@ -6,14 +6,14 @@ import { sendRecapEvent } from '@/api/recapEvents'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { useShareRecap } from '@/hooks/useRecap'
-import type { RecapCardResponse, RecapResponse, ShareRecapResponse } from '@/types/recap.type'
+import type { RecapResponse, ShareRecapCardResponse, ShareRecapResponse } from '@/types/recap.type'
 import { downloadRecapShareImage } from '@/utils/recapShareImage'
+import { getAllShareCardIndexes, getSelectedShareCards, toggleShareCardIndex } from '@/utils/recapShareSelection'
 
 interface RecapSharePreviewProps {
   recap: RecapResponse
 }
-
-function buildShareText(data: ShareRecapResponse, cards: RecapCardResponse[]) {
+function buildShareText(data: ShareRecapResponse, cards: ShareRecapCardResponse[]) {
   const highlights = cards.map((card) => `• ${card.title}${card.value ? ` — ${card.value}` : ''}`)
   return [`Итоги ${data.year} года на Авито`, data.summary.headline, ...highlights].join('\n')
 }
@@ -21,7 +21,7 @@ function buildShareText(data: ShareRecapResponse, cards: RecapCardResponse[]) {
 export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
   const shareMutation = useShareRecap()
   const [shared, setShared] = useState(false)
-  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [selectedIndexes, setSelectedIndexes] = useState<number[]>([])
   const shareCreatedSent = useRef(false)
 
   function trackShareCreated() {
@@ -36,7 +36,7 @@ export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
       shareMutation.mutate(
         { userId: recap.user_id, year: recap.year },
         {
-          onSuccess: (data) => setSelectedIds(data.cards.map((card) => card.id)),
+          onSuccess: (data) => setSelectedIndexes(getAllShareCardIndexes(data.cards)),
         },
       )
     }
@@ -56,10 +56,10 @@ export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
   }
 
   const error = shareMutation.error instanceof Error ? shareMutation.error.message : undefined
-  const selectedCards = shareMutation.data?.cards.filter((card) => selectedIds.includes(card.id)) ?? []
+  const selectedCards = shareMutation.data ? getSelectedShareCards(shareMutation.data.cards, selectedIndexes) : []
 
-  function toggleCard(cardId: string) {
-    setSelectedIds((ids) => (ids.includes(cardId) ? ids.filter((id) => id !== cardId) : [...ids, cardId]))
+  function toggleCard(index: number) {
+    setSelectedIndexes((indexes) => toggleShareCardIndex(indexes, index))
   }
 
   async function download() {
@@ -77,7 +77,9 @@ export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
       <DialogContent className="max-h-[min(760px,calc(100dvh-2rem))] overflow-y-auto sm:max-w-3xl">
         <div className="pr-10">
           <DialogTitle className="text-xl font-black">Предпросмотр публикации</DialogTitle>
-          <DialogDescription className="mt-2">Выберите моменты, которые хотите сохранить или отправить друзьям.</DialogDescription>
+          <DialogDescription className="mt-2">
+            Выберите моменты, которые хотите сохранить или отправить друзьям.
+          </DialogDescription>
         </div>
 
         {shareMutation.isPending && (
@@ -93,8 +95,12 @@ export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
               <div className="relative flex items-center gap-2 text-xs font-bold text-[#00aaff]">
                 <ShieldCheck className="size-4" /> Без приватных данных
               </div>
-              <h3 className="relative mt-4 max-w-xl text-3xl leading-8 font-black tracking-[-0.03em] text-[#1f1f1f]">{shareMutation.data.summary.headline}</h3>
-              <p className="relative mt-2 max-w-xl text-sm leading-5 text-[#6f7377]">{shareMutation.data.summary.description}</p>
+              <h3 className="relative mt-4 max-w-xl text-3xl leading-8 font-black tracking-[-0.03em] text-[#1f1f1f]">
+                {shareMutation.data.summary.headline}
+              </h3>
+              <p className="relative mt-2 max-w-xl text-sm leading-5 text-[#6f7377]">
+                {shareMutation.data.summary.description}
+              </p>
             </section>
             <div>
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -104,18 +110,34 @@ export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
                 </span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
-                {shareMutation.data.cards.map((card) => (
-                  <RecapShareCardOption card={card} key={card.id} onToggle={() => toggleCard(card.id)} selected={selectedIds.includes(card.id)} />
+                {shareMutation.data.cards.map((card, index) => (
+                  <RecapShareCardOption
+                    card={card}
+                    key={`${card.kind}-${index}`}
+                    onToggle={() => toggleCard(index)}
+                    selected={selectedIndexes.includes(index)}
+                  />
                 ))}
               </div>
             </div>
-            <p className="rounded-xl bg-[#f2f3f5] p-3 text-xs leading-5 text-[#6f7377]">Сейчас можно поделиться выбранными итогами как текстом или PNG.</p>
+            <p className="rounded-xl bg-[#f2f3f5] p-3 text-xs leading-5 text-[#6f7377]">
+              Сейчас можно поделиться выбранными итогами как текстом или PNG.
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
-              <Button className="rounded-2xl" disabled={!selectedCards.length} onClick={() => void download()} variant="outline">
+              <Button
+                className="rounded-2xl"
+                disabled={!selectedCards.length}
+                onClick={() => void download()}
+                variant="outline"
+              >
                 <Download />
                 Скачать PNG
               </Button>
-              <Button className="rounded-2xl bg-[#00aaff] text-white hover:bg-[#0099e6]" disabled={!selectedCards.length} onClick={share}>
+              <Button
+                className="rounded-2xl bg-[#00aaff] text-white hover:bg-[#0099e6]"
+                disabled={!selectedCards.length}
+                onClick={share}
+              >
                 {shared ? <Check /> : <Send />}
                 {shared ? 'Готово' : 'Поделиться текстом'}
               </Button>
