@@ -1,10 +1,13 @@
-import { useState, type ReactNode } from 'react'
+import { lazy, Suspense, useState, type ReactNode } from 'react'
 
-import { RecapExperience } from './RecapExperience'
 import { RecapStatus } from './RecapStatus'
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { useGenerateRecap } from '@/hooks/useRecap'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
+
+const RecapExperience = lazy(() =>
+  import('./RecapExperience').then((module) => ({ default: module.RecapExperience })),
+)
 
 interface RecapDialogProps {
   children: ReactNode
@@ -37,7 +40,9 @@ export function RecapDialog({ children, profile }: RecapDialogProps) {
         <DialogTitle className="sr-only">Итоги {recapYear} года для {profile.name}</DialogTitle>
         <DialogDescription className="sr-only">Персональные итоги можно листать кнопками или свайпом.</DialogDescription>
         {recapMutation.data ? (
-          <RecapExperience key={recapMutation.data.id} profile={profile} recap={recapMutation.data} />
+          <Suspense fallback={<RecapStatus />}>
+            <RecapExperience key={recapMutation.data.id} profile={profile} recap={recapMutation.data} />
+          </Suspense>
         ) : (
           <RecapStatus error={error} onRetry={error ? loadRecap : undefined} />
         )}

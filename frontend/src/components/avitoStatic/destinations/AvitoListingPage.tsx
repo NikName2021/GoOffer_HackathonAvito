@@ -1,5 +1,8 @@
 import { Heart, MapPin, ShieldCheck } from 'lucide-react'
 
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
+import { AVITO_IMAGE_FALLBACK } from '@/constants/avitoStatic'
+
 import type { AvitoCatalogItem } from './AvitoCatalogPage'
 
 interface AvitoListingPageProps {
@@ -11,7 +14,15 @@ export function AvitoListingPage({ item, own = false }: AvitoListingPageProps) {
   return (
     <article className="avito-mock-listing">
       <div className="avito-mock-listing-image">
-        {item.image ? <img alt={item.title} src={item.image} /> : <span>Фото объявления</span>}
+        {item.image ? (
+          <ImageWithFallback
+            alt={item.title}
+            fallbackSrc={AVITO_IMAGE_FALLBACK}
+            src={item.image}
+          />
+        ) : (
+          <span>Фото объявления</span>
+        )}
       </div>
       <div className="avito-mock-listing-info">
         <span className="avito-mock-listing-badge">{own ? 'Ваше объявление' : 'Объявление Avito'}</span>

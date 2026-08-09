@@ -26,7 +26,7 @@ const authMessages: Record<string, string> = {
 }
 
 function assertAccount(data: AuthAccount | undefined, fallbackMessage: string): AuthAccount {
-  if (!data?.id || !data.login || !data.createdAt) {
+  if (!data?.id || !data.login || typeof data.isAdmin !== 'boolean' || !data.createdAt) {
     throw createAuthRequestError('invalid_response', fallbackMessage)
   }
 

@@ -1,6 +1,8 @@
 import { ImagePlus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
+
 interface ImageUploadFieldProps {
   label: string
   onChange: (imageUrl?: string) => void
@@ -37,7 +39,7 @@ export function ImageUploadField({ label, onChange, value }: ImageUploadFieldPro
       <div className="mt-1.5 flex items-center gap-3 rounded-2xl border border-dashed border-[#cfd2d5] bg-[#fafafa] p-3">
         <span className="grid size-14 shrink-0 place-items-center overflow-hidden rounded-xl bg-[#e8f6ff] text-[#00aaff]">
           {value ? (
-            <img alt="Предпросмотр" className="size-full object-cover" src={value} />
+            <ImageWithFallback alt="Предпросмотр" className="size-full object-cover" src={value} />
           ) : (
             <ImagePlus aria-hidden="true" className="size-5" />
           )}

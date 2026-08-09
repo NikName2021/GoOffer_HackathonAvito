@@ -11,7 +11,7 @@ test('пользователь выбирает миссию на финальн
   await page.goto(`/avito?profileId=${profileId}`)
 
   await page.getByRole('button', { name: `Открыть итоги года для ${profile.name}` }).click()
-  await page.getByRole('button', { name: /Открыть итог 2: Продолжение следует/ }).click()
+  await page.getByRole('button', { name: /Открыть итог 3: Миссия на следующий год/ }).click()
   await expect(page.getByRole('heading', { name: 'Миссия на следующий год' })).toBeVisible()
 
   await page.getByRole('button', { name: /Продать три ненужные вещи/ }).click()

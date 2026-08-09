@@ -1,6 +1,9 @@
 import { ArrowLeft, Bell, Heart, MessageCircle, ShoppingCart } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
+import marketplaceBanner from '@/assets/avito-demo/marketplace-banner.webp'
+import marketplacePlaceholder from '@/assets/avito-demo/marketplace-placeholder.webp'
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
 import { PATHS } from '@/config/paths'
 
 const links = ['◉ Для бизнеса⌄', 'Карьера в Авито', 'Помощь', 'Каталоги⌄', '#яПомогаю']
@@ -10,9 +13,13 @@ export function AvitoHeader() {
     <>
       <div className="avito-static-promo-top">
         <div className="avito-static-promo-copy">
-          Получите кешбэк от Альфа-Банка за покупки с Авито Доставкой. <u>Подробнее</u>
+          Находите нужное и давайте вещам новую жизнь. <u>Подробнее</u>
         </div>
-        <img alt="Картинка баннера" src="https://www.avito.st/static/ims/61ec3b14-2de3-4c92-bead-b7c8612c1b28_desktop_main_page_banner_v6_common_1492x240.png" />
+        <ImageWithFallback
+          alt="Подборка товаров для дома, хобби и путешествий"
+          fallbackSrc={marketplacePlaceholder}
+          src={marketplaceBanner}
+        />
       </div>
       <header className="avito-static-header">
         <div className="avito-static-nav">

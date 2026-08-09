@@ -20,6 +20,7 @@ import {
 const icons: Record<string, LucideIcon> = {
   arrow: ArrowUpRight,
   bag: ShoppingBag,
+  chart: Shapes,
   calendar: CalendarDays,
   categories: Shapes,
   compass: Compass,

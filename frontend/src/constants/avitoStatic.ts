@@ -1,8 +1,12 @@
+import marketplacePlaceholder from '@/assets/avito-demo/marketplace-placeholder.webp'
+
 export interface AvitoProduct {
   image: string
   price: string
   title: string
 }
+
+export const AVITO_IMAGE_FALLBACK = marketplacePlaceholder
 
 export const AVITO_CATEGORIES = [
   { label: 'Авто', image: 'https://www.avito.st/static/ims/0bf3d8ac-175d-4ffa-a1a0-32531cb0281d_desktop_common_612x300.png' },

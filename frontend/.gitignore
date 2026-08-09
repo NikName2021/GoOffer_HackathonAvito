@@ -26,5 +26,5 @@ test-results
 *.sln
 *.sw?
 
-.env
+.env.development
 /scripts/generate-profile-import-fixtures.mjs

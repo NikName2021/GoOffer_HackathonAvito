@@ -3,7 +3,7 @@ import { Cell, Pie, PieChart } from 'recharts'
 
 import { getRecapChartColor } from './recapChartColors'
 import { Button } from '@/components/ui/button'
-import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from '@/components/ui/chart'
+import { ChartContainer, type ChartConfig } from '@/components/ui/chart'
 import type { RecapVisualization } from '@/types/recap.type'
 
 interface RecapDonutChartProps {
@@ -28,7 +28,6 @@ export function RecapDonutChart({ visualization }: RecapDonutChartProps) {
       <div className="relative min-w-0">
         <ChartContainer className="mx-auto h-[200px] w-full max-w-[420px]" config={config}>
           <PieChart>
-            <ChartTooltip content={<ChartTooltipContent unit={visualization.unit} />} cursor={false} />
             <Pie
               animationDuration={650}
               data={segments}
@@ -47,9 +46,9 @@ export function RecapDonutChart({ visualization }: RecapDonutChartProps) {
           </PieChart>
         </ChartContainer>
         {active && (
-          <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
+          <div className="pointer-events-none absolute inset-0 grid place-content-center px-3 text-center">
             <b className="text-2xl font-black text-[#1f1f1f]">{Math.round(active.value * 100 / total)}%</b>
-            <span className="max-w-24 truncate text-xs text-[#8a8d91]">{active.label}</span>
+            <span className="mt-0.5 max-w-24 text-xs leading-4 text-balance text-[#8a8d91]">{active.label}</span>
           </div>
         )}
       </div>

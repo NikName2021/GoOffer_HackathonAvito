@@ -1,3 +1,4 @@
+import { ImageWithFallback } from '@/components/ui/image-with-fallback'
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import { getProfileAccent, getProfileInitials } from '@/utils/profileAppearance'
 
@@ -16,7 +17,7 @@ export function ProfileImage({ profile, size = 'default' }: ProfileImageProps) {
     >
       <span>{getProfileInitials(profile.name)}</span>
       {profile.avatarUrl && (
-        <img
+        <ImageWithFallback
           alt={`Фото пользователя ${profile.name}`}
           className="absolute inset-0 size-full object-cover"
           src={profile.avatarUrl}

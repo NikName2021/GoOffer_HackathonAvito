@@ -1,4 +1,4 @@
-import type { RecapCardResponse, ShareRecapResponse } from '@/types/recap.type'
+import type { ShareRecapCardResponse, ShareRecapResponse } from '@/types/recap.type'
 
 const CANVAS_WIDTH = 1080
 const CANVAS_HEIGHT = 1350
@@ -12,7 +12,14 @@ const themes: Record<string, { accent: string; surface: string }> = {
   'avito-red': { accent: '#ff4053', surface: '#fff0f2' },
 }
 
-function fillRoundedRect(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+function fillRoundedRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
   context.beginPath()
   context.roundRect(x, y, width, height, radius)
   context.fill()
@@ -60,7 +67,15 @@ function drawAvitoMark(context: CanvasRenderingContext2D) {
   })
 }
 
-function drawCard(context: CanvasRenderingContext2D, card: RecapCardResponse, index: number, x: number, y: number, width: number, height: number) {
+function drawCard(
+  context: CanvasRenderingContext2D,
+  card: ShareRecapCardResponse,
+  index: number,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+) {
   const theme = themes[card.presentation.theme] ?? themes['avito-blue']
   context.save()
   context.shadowColor = 'rgba(34, 34, 34, 0.08)'
@@ -96,7 +111,7 @@ function drawCard(context: CanvasRenderingContext2D, card: RecapCardResponse, in
   }
 }
 
-export function downloadRecapShareImage(data: ShareRecapResponse, cards: RecapCardResponse[]) {
+export function downloadRecapShareImage(data: ShareRecapResponse, cards: ShareRecapCardResponse[]) {
   return new Promise<boolean>((resolve) => {
     const canvas = document.createElement('canvas')
     canvas.width = CANVAS_WIDTH
@@ -124,7 +139,11 @@ export function downloadRecapShareImage(data: ShareRecapResponse, cards: RecapCa
     const headlineBottom = 205 + (headline.length - 1) * 69
     context.fillStyle = '#6f7377'
     context.font = '500 25px Inter, Arial'
-    context.fillText(`${cards.length} ${cards.length === 1 ? 'главный момент' : 'главных моментов'} года`, 62, headlineBottom + 54)
+    context.fillText(
+      `${cards.length} ${cards.length === 1 ? 'главный момент' : 'главных моментов'} года`,
+      62,
+      headlineBottom + 54,
+    )
 
     const gridTop = 390
     const gridBottom = 1210
