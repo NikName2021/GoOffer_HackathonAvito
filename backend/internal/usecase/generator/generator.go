@@ -11,18 +11,25 @@ import (
 )
 
 type Generator struct {
-	userRepo  ports.UserRepository
-	recapRepo ports.RecapRepository
+	userRepo           ports.UserRepository
+	recapRepo          ports.RecapRepository
+	cardDefinitionRepo ports.CardDefinitionRepository
 }
 
 func New(
 	userRepo ports.UserRepository,
 	_ ports.ActionRepository, // kept temporarily so existing application wiring stays compatible
 	recapRepo ports.RecapRepository,
+	cardDefinitionRepositories ...ports.CardDefinitionRepository,
 ) *Generator {
+	var cardDefinitionRepo ports.CardDefinitionRepository
+	if len(cardDefinitionRepositories) > 0 {
+		cardDefinitionRepo = cardDefinitionRepositories[0]
+	}
 	return &Generator{
-		userRepo:  userRepo,
-		recapRepo: recapRepo,
+		userRepo:           userRepo,
+		recapRepo:          recapRepo,
+		cardDefinitionRepo: cardDefinitionRepo,
 	}
 }
 
@@ -35,6 +42,13 @@ func (g *Generator) Execute(ctx context.Context, accountID, userID uuid.UUID, ye
 	metrics := calculateProfileMetrics(user, year)
 	summary := buildRecapSummary(metrics)
 	cards := buildRecapCards(metrics, summary, user.RegisteredAt)
+	if g.cardDefinitionRepo != nil {
+		definitions, err := g.cardDefinitionRepo.ListActiveForUser(ctx, userID)
+		if err != nil {
+			return nil, fmt.Errorf("load custom card definitions: %w", err)
+		}
+		cards = insertConfiguredCards(cards, buildConfiguredCards(metrics, definitions))
+	}
 	achievementMetrics := metrics.achievementMetrics()
 	achievements := AssignAchievements(achievementMetrics)
 

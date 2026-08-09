@@ -17,6 +17,7 @@ type SessionAuthenticator interface {
 }
 
 type accountContextKey struct{}
+type adminContextKey struct{}
 
 func Authenticate(
 	authenticator SessionAuthenticator,
@@ -46,6 +47,7 @@ func Authenticate(
 			}
 
 			ctx := context.WithValue(r.Context(), accountContextKey{}, account.ID)
+			ctx = context.WithValue(ctx, adminContextKey{}, account.IsAdmin)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -54,6 +56,21 @@ func Authenticate(
 func AccountIDFromContext(ctx context.Context) (uuid.UUID, bool) {
 	accountID, ok := ctx.Value(accountContextKey{}).(uuid.UUID)
 	return accountID, ok && accountID != uuid.Nil
+}
+
+func IsAdminFromContext(ctx context.Context) bool {
+	isAdmin, _ := ctx.Value(adminContextKey{}).(bool)
+	return isAdmin
+}
+
+func RequireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsAdminFromContext(r.Context()) {
+			writeAuthError(w, r, http.StatusForbidden, "forbidden", "administrator access required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func writeAuthError(w http.ResponseWriter, r *http.Request, status int, code, message string) {

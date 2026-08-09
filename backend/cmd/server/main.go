@@ -19,6 +19,7 @@ import (
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
 	"gooffer/backend/internal/usecase/auth"
+	"gooffer/backend/internal/usecase/carddefinition"
 	"gooffer/backend/internal/usecase/generator"
 	missionusecase "gooffer/backend/internal/usecase/mission"
 	"gooffer/backend/internal/usecase/profile"
@@ -79,6 +80,7 @@ func run(logger *slog.Logger) error {
 	actionRepository := postgres.NewActionRepository(database)
 	recapStore := postgres.NewRecapRepository(database)
 	missionRepository := postgres.NewMissionRepository(database)
+	cardDefinitionRepository := postgres.NewCardDefinitionRepository(database)
 	recapCache := redisrepo.NewRecapCache(redisClient)
 	recapCacheMetrics := observability.NewRecapCacheMetrics()
 	businessMetrics := observability.NewBusinessMetrics()
@@ -93,10 +95,12 @@ func run(logger *slog.Logger) error {
 	metricCollectors = append(metricCollectors, businessMetrics.Collectors()...)
 	profileService := profile.New(logger, userRepository)
 	authService := auth.New(authRepository, cfg.SessionTTL)
+	adminCardService := carddefinition.New(cardDefinitionRepository)
 	recapGenerator := generator.New(
 		userRepository,
 		actionRepository,
 		recapRepository,
+		cardDefinitionRepository,
 	)
 	missionService := missionusecase.New(userRepository, recapRepository, missionRepository)
 
@@ -107,6 +111,7 @@ func run(logger *slog.Logger) error {
 		Recaps:         recapRepository,
 		Missions:       missionService,
 		BusinessEvents: businessMetrics,
+		AdminCards:     adminCardService,
 	}, server.Options{
 		Logger:           logger,
 		AllowedOrigins:   cfg.AllowedOrigins,

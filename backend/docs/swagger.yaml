@@ -10,6 +10,7 @@ tags:
   - name: Auth
   - name: Profiles
   - name: Recap
+  - name: Admin
 paths:
   /health:
     get:
@@ -408,6 +409,105 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/admin/card-definitions/options:
+    get:
+      tags: [Admin]
+      summary: Получить доступные настройки конструктора карточек
+      operationId: getCardDefinitionOptions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Допустимые метрики, способы анализа и условия
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDefinitionOptions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/admin/card-definitions:
+    get:
+      tags: [Admin]
+      summary: Получить созданные шаблоны карточек
+      operationId: listCardDefinitions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Все глобальные и пользовательские шаблоны
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CardDefinition"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Admin]
+      summary: Создать шаблон пользовательской recap-карточки
+      description: target_user_id ограничивает шаблон одним профилем; без него правило действует для всех профилей.
+      operationId: createCardDefinition
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCardDefinition"
+      responses:
+        "201":
+          description: Шаблон создан и будет применён при следующей генерации recap
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardDefinition"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/admin/card-definitions/{id}:
+    delete:
+      tags: [Admin]
+      summary: Удалить шаблон карточки
+      operationId: deleteCardDefinition
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        "204":
+          description: Шаблон удалён
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     cookieAuth:
@@ -458,7 +558,7 @@ components:
           example: avito2026
     Account:
       type: object
-      required: [id, login, createdAt]
+      required: [id, login, isAdmin, createdAt]
       properties:
         id:
           type: string
@@ -466,6 +566,9 @@ components:
         login:
           type: string
           example: nikita
+        isAdmin:
+          type: boolean
+          description: Разрешён ли доступ к административному API.
         createdAt:
           type: string
           format: date-time
@@ -678,6 +781,82 @@ components:
         review:
           allOf: [{$ref: "#/components/schemas/ProfileReview"}]
           nullable: true
+    CreateCardDefinition:
+      type: object
+      additionalProperties: false
+      required: [name, metric, title]
+      properties:
+        name: {type: string, minLength: 1, maxLength: 100, example: Активный покупатель}
+        target_user_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Не указывать для глобальной карточки.
+        kind:
+          type: string
+          enum: [statistic, highlight]
+          default: statistic
+        metric:
+          type: string
+          enum: [total_views, favorites, chats, purchases, sales, listing_views, contacts, reviews, activity_days, categories, deals]
+        analysis:
+          type: string
+          enum: [total, monthly_average, monthly_max]
+          default: total
+        condition_operator:
+          type: string
+          enum: [always, gt, gte, lt, lte, eq]
+          default: always
+        condition_value:
+          type: number
+          format: double
+          nullable: true
+          description: Обязательно для всех условий, кроме always.
+        title: {type: string, minLength: 1, maxLength: 160}
+        description: {type: string, maxLength: 500, default: ""}
+        value_suffix: {type: string, maxLength: 40, default: ""}
+        layout:
+          type: string
+          enum: [statistic, hero]
+          default: statistic
+        theme: {type: string, minLength: 1, maxLength: 50, default: avito-purple}
+        icon: {type: string, minLength: 1, maxLength: 50, default: chart}
+        shareable: {type: boolean, default: true}
+        sort_order: {type: integer, minimum: 0, default: 100}
+        is_active: {type: boolean, default: true}
+    CardDefinition:
+      allOf:
+        - $ref: "#/components/schemas/CreateCardDefinition"
+        - type: object
+          required: [id, created_by, created_at, updated_at]
+          properties:
+            id: {type: string, format: uuid}
+            created_by: {type: string, format: uuid}
+            created_at: {type: string, format: date-time}
+            updated_at: {type: string, format: date-time}
+    CardDefinitionOptions:
+      type: object
+      required: [kinds, metrics, analyses, conditions, layouts, monthly_metrics]
+      properties:
+        kinds:
+          type: array
+          items: {type: string}
+        metrics:
+          type: array
+          items: {type: string}
+        analyses:
+          type: array
+          items: {type: string}
+        conditions:
+          type: array
+          items: {type: string}
+        layouts:
+          type: array
+          items: {type: string}
+        monthly_metrics:
+          type: array
+          description: Метрики, совместимые с monthly_average и monthly_max.
+          items: {type: string}
     GenerateRecapRequest:
       type: object
       additionalProperties: false
@@ -1121,6 +1300,12 @@ components:
             $ref: "#/components/schemas/Error"
     Unauthorized:
       description: Требуется действующая сессия
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: Требуются права администратора
       content:
         application/json:
           schema:
