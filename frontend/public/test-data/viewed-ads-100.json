@@ -1,0 +1,2172 @@
+[
+  {
+    "adId": "fixture-view-1",
+    "title": "Смартфон 1 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 500,
+    "viewCount": 10,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-01T08:00"
+      },
+      {
+        "type": "like",
+        "time": "2026-01-01T08:00"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-01T08:00"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-01T08:00",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-2",
+    "title": "Кресло 2 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 1875,
+    "viewCount": 13,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-01T08:00"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-02T09:07"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-3",
+    "title": "Велосипед 3 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 3250,
+    "viewCount": 16,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-02T09:07"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-02T09:07"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-03T10:14"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-4",
+    "title": "Наушники 4 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 4625,
+    "viewCount": 19,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-03T10:14"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-04T11:21"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-04T11:21",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-5",
+    "title": "Куртка 5 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 6000,
+    "viewCount": 22,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-04T11:21"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-04T11:21"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-05T12:28"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-6",
+    "title": "Планшет 6 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 7375,
+    "viewCount": 25,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-05T12:28"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-06T13:35"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-7",
+    "title": "Фотоаппарат 7 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 8750,
+    "viewCount": 28,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-06T13:35"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-06T13:35"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-07T14:42"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-07T14:42",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-8",
+    "title": "Стол 8 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 10125,
+    "viewCount": 31,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-07T14:42"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-08T15:49"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-9",
+    "title": "Смартфон 9 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 11500,
+    "viewCount": 34,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-08T15:49"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-08T15:49"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-09T16:56"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-10",
+    "title": "Кресло 10 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 12875,
+    "viewCount": 37,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-09T16:56"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-10T17:03"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-10T17:03",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-11",
+    "title": "Велосипед 11 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 14250,
+    "viewCount": 40,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-10T17:03"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-10T17:03"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-11T18:10"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-12",
+    "title": "Наушники 12 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 15625,
+    "viewCount": 43,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-11T18:10"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-12T19:17"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-13",
+    "title": "Куртка 13 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 17000,
+    "viewCount": 46,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-12T19:17"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-12T19:17"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-13T20:24"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-13T20:24",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-14",
+    "title": "Планшет 14 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 18375,
+    "viewCount": 49,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-13T20:24"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-14T21:31"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-15",
+    "title": "Фотоаппарат 15 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 19750,
+    "viewCount": 52,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-14T21:31"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-14T21:31"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-15T08:38"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-16",
+    "title": "Стол 16 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 21125,
+    "viewCount": 55,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-15T08:38"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-16T09:45"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-16T09:45",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-17",
+    "title": "Смартфон 17 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 22500,
+    "viewCount": 58,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-16T09:45"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-16T09:45"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-17T10:52"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-18",
+    "title": "Кресло 18 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 23875,
+    "viewCount": 61,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-17T10:52"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-18T11:59"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-19",
+    "title": "Велосипед 19 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 25250,
+    "viewCount": 64,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-18T11:59"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-18T11:59"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-19T12:06"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-19T12:06",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-20",
+    "title": "Наушники 20 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 26625,
+    "viewCount": 67,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-19T12:06"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-20T13:13"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-21",
+    "title": "Куртка 21 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 28000,
+    "viewCount": 70,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-20T13:13"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-20T13:13"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-21T14:20"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-22",
+    "title": "Планшет 22 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 29375,
+    "viewCount": 73,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-21T14:20"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-22T15:27"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-22T15:27",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-23",
+    "title": "Фотоаппарат 23 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 30750,
+    "viewCount": 76,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-22T15:27"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-22T15:27"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-23T16:34"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-24",
+    "title": "Стол 24 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 32125,
+    "viewCount": 79,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-23T16:34"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-24T17:41"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-25",
+    "title": "Смартфон 25 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 33500,
+    "viewCount": 82,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-24T17:41"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-24T17:41"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-25T18:48"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-25T18:48",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-26",
+    "title": "Кресло 26 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 34875,
+    "viewCount": 85,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-25T18:48"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-26T19:55"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-27",
+    "title": "Велосипед 27 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 36250,
+    "viewCount": 88,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-26T19:55"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-26T19:55"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-27T20:02"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-28",
+    "title": "Наушники 28 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 37625,
+    "viewCount": 91,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-27T20:02"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-28T21:09"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-28T21:09",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-29",
+    "title": "Куртка 29 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 39000,
+    "viewCount": 94,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-28T21:09"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-28T21:09"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-01T08:16"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-30",
+    "title": "Планшет 30 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 40375,
+    "viewCount": 97,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-01T08:16"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-02T09:23"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-31",
+    "title": "Фотоаппарат 31 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 41750,
+    "viewCount": 100,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-02T09:23"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-02T09:23"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-03T10:30"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-03T10:30",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-32",
+    "title": "Стол 32 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 43125,
+    "viewCount": 103,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-03T10:30"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-04T11:37"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-33",
+    "title": "Смартфон 33 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 44500,
+    "viewCount": 106,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-04T11:37"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-04T11:37"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-05T12:44"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-34",
+    "title": "Кресло 34 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 45875,
+    "viewCount": 109,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-05T12:44"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-06T13:51"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-06T13:51",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-35",
+    "title": "Велосипед 35 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 47250,
+    "viewCount": 112,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-06T13:51"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-06T13:51"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-07T14:58"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-36",
+    "title": "Наушники 36 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 48625,
+    "viewCount": 115,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-07T14:58"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-08T15:05"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-37",
+    "title": "Куртка 37 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 50000,
+    "viewCount": 118,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-08T15:05"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-08T15:05"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-09T16:12"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-09T16:12",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-38",
+    "title": "Планшет 38 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 51375,
+    "viewCount": 121,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-09T16:12"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-10T17:19"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-39",
+    "title": "Фотоаппарат 39 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 52750,
+    "viewCount": 124,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-10T17:19"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-10T17:19"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-11T18:26"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-40",
+    "title": "Стол 40 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 54125,
+    "viewCount": 127,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-11T18:26"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-12T19:33"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-12T19:33",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-41",
+    "title": "Смартфон 41 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 55500,
+    "viewCount": 130,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-12T19:33"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-12T19:33"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-13T20:40"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-42",
+    "title": "Кресло 42 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 56875,
+    "viewCount": 133,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-13T20:40"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-14T21:47"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-43",
+    "title": "Велосипед 43 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 58250,
+    "viewCount": 136,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-14T21:47"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-14T21:47"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-15T08:54"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-15T08:54",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-44",
+    "title": "Наушники 44 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 59625,
+    "viewCount": 139,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-15T08:54"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-16T09:01"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-45",
+    "title": "Куртка 45 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 61000,
+    "viewCount": 142,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-16T09:01"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-16T09:01"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-17T10:08"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-46",
+    "title": "Планшет 46 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 62375,
+    "viewCount": 145,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-17T10:08"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-18T11:15"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-18T11:15",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-47",
+    "title": "Фотоаппарат 47 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 63750,
+    "viewCount": 148,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-18T11:15"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-18T11:15"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-19T12:22"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-48",
+    "title": "Стол 48 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 65125,
+    "viewCount": 151,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-19T12:22"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-20T13:29"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-49",
+    "title": "Смартфон 49 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 66500,
+    "viewCount": 154,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-20T13:29"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-20T13:29"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-21T14:36"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-21T14:36",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-50",
+    "title": "Кресло 50 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 67875,
+    "viewCount": 157,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-21T14:36"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-22T15:43"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-51",
+    "title": "Велосипед 51 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 69250,
+    "viewCount": 160,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-22T15:43"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-22T15:43"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-23T16:50"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-52",
+    "title": "Наушники 52 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 70625,
+    "viewCount": 163,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-23T16:50"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-24T17:57"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-24T17:57",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-53",
+    "title": "Куртка 53 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 72000,
+    "viewCount": 166,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-24T17:57"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-24T17:57"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-25T18:04"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-54",
+    "title": "Планшет 54 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 73375,
+    "viewCount": 169,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-25T18:04"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-26T19:11"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-55",
+    "title": "Фотоаппарат 55 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 74750,
+    "viewCount": 172,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-26T19:11"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-26T19:11"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-27T20:18"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-27T20:18",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-56",
+    "title": "Стол 56 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 76125,
+    "viewCount": 175,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-27T20:18"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-28T21:25"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-57",
+    "title": "Смартфон 57 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 77500,
+    "viewCount": 178,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-28T21:25"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-28T21:25"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-01T08:32"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-58",
+    "title": "Кресло 58 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 78875,
+    "viewCount": 181,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-01T08:32"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-02T09:39"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-02T09:39",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-59",
+    "title": "Велосипед 59 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 80250,
+    "viewCount": 184,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-02T09:39"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-02T09:39"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-03T10:46"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-60",
+    "title": "Наушники 60 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 81625,
+    "viewCount": 187,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-03T10:46"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-04T11:53"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-61",
+    "title": "Куртка 61 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 83000,
+    "viewCount": 190,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-04T11:53"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-04T11:53"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-05T12:00"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-05T12:00",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-62",
+    "title": "Планшет 62 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 84375,
+    "viewCount": 193,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-05T12:00"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-06T13:07"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-63",
+    "title": "Фотоаппарат 63 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 85750,
+    "viewCount": 196,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-06T13:07"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-06T13:07"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-07T14:14"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-64",
+    "title": "Стол 64 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 87125,
+    "viewCount": 199,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-07T14:14"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-08T15:21"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-08T15:21",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-65",
+    "title": "Смартфон 65 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 88500,
+    "viewCount": 202,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-08T15:21"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-08T15:21"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-09T16:28"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-66",
+    "title": "Кресло 66 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 89875,
+    "viewCount": 205,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-09T16:28"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-10T17:35"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-67",
+    "title": "Велосипед 67 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 91250,
+    "viewCount": 208,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-10T17:35"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-10T17:35"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-11T18:42"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-11T18:42",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-68",
+    "title": "Наушники 68 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 92625,
+    "viewCount": 211,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-11T18:42"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-12T19:49"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-69",
+    "title": "Куртка 69 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 94000,
+    "viewCount": 214,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-12T19:49"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-12T19:49"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-13T20:56"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-70",
+    "title": "Планшет 70 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 95375,
+    "viewCount": 217,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-13T20:56"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-14T21:03"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-14T21:03",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-71",
+    "title": "Фотоаппарат 71 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 96750,
+    "viewCount": 220,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-14T21:03"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-14T21:03"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-15T08:10"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-72",
+    "title": "Стол 72 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 98125,
+    "viewCount": 223,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-15T08:10"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-16T09:17"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-73",
+    "title": "Смартфон 73 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 99500,
+    "viewCount": 226,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-16T09:17"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-16T09:17"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-17T10:24"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-17T10:24",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-74",
+    "title": "Кресло 74 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 100875,
+    "viewCount": 229,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-17T10:24"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-18T11:31"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-75",
+    "title": "Велосипед 75 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 102250,
+    "viewCount": 232,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-18T11:31"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-18T11:31"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-19T12:38"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-76",
+    "title": "Наушники 76 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 103625,
+    "viewCount": 235,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-19T12:38"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-20T13:45"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-20T13:45",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-77",
+    "title": "Куртка 77 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 105000,
+    "viewCount": 238,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-20T13:45"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-20T13:45"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-21T14:52"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-78",
+    "title": "Планшет 78 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 106375,
+    "viewCount": 241,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-21T14:52"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-22T15:59"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-79",
+    "title": "Фотоаппарат 79 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 107750,
+    "viewCount": 244,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-22T15:59"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-22T15:59"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-23T16:06"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-23T16:06",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-80",
+    "title": "Стол 80 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 109125,
+    "viewCount": 247,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-23T16:06"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-24T17:13"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-81",
+    "title": "Смартфон 81 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 110500,
+    "viewCount": 250,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-24T17:13"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-24T17:13"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-25T18:20"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-82",
+    "title": "Кресло 82 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 111875,
+    "viewCount": 253,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-25T18:20"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-26T19:27"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-26T19:27",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-83",
+    "title": "Велосипед 83 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 113250,
+    "viewCount": 256,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-26T19:27"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-26T19:27"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-27T20:34"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-84",
+    "title": "Наушники 84 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 114625,
+    "viewCount": 259,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-27T20:34"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-28T21:41"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-85",
+    "title": "Куртка 85 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 116000,
+    "viewCount": 262,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-28T21:41"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-28T21:41"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-01T08:48"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-01T08:48",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-86",
+    "title": "Планшет 86 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 117375,
+    "viewCount": 265,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-01T08:48"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-02T09:55"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-87",
+    "title": "Фотоаппарат 87 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 118750,
+    "viewCount": 268,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-02T09:55"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-02T09:55"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-03T10:02"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-88",
+    "title": "Стол 88 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 120125,
+    "viewCount": 271,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-03T10:02"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-04T11:09"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-04T11:09",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-89",
+    "title": "Смартфон 89 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 121500,
+    "viewCount": 274,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-04-04T11:09"
+      },
+      {
+        "type": "like",
+        "time": "2026-04-04T11:09"
+      },
+      {
+        "type": "watch",
+        "time": "2026-05-05T12:16"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-90",
+    "title": "Кресло 90 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 122875,
+    "viewCount": 277,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-05-05T12:16"
+      },
+      {
+        "type": "watch",
+        "time": "2026-06-06T13:23"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-91",
+    "title": "Велосипед 91 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 124250,
+    "viewCount": 280,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-06-06T13:23"
+      },
+      {
+        "type": "like",
+        "time": "2026-06-06T13:23"
+      },
+      {
+        "type": "watch",
+        "time": "2026-07-07T14:30"
+      },
+      {
+        "type": "buy",
+        "time": "2026-07-07T14:30",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-92",
+    "title": "Наушники 92 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 125625,
+    "viewCount": 283,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-07-07T14:30"
+      },
+      {
+        "type": "watch",
+        "time": "2026-08-08T15:37"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-93",
+    "title": "Куртка 93 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 127000,
+    "viewCount": 286,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-08-08T15:37"
+      },
+      {
+        "type": "like",
+        "time": "2026-08-08T15:37"
+      },
+      {
+        "type": "watch",
+        "time": "2026-09-09T16:44"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-94",
+    "title": "Планшет 94 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 128375,
+    "viewCount": 289,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-09-09T16:44"
+      },
+      {
+        "type": "watch",
+        "time": "2026-10-10T17:51"
+      },
+      {
+        "type": "buy",
+        "time": "2026-10-10T17:51",
+        "useAvitoDelivery": false
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-95",
+    "title": "Фотоаппарат 95 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 129750,
+    "viewCount": 292,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-10-10T17:51"
+      },
+      {
+        "type": "like",
+        "time": "2026-10-10T17:51"
+      },
+      {
+        "type": "watch",
+        "time": "2026-11-11T18:58"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-96",
+    "title": "Стол 96 — просмотр",
+    "category": "Электроника",
+    "subcategory": "Смартфоны",
+    "price": 131125,
+    "viewCount": 295,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-11-11T18:58"
+      },
+      {
+        "type": "watch",
+        "time": "2026-12-12T19:05"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-97",
+    "title": "Смартфон 97 — просмотр",
+    "category": "Для дома",
+    "subcategory": "Мебель",
+    "price": 132500,
+    "viewCount": 298,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-12-12T19:05"
+      },
+      {
+        "type": "like",
+        "time": "2026-12-12T19:05"
+      },
+      {
+        "type": "watch",
+        "time": "2026-01-13T20:12"
+      },
+      {
+        "type": "buy",
+        "time": "2026-01-13T20:12",
+        "useAvitoDelivery": true
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-98",
+    "title": "Кресло 98 — просмотр",
+    "category": "Хобби и отдых",
+    "subcategory": "Спорт",
+    "price": 133875,
+    "viewCount": 301,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-01-13T20:12"
+      },
+      {
+        "type": "watch",
+        "time": "2026-02-14T21:19"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-99",
+    "title": "Велосипед 99 — просмотр",
+    "category": "Транспорт",
+    "subcategory": "Автотовары",
+    "price": 135250,
+    "viewCount": 304,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-02-14T21:19"
+      },
+      {
+        "type": "like",
+        "time": "2026-02-14T21:19"
+      },
+      {
+        "type": "watch",
+        "time": "2026-03-15T08:26"
+      }
+    ]
+  },
+  {
+    "adId": "fixture-view-100",
+    "title": "Наушники 100 — просмотр",
+    "category": "Одежда",
+    "subcategory": "Обувь",
+    "price": 136625,
+    "viewCount": 307,
+    "viewedAt": [
+      {
+        "type": "watch",
+        "time": "2026-03-15T08:26"
+      },
+      {
+        "type": "watch",
+        "time": "2026-04-16T09:33"
+      },
+      {
+        "type": "buy",
+        "time": "2026-04-16T09:33",
+        "useAvitoDelivery": false
+      }
+    ]
+  }
+]

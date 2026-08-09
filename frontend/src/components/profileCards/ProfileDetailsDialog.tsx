@@ -15,6 +15,7 @@ import {
 import type { GetProfileResponse } from '@/types/profileResponse.type'
 import { PATHS } from '@/config/paths'
 import { formatDate } from '@/utils/formatterDate'
+import { resetRecapOpened } from '@/utils/recapStorage'
 
 interface ProfileDetailsDialogProps {
   children: ReactNode
@@ -43,6 +44,7 @@ export function ProfileDetailsDialog({ children, profile }: ProfileDetailsDialog
         <ActivityHistory profile={profile} />
         <Link
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#00aaff] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0099e6]"
+          onClick={() => resetRecapOpened(profile.id, new Date().getFullYear())}
           to={`${PATHS.AVITO}?profileId=${encodeURIComponent(profile.id)}`}
         >
           Перейти на симуляцию

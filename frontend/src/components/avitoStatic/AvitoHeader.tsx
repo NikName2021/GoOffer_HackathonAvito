@@ -1,4 +1,7 @@
-import { Bell, Heart, MessageCircle, ShoppingCart } from 'lucide-react'
+import { ArrowLeft, Bell, Heart, MessageCircle, ShoppingCart } from 'lucide-react'
+import { Link } from 'react-router-dom'
+
+import { PATHS } from '@/config/paths'
 
 const links = ['◉ Для бизнеса⌄', 'Карьера в Авито', 'Помощь', 'Каталоги⌄', '#яПомогаю']
 
@@ -13,7 +16,12 @@ export function AvitoHeader() {
       </div>
       <header className="avito-static-header">
         <div className="avito-static-nav">
-          <div className="avito-static-nav-links">{links.map((link) => <span key={link}>{link}</span>)}</div>
+          <div className="avito-static-nav-left">
+            <Link aria-label="Вернуться к профилям" className="avito-static-profiles-link" title="Вернуться к профилям" to={PATHS.HOME}>
+              <ArrowLeft aria-hidden="true" />
+            </Link>
+            <div className="avito-static-nav-links">{links.map((link) => <span key={link}>{link}</span>)}</div>
+          </div>
           <div className="avito-static-actions">
             <span className="avito-static-add">＋ Разместить объявление</span>
             <span>▣ Мои объявления</span>

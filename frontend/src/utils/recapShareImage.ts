@@ -97,56 +97,69 @@ function drawCard(context: CanvasRenderingContext2D, card: RecapCardResponse, in
 }
 
 export function downloadRecapShareImage(data: ShareRecapResponse, cards: RecapCardResponse[]) {
-  const canvas = document.createElement('canvas')
-  canvas.width = CANVAS_WIDTH
-  canvas.height = CANVAS_HEIGHT
-  const context = canvas.getContext('2d')
-  if (!context || cards.length === 0) return
+  return new Promise<boolean>((resolve) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = CANVAS_WIDTH
+    canvas.height = CANVAS_HEIGHT
+    const context = canvas.getContext('2d')
+    if (!context || cards.length === 0) {
+      resolve(false)
+      return
+    }
 
-  const background = context.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-  background.addColorStop(0, '#f5efff')
-  background.addColorStop(0.52, '#eef9ff')
-  background.addColorStop(1, '#effcf5')
-  context.fillStyle = background
-  context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
-  drawAvitoMark(context)
+    const background = context.createLinearGradient(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    background.addColorStop(0, '#f5efff')
+    background.addColorStop(0.52, '#eef9ff')
+    background.addColorStop(1, '#effcf5')
+    context.fillStyle = background
+    context.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
+    drawAvitoMark(context)
 
-  context.fillStyle = '#1f1f1f'
-  context.font = '800 28px Inter, Arial'
-  context.fillText(`АВИТО · ИТОГИ ${data.year}`, 230, 105)
-  context.font = '900 62px Inter, Arial'
-  const headline = getLines(context, data.summary.headline, 940, 2)
-  drawLines(context, headline, 60, 205, 69)
-  const headlineBottom = 205 + (headline.length - 1) * 69
-  context.fillStyle = '#6f7377'
-  context.font = '500 25px Inter, Arial'
-  context.fillText(`${cards.length} ${cards.length === 1 ? 'главный момент' : 'главных моментов'} года`, 62, headlineBottom + 54)
+    context.fillStyle = '#1f1f1f'
+    context.font = '800 28px Inter, Arial'
+    context.fillText(`АВИТО · ИТОГИ ${data.year}`, 230, 105)
+    context.font = '900 62px Inter, Arial'
+    const headline = getLines(context, data.summary.headline, 940, 2)
+    drawLines(context, headline, 60, 205, 69)
+    const headlineBottom = 205 + (headline.length - 1) * 69
+    context.fillStyle = '#6f7377'
+    context.font = '500 25px Inter, Arial'
+    context.fillText(`${cards.length} ${cards.length === 1 ? 'главный момент' : 'главных моментов'} года`, 62, headlineBottom + 54)
 
-  const gridTop = 390
-  const gridBottom = 1210
-  const columns = cards.length === 1 ? 1 : 2
-  const rows = Math.ceil(cards.length / columns)
-  const cardWidth = (CANVAS_WIDTH - 120 - CARD_GAP * (columns - 1)) / columns
-  const cardHeight = Math.min(182, (gridBottom - gridTop - CARD_GAP * (rows - 1)) / rows)
+    const gridTop = 390
+    const gridBottom = 1210
+    const columns = cards.length === 1 ? 1 : 2
+    const rows = Math.ceil(cards.length / columns)
+    const cardWidth = (CANVAS_WIDTH - 120 - CARD_GAP * (columns - 1)) / columns
+    const cardHeight = Math.min(182, (gridBottom - gridTop - CARD_GAP * (rows - 1)) / rows)
 
-  cards.forEach((card, index) => {
-    const column = index % columns
-    const row = Math.floor(index / columns)
-    const x = 60 + column * (cardWidth + CARD_GAP)
-    const y = gridTop + row * (cardHeight + CARD_GAP)
-    drawCard(context, card, index, x, y, cardWidth, cardHeight)
+    cards.forEach((card, index) => {
+      const column = index % columns
+      const row = Math.floor(index / columns)
+      const x = 60 + column * (cardWidth + CARD_GAP)
+      const y = gridTop + row * (cardHeight + CARD_GAP)
+      drawCard(context, card, index, x, y, cardWidth, cardHeight)
+    })
+
+    context.fillStyle = '#6f7377'
+    context.font = '600 22px Inter, Arial'
+    context.fillText('Собрано в «Итогах года» · Без приватных данных', 62, 1292)
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        resolve(false)
+        return
+      }
+      try {
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.download = `avito-recap-${data.year}.png`
+        link.href = url
+        link.click()
+        window.setTimeout(() => URL.revokeObjectURL(url), 1000)
+        resolve(true)
+      } catch {
+        resolve(false)
+      }
+    }, 'image/png')
   })
-
-  context.fillStyle = '#6f7377'
-  context.font = '600 22px Inter, Arial'
-  context.fillText('Собрано в «Итогах года» · Без приватных данных', 62, 1292)
-  canvas.toBlob((blob) => {
-    if (!blob) return
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.download = `avito-recap-${data.year}.png`
-    link.href = url
-    link.click()
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000)
-  }, 'image/png')
 }

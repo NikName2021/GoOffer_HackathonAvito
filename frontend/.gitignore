@@ -11,6 +11,9 @@ node_modules
 dist
 dist-ssr
 *.local
+coverage
+playwright-report
+test-results
 
 # Editor directories and files
 .vscode/*
@@ -25,4 +28,3 @@ dist-ssr
 
 .env*
 /scripts/generate-profile-import-fixtures.mjs
-/public/test-data
