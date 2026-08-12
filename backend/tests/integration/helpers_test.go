@@ -28,22 +28,51 @@ type fakeCredential struct {
 }
 
 type fakeApplication struct {
-	users          []domain.User
-	recaps         map[string]domain.Recap
-	missions       map[string]domain.MissionOverview
-	businessEvents []string
-	ctaImpressions int
-	profileErr     error
-	generatorErr   error
-	readerErr      error
-	panicProfiles  bool
-	credentials    map[string]fakeCredential
-	sessions       map[string]uuid.UUID
-	adminCards     *fakeAdminCardService
+	users             []domain.User
+	recaps            map[string]domain.Recap
+	missions          map[string]domain.MissionOverview
+	businessEvents    []string
+	ctaImpressions    int
+	profileErr        error
+	generatorErr      error
+	readerErr         error
+	panicProfiles     bool
+	credentials       map[string]fakeCredential
+	sessions          map[string]uuid.UUID
+	adminCards        *fakeAdminCardService
+	adminAchievements *fakeAdminAchievementService
 }
 
 type fakeAdminCardService struct {
 	definitions []domain.CardDefinition
+}
+
+type fakeAdminAchievementService struct {
+	definitions []domain.AchievementDefinition
+}
+
+func (f *fakeAdminAchievementService) List(context.Context) ([]domain.AchievementDefinition, error) {
+	return append([]domain.AchievementDefinition(nil), f.definitions...), nil
+}
+
+func (f *fakeAdminAchievementService) Update(
+	_ context.Context,
+	slug string,
+	definition *domain.AchievementDefinition,
+) (*domain.AchievementDefinition, error) {
+	for index := range f.definitions {
+		if f.definitions[index].Slug != slug {
+			continue
+		}
+		updated := *definition
+		updated.Slug = slug
+		updated.Category = f.definitions[index].Category
+		updated.SortOrder = f.definitions[index].SortOrder
+		updated.UpdatedAt = time.Now().UTC()
+		f.definitions[index] = updated
+		return &updated, nil
+	}
+	return nil, apperrors.ErrNotFound
 }
 
 func (f *fakeAdminCardService) Create(
@@ -197,8 +226,28 @@ func newFakeApplication() *fakeApplication {
 		credentials: map[string]fakeCredential{
 			"nikita": {account: account, password: "avito2026"},
 		},
-		sessions:   map[string]uuid.UUID{"test-session": testAccountID},
-		adminCards: &fakeAdminCardService{},
+		sessions:          map[string]uuid.UUID{"test-session": testAccountID},
+		adminCards:        &fakeAdminCardService{},
+		adminAchievements: &fakeAdminAchievementService{definitions: fakeAchievementDefinitions()},
+	}
+}
+
+func fakeAchievementDefinitions() []domain.AchievementDefinition {
+	threshold := 500.0
+	return []domain.AchievementDefinition{
+		{
+			Slug:              "curious",
+			Title:             "Любопытный",
+			Description:       "Просмотрел не менее 500 объявлений за год",
+			Icon:              "👀",
+			Category:          "views",
+			Metric:            domain.CardMetricTotalViews,
+			ConditionOperator: domain.CardConditionGTE,
+			ConditionValue:    &threshold,
+			SortOrder:         10,
+			IsActive:          true,
+			UpdatedAt:         time.Now().UTC(),
+		},
 	}
 }
 
@@ -439,13 +488,14 @@ func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	return server.NewRouter(server.Dependencies{
-		Auth:           application,
-		Profiles:       application,
-		RecapGenerator: application,
-		Recaps:         application,
-		Missions:       application,
-		BusinessEvents: application,
-		AdminCards:     application.adminCards,
+		Auth:              application,
+		Profiles:          application,
+		RecapGenerator:    application,
+		Recaps:            application,
+		Missions:          application,
+		BusinessEvents:    application,
+		AdminCards:        application.adminCards,
+		AdminAchievements: application.adminAchievements,
 	}, server.Options{
 		Logger:         logger,
 		AllowedOrigins: []string{"http://localhost:5173"},

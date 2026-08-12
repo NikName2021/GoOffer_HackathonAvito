@@ -3,6 +3,7 @@ package unit
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -57,6 +58,23 @@ type mockRecapRepo struct {
 type mockCardDefinitionRepo struct {
 	definitions []domain.CardDefinition
 	err         error
+}
+
+type mockAchievementDefinitionRepo struct {
+	definitions []domain.AchievementDefinition
+	err         error
+}
+
+func (m *mockAchievementDefinitionRepo) List(context.Context) ([]domain.AchievementDefinition, error) {
+	return m.definitions, m.err
+}
+
+func (m *mockAchievementDefinitionRepo) ListActive(context.Context) ([]domain.AchievementDefinition, error) {
+	return m.definitions, m.err
+}
+
+func (m *mockAchievementDefinitionRepo) Update(context.Context, *domain.AchievementDefinition) error {
+	return m.err
 }
 
 func (m *mockCardDefinitionRepo) Create(context.Context, *domain.CardDefinition) error {
@@ -155,7 +173,7 @@ func TestGenerator_Execute_Success(t *testing.T) {
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, recapRepo, nil)
+	gen := generator.New(userRepo, recapRepo, nil, nil)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -236,7 +254,7 @@ func TestGenerator_Execute_EmptyProfile(t *testing.T) {
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, recapRepo, nil)
+	gen := generator.New(userRepo, recapRepo, nil, nil)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -265,12 +283,31 @@ func TestGenerator_UserNotFound(t *testing.T) {
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, recapRepo, nil)
+	gen := generator.New(userRepo, recapRepo, nil, nil)
 
 	_, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
 	if err == nil {
 		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestGenerator_StopsWhenAchievementDefinitionsCannotBeLoaded(t *testing.T) {
+	userID := uuid.New()
+	userRepo := &mockUserRepo{users: map[uuid.UUID]domain.User{
+		userID: {ID: userID, Name: "Test User"},
+	}}
+	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
+	achievementRepo := &mockAchievementDefinitionRepo{err: errors.New("database unavailable")}
+
+	_, err := generator.New(userRepo, recapRepo, nil, achievementRepo).Execute(
+		context.Background(),
+		generatorAccountID,
+		userID,
+		2026,
+	)
+	if err == nil || !strings.Contains(err.Error(), "load achievement definitions") {
+		t.Fatalf("error = %v, want achievement definition load error", err)
 	}
 }
 
@@ -309,7 +346,7 @@ func TestGenerator_Execute_AddsMatchingAdminCard(t *testing.T) {
 		Shareable:         true,
 		IsActive:          true,
 	}}}
-	gen := generator.New(userRepo, recapRepo, cardRepo)
+	gen := generator.New(userRepo, recapRepo, cardRepo, nil)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 	if err != nil {
@@ -369,7 +406,7 @@ func TestCalculateMetrics(t *testing.T) {
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, recapRepo, nil)
+	gen := generator.New(userRepo, recapRepo, nil, nil)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -427,7 +464,8 @@ func TestAssignAchievements(t *testing.T) {
 
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	gen := generator.New(userRepo, recapRepo, nil)
+	achievementRepo := &mockAchievementDefinitionRepo{definitions: defaultAchievementDefinitions()}
+	gen := generator.New(userRepo, recapRepo, nil, achievementRepo)
 
 	recap, err := gen.Execute(context.Background(), generatorAccountID, userID, year)
 
@@ -460,7 +498,7 @@ func TestGeneratorUsesUTCYearBoundaries(t *testing.T) {
 	}}
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	recap, err := generator.New(userRepo, recapRepo, nil).Execute(
+	recap, err := generator.New(userRepo, recapRepo, nil, nil).Execute(
 		context.Background(), generatorAccountID, userID, 2026,
 	)
 	if err != nil {
@@ -481,7 +519,7 @@ func TestGeneratorExcludesUndatedSnapshotsFromAnnualRecap(t *testing.T) {
 	}}
 	recapRepo := &mockRecapRepo{recaps: make(map[string]domain.Recap)}
 
-	recap, err := generator.New(userRepo, recapRepo, nil).Execute(
+	recap, err := generator.New(userRepo, recapRepo, nil, nil).Execute(
 		context.Background(), generatorAccountID, userID, 2026,
 	)
 	if err != nil {

@@ -18,6 +18,7 @@ import (
 	"gooffer/backend/internal/repository/postgres"
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/achievementdefinition"
 	"gooffer/backend/internal/usecase/auth"
 	"gooffer/backend/internal/usecase/carddefinition"
 	"gooffer/backend/internal/usecase/generator"
@@ -80,6 +81,7 @@ func run(logger *slog.Logger) error {
 	recapStore := postgres.NewRecapRepository(database)
 	missionRepository := postgres.NewMissionRepository(database)
 	cardDefinitionRepository := postgres.NewCardDefinitionRepository(database)
+	achievementDefinitionRepository := postgres.NewAchievementDefinitionRepository(database)
 	recapCache := redisrepo.NewRecapCache(redisClient)
 	recapCacheMetrics := observability.NewRecapCacheMetrics()
 	businessMetrics := observability.NewBusinessMetrics()
@@ -95,21 +97,24 @@ func run(logger *slog.Logger) error {
 	profileService := profile.New(logger, userRepository)
 	authService := auth.New(authRepository, cfg.SessionTTL)
 	adminCardService := carddefinition.New(cardDefinitionRepository)
+	adminAchievementService := achievementdefinition.New(achievementDefinitionRepository)
 	recapGenerator := generator.New(
 		userRepository,
 		recapRepository,
 		cardDefinitionRepository,
+		achievementDefinitionRepository,
 	)
 	missionService := missionusecase.New(userRepository, recapRepository, missionRepository)
 
 	httpServer := server.New(cfg.HTTPAddress(), server.Dependencies{
-		Auth:           authService,
-		Profiles:       profileService,
-		RecapGenerator: recapGenerator,
-		Recaps:         recapRepository,
-		Missions:       missionService,
-		BusinessEvents: businessMetrics,
-		AdminCards:     adminCardService,
+		Auth:              authService,
+		Profiles:          profileService,
+		RecapGenerator:    recapGenerator,
+		Recaps:            recapRepository,
+		Missions:          missionService,
+		BusinessEvents:    businessMetrics,
+		AdminCards:        adminCardService,
+		AdminAchievements: adminAchievementService,
 	}, server.Options{
 		Logger:           logger,
 		AllowedOrigins:   cfg.AllowedOrigins,

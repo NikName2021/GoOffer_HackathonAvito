@@ -41,8 +41,9 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 	userRepo := postgres.NewUserRepository(pool)
 	recapRepo := postgres.NewRecapRepository(pool)
 	cardDefinitionRepo := postgres.NewCardDefinitionRepository(pool)
+	achievementDefinitionRepo := postgres.NewAchievementDefinitionRepository(pool)
 
-	gen := generator.New(userRepo, recapRepo, cardDefinitionRepo)
+	gen := generator.New(userRepo, recapRepo, cardDefinitionRepo, achievementDefinitionRepo)
 
 	accountID := uuid.MustParse("99999999-9999-4999-8999-999999999999")
 	account, _, err := postgres.NewAuthRepository(pool).GetAccountByLogin(ctx, "nikita")
@@ -361,4 +362,67 @@ func containsCardDefinition(definitions []domain.CardDefinition, id uuid.UUID) b
 		}
 	}
 	return false
+}
+
+func TestAchievementDefinitionRepositoryLifecycle(t *testing.T) {
+	if os.Getenv("DB_PORT") == "" {
+		t.Skip("set DB_PORT to run integration test against local postgres")
+	}
+
+	ctx := context.Background()
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL())
+	if err != nil {
+		t.Fatalf("connect postgres: %v", err)
+	}
+	defer pool.Close()
+	if err := migrations.Apply(ctx, pool); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+
+	repository := postgres.NewAchievementDefinitionRepository(pool)
+	definitions, err := repository.List(ctx)
+	if err != nil {
+		t.Fatalf("list achievement definitions: %v", err)
+	}
+	if len(definitions) != 6 {
+		t.Fatalf("achievement definitions = %d, want 6 seeded rules", len(definitions))
+	}
+
+	original := definitions[0]
+	restored := original
+	defer func() {
+		restored.UpdatedAt = time.Now().UTC()
+		_ = repository.Update(ctx, &restored)
+	}()
+
+	updated := original
+	updated.Title = "Интеграционное название"
+	updated.IsActive = false
+	updated.UpdatedAt = time.Now().UTC()
+	if err := repository.Update(ctx, &updated); err != nil {
+		t.Fatalf("update achievement definition: %v", err)
+	}
+	if updated.Category != original.Category || updated.SortOrder != original.SortOrder {
+		t.Fatalf("immutable fields changed: %#v", updated)
+	}
+
+	active, err := repository.ListActive(ctx)
+	if err != nil {
+		t.Fatalf("list active achievement definitions: %v", err)
+	}
+	for _, definition := range active {
+		if definition.Slug == updated.Slug {
+			t.Fatal("inactive achievement definition was returned by ListActive")
+		}
+	}
+
+	missing := updated
+	missing.Slug = "does_not_exist"
+	if err := repository.Update(ctx, &missing); !errors.Is(err, apperrors.ErrNotFound) {
+		t.Fatalf("missing update error = %v, want not found", err)
+	}
 }

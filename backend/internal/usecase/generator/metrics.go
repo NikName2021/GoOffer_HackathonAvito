@@ -7,13 +7,19 @@ import (
 	"gooffer/backend/internal/domain"
 )
 
-// UserMetrics is retained as the small input contract for the existing
+// UserMetrics is the numeric input contract for administrator-managed
 // achievement rules.
 type UserMetrics struct {
 	TotalViews     int
+	Favorites      int
 	TotalPurchases int
 	TotalSales     int
+	ListingViews   int
+	Contacts       int
+	Reviews        int
 	ActivityDays   int
+	Categories     int
+	Deals          int
 }
 
 // ProfileMetrics contains only activity that can be attributed to Year.
@@ -167,9 +173,15 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 func (metrics ProfileMetrics) achievementMetrics() *UserMetrics {
 	return &UserMetrics{
 		TotalViews:     metrics.Buyer.TotalViews,
+		Favorites:      metrics.Buyer.FavoritesCount,
 		TotalPurchases: metrics.Buyer.PurchasesCount,
 		TotalSales:     metrics.Seller.SalesCount,
+		ListingViews:   metrics.Seller.ListingViews,
+		Contacts:       metrics.Seller.ContactsReceived,
+		Reviews:        metrics.Seller.ReviewsCount,
 		ActivityDays:   metrics.ActivityDays,
+		Categories:     metrics.Combined.Categories,
+		Deals:          metrics.Combined.Deals,
 	}
 }
 

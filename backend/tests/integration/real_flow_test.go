@@ -21,6 +21,7 @@ import (
 	"gooffer/backend/internal/repository/postgres"
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/achievementdefinition"
 	"gooffer/backend/internal/usecase/auth"
 	"gooffer/backend/internal/usecase/carddefinition"
 	"gooffer/backend/internal/usecase/generator"
@@ -64,6 +65,7 @@ func TestRealApplicationFlow(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	userRepository := postgres.NewUserRepository(pool)
 	cardDefinitionRepository := postgres.NewCardDefinitionRepository(pool)
+	achievementDefinitionRepository := postgres.NewAchievementDefinitionRepository(pool)
 	recapRepository := redisrepo.NewCachedRecapRepository(
 		postgres.NewRecapRepository(pool),
 		redisrepo.NewRecapCache(redisClient),
@@ -72,14 +74,15 @@ func TestRealApplicationFlow(t *testing.T) {
 	handler := server.NewRouter(server.Dependencies{
 		Auth:           auth.New(postgres.NewAuthRepository(pool), time.Hour),
 		Profiles:       profile.New(logger, userRepository),
-		RecapGenerator: generator.New(userRepository, recapRepository, cardDefinitionRepository),
+		RecapGenerator: generator.New(userRepository, recapRepository, cardDefinitionRepository, achievementDefinitionRepository),
 		Recaps:         recapRepository,
 		Missions: missionusecase.New(
 			userRepository,
 			recapRepository,
 			postgres.NewMissionRepository(pool),
 		),
-		AdminCards: carddefinition.New(cardDefinitionRepository),
+		AdminCards:        carddefinition.New(cardDefinitionRepository),
+		AdminAchievements: achievementdefinition.New(achievementDefinitionRepository),
 	}, server.Options{Logger: logger})
 	adminLogin := realRequest(
 		handler,

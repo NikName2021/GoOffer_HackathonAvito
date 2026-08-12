@@ -11,20 +11,23 @@ import (
 )
 
 type Generator struct {
-	userRepo           ports.UserRepository
-	recapRepo          ports.RecapRepository
-	cardDefinitionRepo ports.CardDefinitionRepository
+	userRepo                  ports.UserRepository
+	recapRepo                 ports.RecapRepository
+	cardDefinitionRepo        ports.CardDefinitionRepository
+	achievementDefinitionRepo ports.AchievementDefinitionRepository
 }
 
 func New(
 	userRepo ports.UserRepository,
 	recapRepo ports.RecapRepository,
 	cardDefinitionRepo ports.CardDefinitionRepository,
+	achievementDefinitionRepo ports.AchievementDefinitionRepository,
 ) *Generator {
 	return &Generator{
-		userRepo:           userRepo,
-		recapRepo:          recapRepo,
-		cardDefinitionRepo: cardDefinitionRepo,
+		userRepo:                  userRepo,
+		recapRepo:                 recapRepo,
+		cardDefinitionRepo:        cardDefinitionRepo,
+		achievementDefinitionRepo: achievementDefinitionRepo,
 	}
 }
 
@@ -45,7 +48,14 @@ func (g *Generator) Execute(ctx context.Context, accountID, userID uuid.UUID, ye
 		cards = insertConfiguredCards(cards, buildConfiguredCards(metrics, definitions))
 	}
 	achievementMetrics := metrics.achievementMetrics()
-	achievements := AssignAchievements(achievementMetrics)
+	achievementDefinitions := []domain.AchievementDefinition{}
+	if g.achievementDefinitionRepo != nil {
+		achievementDefinitions, err = g.achievementDefinitionRepo.ListActive(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("load achievement definitions: %w", err)
+		}
+	}
+	achievements := AssignAchievements(achievementMetrics, achievementDefinitions)
 
 	recap := domain.Recap{
 		ID:             uuid.New(),

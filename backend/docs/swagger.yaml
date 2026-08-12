@@ -18,7 +18,7 @@ tags:
   - name: Recap
     description: Генерация и просмотр персональных итогов года.
   - name: Admin
-    description: Управление правилами дополнительных Recap-карточек; требуется аккаунт администратора.
+    description: Управление встроенными ачивками и правилами дополнительных Recap-карточек; требуется аккаунт администратора.
 paths:
   /health:
     get:
@@ -560,6 +560,89 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/admin/achievement-definitions/options:
+    get:
+      tags: [Admin]
+      summary: Получить доступные метрики и условия для встроенных ачивок
+      operationId: getAchievementDefinitionOptions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Допустимые метрики и операторы условий
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AchievementDefinitionOptions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/admin/achievement-definitions:
+    get:
+      tags: [Admin]
+      summary: Получить определения встроенных ачивок
+      operationId: listAchievementDefinitions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Все встроенные ачивки, включая отключённые
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AchievementDefinition"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/admin/achievement-definitions/{slug}:
+    put:
+      tags: [Admin]
+      summary: Обновить существующую встроенную ачивку
+      description: Системные поля slug, category и sort_order остаются неизменными. Изменение применяется при следующей генерации Recap.
+      operationId: updateAchievementDefinition
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+            pattern: ^[a-z0-9_]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAchievementDefinition"
+      responses:
+        "200":
+          description: Обновлённое определение ачивки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AchievementDefinition"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     cookieAuth:
@@ -917,6 +1000,47 @@ components:
           type: array
           description: Метрики, совместимые с monthly_average и monthly_max.
           items: {type: string, enum: [total_views, favorites, purchases, sales]}
+    UpdateAchievementDefinition:
+      type: object
+      additionalProperties: false
+      required: [title, description, icon, metric, condition_operator, is_active]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 160}
+        description: {type: string, maxLength: 500}
+        icon: {type: string, minLength: 1, maxLength: 50, example: 👀}
+        metric:
+          type: string
+          enum: [total_views, favorites, purchases, sales, listing_views, contacts, reviews, activity_days, categories, deals]
+        condition_operator:
+          type: string
+          enum: [always, gt, gte, lt, lte, eq]
+        condition_value:
+          type: number
+          format: double
+          minimum: 0
+          nullable: true
+          description: Обязательно для всех условий, кроме always.
+        is_active: {type: boolean}
+    AchievementDefinition:
+      allOf:
+        - $ref: "#/components/schemas/UpdateAchievementDefinition"
+        - type: object
+          required: [slug, category, sort_order, updated_at]
+          properties:
+            slug: {type: string, maxLength: 100, pattern: "^[a-z0-9_]+$", example: curious, readOnly: true}
+            category: {type: string, example: views, readOnly: true}
+            sort_order: {type: integer, minimum: 0, readOnly: true}
+            updated_at: {type: string, format: date-time, readOnly: true}
+    AchievementDefinitionOptions:
+      type: object
+      required: [metrics, conditions]
+      properties:
+        metrics:
+          type: array
+          items: {type: string, enum: [total_views, favorites, purchases, sales, listing_views, contacts, reviews, activity_days, categories, deals]}
+        conditions:
+          type: array
+          items: {type: string, enum: [always, gt, gte, lt, lte, eq]}
     GenerateRecapRequest:
       type: object
       additionalProperties: false
