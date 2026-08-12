@@ -21,7 +21,7 @@ test('owner selects only shareable cards and opens the public link', async ({ pa
   await page.locator('.avito-static-recap-link').click()
   await page.getByRole('button', { name: 'Поделиться' }).click()
 
-  await page.getByRole('button', { name: 'Создать и открыть ссылку' }).click()
+  await page.getByRole('button', { name: /Создать (и открыть )?ссылку/ }).click()
   await expect(page).toHaveURL(`/share/${token}`)
   await expect(page.getByText('Публичная подборка · без приватных данных')).toBeVisible()
   expect(shareBodies).toEqual([{ card_ids: ['year_overview', 'year_final'], format: 'responsive' }])
@@ -45,4 +45,20 @@ test('mobile story uses a dedicated 9:16 layout', async ({ page }) => {
   await page.goto(`/share/${mobileStoryToken}`)
 
   await expect(page.getByRole('region', { name: 'История 9:16' })).toBeVisible()
+})
+
+test('owner downloads selected recap cards as PNG', async ({ page }) => {
+  await mockApi(page)
+  await page.addInitScript(({ key }) => window.localStorage.setItem(key, 'true'), {
+    key: `avito-recap-opened:${profileId}:2026`,
+  })
+  await page.goto(`/avito?profileId=${profileId}`)
+  await page.locator('.avito-static-recap-link').click()
+  await page.getByRole('button', { name: 'Поделиться' }).click()
+
+  const downloadPromise = page.waitForEvent('download')
+  await page.getByRole('button', { name: 'Скачать PNG' }).click()
+  const download = await downloadPromise
+
+  expect(download.suggestedFilename()).toBe('itogi-goda-2026.png')
 })
