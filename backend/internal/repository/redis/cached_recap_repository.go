@@ -10,7 +10,7 @@ import (
 	"gooffer/backend/internal/usecase/ports"
 )
 
-const recapCacheKeyVersion = "v1"
+const recapCacheKeyVersion = "v2"
 
 type RecapCacheMetrics interface {
 	Hit()

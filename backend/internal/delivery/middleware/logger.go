@@ -3,8 +3,11 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 )
+
+const publicRecapSharePathPrefix = "/api/public/recap-shares/"
 
 type statusWriter struct {
 	http.ResponseWriter
@@ -43,7 +46,7 @@ func Logger(logger *slog.Logger) func(http.Handler) http.Handler {
 			}
 			logger.LogAttrs(r.Context(), slog.LevelInfo, "http request",
 				slog.String("method", r.Method),
-				slog.String("path", r.URL.Path),
+				slog.String("path", safeLogPath(r.URL.Path)),
 				slog.Int("status", status),
 				slog.Int("bytes", writer.bytes),
 				slog.Duration("duration", time.Since(started)),
@@ -51,4 +54,11 @@ func Logger(logger *slog.Logger) func(http.Handler) http.Handler {
 			)
 		})
 	}
+}
+
+func safeLogPath(path string) string {
+	if strings.HasPrefix(path, publicRecapSharePathPrefix) {
+		return publicRecapSharePathPrefix + "{token}"
+	}
+	return path
 }

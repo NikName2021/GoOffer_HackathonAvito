@@ -13,13 +13,15 @@ import (
 )
 
 type Dependencies struct {
-	Auth           handlers.AuthService
-	Profiles       handlers.ProfileService
-	RecapGenerator handlers.RecapGenerator
-	Recaps         handlers.RecapReader
-	Missions       handlers.MissionService
-	BusinessEvents handlers.BusinessEventRecorder
-	AdminCards     handlers.AdminCardDefinitionService
+	Auth              handlers.AuthService
+	Profiles          handlers.ProfileService
+	RecapGenerator    handlers.RecapGenerator
+	Recaps            handlers.RecapReader
+	RecapShares       handlers.RecapShareService
+	Missions          handlers.MissionService
+	BusinessEvents    handlers.BusinessEventRecorder
+	AdminCards        handlers.AdminCardDefinitionService
+	AdminAchievements handlers.AdminAchievementDefinitionService
 }
 
 type Options struct {
@@ -84,10 +86,19 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 		logger,
 	)
 	recapHandler.Register(protectedMux)
+	recapShareHandler := handlers.NewRecapShareHandler(
+		dependencies.RecapShares,
+		dependencies.BusinessEvents,
+		logger,
+	)
+	recapShareHandler.RegisterProtected(protectedMux)
+	recapShareHandler.RegisterPublic(mux)
 	missionHandler := handlers.NewMissionHandler(dependencies.Missions, logger)
 	missionHandler.Register(protectedMux)
 	adminCardHandler := handlers.NewAdminCardDefinitionHandler(dependencies.AdminCards, logger)
 	adminCardHandler.Register(protectedMux)
+	adminAchievementHandler := handlers.NewAdminAchievementDefinitionHandler(dependencies.AdminAchievements, logger)
+	adminAchievementHandler.Register(protectedMux)
 	protectedMux.HandleFunc("/", notFoundHandler)
 	protectedHandler := middleware.Authenticate(dependencies.Auth, "gooffer_session", logger)(protectedMux)
 	mux.Handle("/api/", protectedHandler)

@@ -1,19 +1,26 @@
 package generator
 
 import (
+	"math"
 	"sort"
 	"time"
 
 	"gooffer/backend/internal/domain"
 )
 
-// UserMetrics is retained as the small input contract for the existing
+// UserMetrics is the numeric input contract for administrator-managed
 // achievement rules.
 type UserMetrics struct {
 	TotalViews     int
+	Favorites      int
 	TotalPurchases int
 	TotalSales     int
+	ListingViews   int
+	Contacts       int
+	Reviews        int
 	ActivityDays   int
+	Categories     int
+	Deals          int
 }
 
 // ProfileMetrics contains only activity that can be attributed to Year.
@@ -29,6 +36,9 @@ type ProfileMetrics struct {
 	ActivityDays     int
 	Monthly          [12]MonthlyActivity
 	StarListingViews int
+	Spending         int64
+	SalesRevenue     int64
+	InterestScores   map[string]int
 }
 
 type MonthlyActivity struct {
@@ -77,6 +87,7 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 		if activity.Bought {
 			metrics.Buyer.PurchasesCount++
 			category.Purchases++
+			metrics.Spending = saturatingAmountAdd(metrics.Spending, view.Price)
 			if activity.UsedAvitoDelivery {
 				metrics.Buyer.AvitoDeliveryPurchases++
 			}
@@ -125,6 +136,7 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 		if ad.IsSold && ad.SoldAt != nil && inYear(*ad.SoldAt, year) {
 			metrics.Seller.SalesCount++
 			category.Sales++
+			metrics.SalesRevenue = saturatingAmountAdd(metrics.SalesRevenue, ad.Price)
 			addActiveDay(activeDays, *ad.SoldAt)
 			metrics.Monthly[int(ad.SoldAt.UTC().Month())-1].Sales++
 		}
@@ -156,6 +168,7 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 		MainCategory:  selectCategory(categories, hasAnySignals, combinedCategoryLess),
 	}
 	metrics.CategoryStats = categoryStats(categories)
+	metrics.InterestScores = interestScores(categories)
 	metrics.TopCategories = append([]domain.CategoryStat(nil), metrics.CategoryStats...)
 	if len(metrics.TopCategories) > 3 {
 		metrics.TopCategories = metrics.TopCategories[:3]
@@ -164,12 +177,39 @@ func calculateProfileMetrics(user *domain.User, year int) ProfileMetrics {
 	return metrics
 }
 
+func interestScores(categories map[string]*categoryMetric) map[string]int {
+	scores := make(map[string]int)
+	for name, category := range categories {
+		score := category.Views + category.Favorites*3 + category.Purchases*5
+		if score > 0 {
+			scores[name] = score
+		}
+	}
+	return scores
+}
+
+func saturatingAmountAdd(total, amount int64) int64 {
+	if amount <= 0 {
+		return total
+	}
+	if total > math.MaxInt64-amount {
+		return math.MaxInt64
+	}
+	return total + amount
+}
+
 func (metrics ProfileMetrics) achievementMetrics() *UserMetrics {
 	return &UserMetrics{
 		TotalViews:     metrics.Buyer.TotalViews,
+		Favorites:      metrics.Buyer.FavoritesCount,
 		TotalPurchases: metrics.Buyer.PurchasesCount,
 		TotalSales:     metrics.Seller.SalesCount,
+		ListingViews:   metrics.Seller.ListingViews,
+		Contacts:       metrics.Seller.ContactsReceived,
+		Reviews:        metrics.Seller.ReviewsCount,
 		ActivityDays:   metrics.ActivityDays,
+		Categories:     metrics.Combined.Categories,
+		Deals:          metrics.Combined.Deals,
 	}
 }
 

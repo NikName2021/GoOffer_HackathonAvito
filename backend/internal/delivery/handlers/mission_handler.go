@@ -25,8 +25,12 @@ type MissionService interface {
 		ctx context.Context,
 		accountID, userID uuid.UUID,
 		recapYear int,
-		code domain.MissionCode,
+		codes []domain.MissionCode,
 	) (*domain.MissionOverview, error)
+	GetProfileMissions(
+		ctx context.Context,
+		accountID, userID uuid.UUID,
+	) (*domain.ProfileMissionOverview, error)
 }
 
 type MissionHandler struct {
@@ -35,7 +39,8 @@ type MissionHandler struct {
 }
 
 type SelectMissionRequest struct {
-	Code domain.MissionCode `json:"code"`
+	Code  *domain.MissionCode   `json:"code,omitempty"`
+	Codes *[]domain.MissionCode `json:"codes,omitempty"`
 }
 
 func NewMissionHandler(service MissionService, logger *slog.Logger) *MissionHandler {
@@ -45,6 +50,7 @@ func NewMissionHandler(service MissionService, logger *slog.Logger) *MissionHand
 func (h *MissionHandler) Register(mux *http.ServeMux) {
 	mux.HandleFunc("GET /api/recap/{user_id}/{year}/mission", h.Get)
 	mux.HandleFunc("PUT /api/recap/{user_id}/{year}/mission", h.Select)
+	mux.HandleFunc("GET /api/profiles/{id}/missions", h.GetProfileMissions)
 }
 
 func (h *MissionHandler) Get(w http.ResponseWriter, r *http.Request) {
@@ -70,9 +76,36 @@ func (h *MissionHandler) Select(w http.ResponseWriter, r *http.Request) {
 		writeError(w, r, http.StatusBadRequest, "invalid_request", err.Error())
 		return
 	}
-	overview, err := h.service.Select(r.Context(), accountID, userID, year, request.Code)
+	codes, err := request.selectedCodes()
+	if err != nil {
+		writeError(w, r, http.StatusBadRequest, "invalid_request", err.Error())
+		return
+	}
+	overview, err := h.service.Select(r.Context(), accountID, userID, year, codes)
 	if err != nil {
 		h.writeMissionError(w, r, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, overview)
+}
+
+func (h *MissionHandler) GetProfileMissions(w http.ResponseWriter, r *http.Request) {
+	accountID, ok := middleware.AccountIDFromContext(r.Context())
+	if !ok {
+		writeError(w, r, http.StatusUnauthorized, "unauthorized", "authentication required")
+		return
+	}
+	userID, ok := profileIDFromPath(w, r)
+	if !ok {
+		return
+	}
+	overview, err := h.service.GetProfileMissions(r.Context(), accountID, userID)
+	if err != nil {
+		if errors.Is(err, apperrors.ErrNotFound) {
+			writeError(w, r, http.StatusNotFound, "profile_not_found", "profile not found")
+			return
+		}
+		writeServiceError(w, r, h.logger, err)
 		return
 	}
 	writeJSON(w, http.StatusOK, overview)
@@ -81,7 +114,7 @@ func (h *MissionHandler) Select(w http.ResponseWriter, r *http.Request) {
 func (h *MissionHandler) writeMissionError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, apperrors.ErrInvalidMission):
-		writeError(w, r, http.StatusBadRequest, "invalid_mission", "unknown mission code")
+		writeError(w, r, http.StatusBadRequest, "invalid_mission", "codes must contain up to three unique known mission codes")
 	case errors.Is(err, apperrors.ErrNotFound):
 		writeError(w, r, http.StatusNotFound, "recap_not_found", "recap not found")
 	default:
@@ -117,10 +150,23 @@ func decodeSelectMissionRequest(w http.ResponseWriter, r *http.Request) (SelectM
 		if errors.Is(err, io.EOF) {
 			return request, errors.New("request body is required")
 		}
-		return request, errors.New("request body must be valid JSON with code")
+		return request, errors.New("request body must be valid JSON with codes")
 	}
 	if err := decoder.Decode(&struct{}{}); !errors.Is(err, io.EOF) {
 		return request, errors.New("request body must contain a single JSON object")
 	}
 	return request, nil
+}
+
+func (request SelectMissionRequest) selectedCodes() ([]domain.MissionCode, error) {
+	if request.Code != nil && request.Codes != nil {
+		return nil, errors.New("use either codes or deprecated code, not both")
+	}
+	if request.Codes != nil {
+		return append([]domain.MissionCode(nil), (*request.Codes)...), nil
+	}
+	if request.Code != nil {
+		return []domain.MissionCode{*request.Code}, nil
+	}
+	return nil, errors.New("codes field is required")
 }

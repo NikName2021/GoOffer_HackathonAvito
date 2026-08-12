@@ -2,8 +2,8 @@ package mission
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,15 +45,14 @@ func (s *Service) GetOverview(
 	if err != nil {
 		return nil, err
 	}
-	selected, err := s.missions.GetByUserAndYear(ctx, userID, recapYear)
-	if errors.Is(err, apperrors.ErrNotFound) {
-		return &domain.MissionOverview{Options: missionOptions(), Selected: nil}, nil
-	}
+	selected, err := s.missions.ListByUserAndYear(ctx, userID, recapYear)
 	if err != nil {
-		return nil, fmt.Errorf("get selected mission: %w", err)
+		return nil, fmt.Errorf("list selected missions: %w", err)
 	}
-	if err := s.refreshProgress(ctx, selected, user); err != nil {
-		return nil, err
+	for index := range selected {
+		if err := s.refreshProgress(ctx, &selected[index], user); err != nil {
+			return nil, err
+		}
 	}
 	return overview(selected), nil
 }
@@ -62,9 +61,9 @@ func (s *Service) Select(
 	ctx context.Context,
 	accountID, userID uuid.UUID,
 	recapYear int,
-	code domain.MissionCode,
+	codes []domain.MissionCode,
 ) (*domain.MissionOverview, error) {
-	definition, ok := missionDefinition(code)
+	definitions, ok := selectedDefinitions(codes)
 	if !ok {
 		return nil, apperrors.ErrInvalidMission
 	}
@@ -73,33 +72,59 @@ func (s *Service) Select(
 		return nil, err
 	}
 
-	existing, err := s.missions.GetByUserAndYear(ctx, userID, recapYear)
-	if err == nil && existing != nil && existing.Code == code {
-		if err := s.refreshProgress(ctx, existing, user); err != nil {
-			return nil, err
-		}
-		return overview(existing), nil
+	existing, err := s.missions.ListByUserAndYear(ctx, userID, recapYear)
+	if err != nil {
+		return nil, fmt.Errorf("list selected missions: %w", err)
 	}
-	if err != nil && !errors.Is(err, apperrors.ErrNotFound) {
-		return nil, fmt.Errorf("get selected mission: %w", err)
+	existingByCode := make(map[domain.MissionCode]domain.RecapMission, len(existing))
+	for _, mission := range existing {
+		existingByCode[mission.Code] = mission
 	}
 
 	now := s.now().UTC()
-	selected := &domain.RecapMission{
-		ID:         uuid.New(),
-		UserID:     userID,
-		RecapYear:  recapYear,
-		Code:       code,
-		Progress:   0,
-		Target:     definition.Target,
-		Status:     domain.MissionActive,
-		SelectedAt: now,
-		UpdatedAt:  now,
+	selected := make([]domain.RecapMission, 0, len(codes))
+	for index, code := range codes {
+		mission, exists := existingByCode[code]
+		if !exists {
+			mission = domain.RecapMission{
+				ID:         uuid.New(),
+				UserID:     userID,
+				RecapYear:  recapYear,
+				Code:       code,
+				Target:     definitions[index].Target,
+				Status:     domain.MissionActive,
+				SelectedAt: now,
+				UpdatedAt:  now,
+			}
+		} else {
+			refreshProgressValue(&mission, user, now)
+		}
+		selected = append(selected, mission)
 	}
-	if err := s.missions.Select(ctx, selected); err != nil {
-		return nil, fmt.Errorf("save selected mission: %w", err)
+	if err := s.missions.ReplaceSelection(ctx, userID, recapYear, selected); err != nil {
+		return nil, fmt.Errorf("replace selected missions: %w", err)
 	}
 	return overview(selected), nil
+}
+
+func (s *Service) GetProfileMissions(
+	ctx context.Context,
+	accountID, userID uuid.UUID,
+) (*domain.ProfileMissionOverview, error) {
+	user, err := s.profiles.GetByID(ctx, accountID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("get mission profile: %w", err)
+	}
+	selected, err := s.missions.ListByUser(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("list profile missions: %w", err)
+	}
+	for index := range selected {
+		if err := s.refreshProgress(ctx, &selected[index], user); err != nil {
+			return nil, err
+		}
+	}
+	return &domain.ProfileMissionOverview{Missions: missionStates(selected)}, nil
 }
 
 func (s *Service) getMissionProfile(
@@ -126,8 +151,18 @@ func (s *Service) refreshProgress(
 	selected *domain.RecapMission,
 	user *domain.User,
 ) error {
-	if selected.Status == domain.MissionCompleted {
+	if !refreshProgressValue(selected, user, s.now().UTC()) {
 		return nil
+	}
+	if err := s.missions.UpdateProgress(ctx, selected); err != nil {
+		return fmt.Errorf("persist mission progress: %w", err)
+	}
+	return nil
+}
+
+func refreshProgressValue(selected *domain.RecapMission, user *domain.User, now time.Time) bool {
+	if selected.Status == domain.MissionCompleted {
+		return false
 	}
 	calculated := calculateProgress(selected, user)
 	if calculated < selected.Progress {
@@ -137,20 +172,16 @@ func (s *Service) refreshProgress(
 		calculated = selected.Target
 	}
 	if calculated == selected.Progress {
-		return nil
+		return false
 	}
 
-	now := s.now().UTC()
 	selected.Progress = calculated
 	selected.UpdatedAt = now
 	if selected.Progress >= selected.Target {
 		selected.Status = domain.MissionCompleted
 		selected.CompletedAt = &now
 	}
-	if err := s.missions.UpdateProgress(ctx, selected); err != nil {
-		return fmt.Errorf("persist mission progress: %w", err)
-	}
-	return nil
+	return true
 }
 
 func calculateProgress(selected *domain.RecapMission, user *domain.User) int {
@@ -211,30 +242,87 @@ func deliveryPurchaseAfter(views []domain.ViewedAd, selectedAt time.Time) bool {
 	return false
 }
 
-func overview(selected *domain.RecapMission) *domain.MissionOverview {
+func overview(selected []domain.RecapMission) *domain.MissionOverview {
+	states := missionStates(selected)
+	var legacySelected *domain.MissionState
+	for index := range states {
+		if legacySelected == nil || states[index].SelectedAt.After(legacySelected.SelectedAt) {
+			copy := states[index]
+			legacySelected = &copy
+		}
+	}
+	return &domain.MissionOverview{
+		Options:          missionOptions(),
+		SelectedMissions: states,
+		Selected:         legacySelected,
+	}
+}
+
+func missionStates(selected []domain.RecapMission) []domain.MissionState {
+	states := make([]domain.MissionState, 0, len(selected))
+	for index := range selected {
+		states = append(states, missionState(&selected[index]))
+	}
+	sort.Slice(states, func(i, j int) bool {
+		if states[i].RecapYear != states[j].RecapYear {
+			return states[i].RecapYear > states[j].RecapYear
+		}
+		return missionOrder(states[i].Code) < missionOrder(states[j].Code)
+	})
+	return states
+}
+
+func missionState(selected *domain.RecapMission) domain.MissionState {
 	definition, _ := missionDefinition(selected.Code)
 	percent := selected.Progress * 100 / selected.Target
 	if percent > 100 {
 		percent = 100
 	}
-	return &domain.MissionOverview{
-		Options: missionOptions(),
-		Selected: &domain.MissionState{
-			Code:            selected.Code,
-			Title:           definition.Title,
-			Description:     definition.Description,
-			Progress:        selected.Progress,
-			Target:          selected.Target,
-			ProgressPercent: percent,
-			Status:          selected.Status,
-			Icon:            definition.Icon,
-			Theme:           definition.Theme,
-			CTA:             cloneCTA(definition.CTA),
-			SelectedAt:      selected.SelectedAt,
-			UpdatedAt:       selected.UpdatedAt,
-			CompletedAt:     selected.CompletedAt,
-		},
+	return domain.MissionState{
+		RecapYear:       selected.RecapYear,
+		Code:            selected.Code,
+		Title:           definition.Title,
+		Description:     definition.Description,
+		Progress:        selected.Progress,
+		Target:          selected.Target,
+		ProgressPercent: percent,
+		Status:          selected.Status,
+		Icon:            definition.Icon,
+		Theme:           definition.Theme,
+		CTA:             cloneCTA(definition.CTA),
+		SelectedAt:      selected.SelectedAt,
+		UpdatedAt:       selected.UpdatedAt,
+		CompletedAt:     selected.CompletedAt,
 	}
+}
+
+func selectedDefinitions(codes []domain.MissionCode) ([]domain.MissionOption, bool) {
+	if len(codes) > len(missionOptions()) {
+		return nil, false
+	}
+	seen := make(map[domain.MissionCode]struct{}, len(codes))
+	definitions := make([]domain.MissionOption, len(codes))
+	for index, code := range codes {
+		if _, duplicate := seen[code]; duplicate {
+			return nil, false
+		}
+		definition, exists := missionDefinition(code)
+		if !exists {
+			return nil, false
+		}
+		seen[code] = struct{}{}
+		definitions[index] = definition
+	}
+	return definitions, true
+}
+
+func missionOrder(code domain.MissionCode) int {
+	for index, option := range missionOptions() {
+		if option.Code == code {
+			return index
+		}
+	}
+	return len(missionOptions())
 }
 
 func missionOptions() []domain.MissionOption {

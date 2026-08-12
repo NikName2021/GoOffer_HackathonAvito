@@ -5,7 +5,9 @@ info:
   description: |-
     API аккаунтов, пользовательских профилей и персональных «Итогов года».
     Все `/api/profiles`, `/api/recap` и mission endpoint доступны только владельцу
-    профиля по обязательной cookie `gooffer_session`. Публичных ссылок в MVP нет.
+    профиля по обязательной cookie `gooffer_session`. Исключение — временный
+    `GET /api/public/recap-shares/{token}`, доступ к которому определяется
+    непредсказуемым capability-токеном.
 servers:
   - url: /
 tags:
@@ -18,7 +20,7 @@ tags:
   - name: Recap
     description: Генерация и просмотр персональных итогов года.
   - name: Admin
-    description: Управление правилами дополнительных Recap-карточек; требуется аккаунт администратора.
+    description: Управление встроенными ачивками и правилами дополнительных Recap-карточек; требуется аккаунт администратора.
 paths:
   /health:
     get:
@@ -263,6 +265,31 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/profiles/{id}/missions:
+    get:
+      tags: [Profiles]
+      summary: Получить выбранные миссии профиля
+      description: Возвращает выбранные миссии всех recap-годов и перед ответом обновляет их прогресс по событиям профиля.
+      operationId: getProfileMissions
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProfileID"
+      responses:
+        "200":
+          description: Миссии профиля; missions является пустым массивом, если ничего не выбрано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileMissionOverview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/recap/generate:
     post:
       tags: [Recap]
@@ -347,6 +374,82 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/recap/{user_id}/{year}/shares:
+    post:
+      tags: [Recap]
+      summary: Создать временную публичную ссылку
+      description: |-
+        Backend принимает только ID карточек, повторно проверяет shareable=true и
+        сохраняет неизменяемый allowlist-snapshot. Исходный профиль, полный Recap,
+        идентификаторы объявлений, изображения, CTA и диаграммы не публикуются.
+      operationId: createPublicRecapShare
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+        - $ref: "#/components/parameters/Year"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/CreateRecapShareRequest"}
+      responses:
+        "201":
+          description: Snapshot создан; Location и public_url содержат пользовательскую ссылку
+          headers:
+            Location:
+              schema: {type: string, format: uri}
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/RecapShareCreated"}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/recap-shares/{share_id}:
+    delete:
+      tags: [Recap]
+      summary: Досрочно отозвать публичную ссылку
+      operationId: revokePublicRecapShare
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: share_id
+          in: path
+          required: true
+          schema: {type: string, format: uuid}
+      responses:
+        "204": {description: Ссылка отозвана}
+        "400": {$ref: "#/components/responses/BadRequest"}
+        "401": {$ref: "#/components/responses/Unauthorized"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
+  /api/public/recap-shares/{token}:
+    get:
+      tags: [Recap]
+      summary: Получить временный публичный snapshot
+      description: |-
+        Не требует cookie. Невалидный, истёкший и отозванный токен одинаково дают
+        404. Ответ содержит Cache-Control: no-store, X-Robots-Tag: noindex и
+        Referrer-Policy: no-referrer.
+      operationId: getPublicRecapShare
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 43
+            maxLength: 43
+      responses:
+        "200":
+          description: Безопасный snapshot выбранных карточек
+          content:
+            application/json:
+              schema: {$ref: "#/components/schemas/PublicRecapShare"}
+        "404": {$ref: "#/components/responses/NotFound"}
+        "500": {$ref: "#/components/responses/InternalError"}
   /api/recap/events:
     post:
       tags: [Recap]
@@ -373,8 +476,8 @@ paths:
   /api/recap/{user_id}/{year}/mission:
     get:
       tags: [Recap]
-      summary: Получить миссии и прогресс выбранной цели
-      description: Backend пересчитывает прогресс по событиям профиля после selected_at и сохраняет новое состояние.
+      summary: Получить миссии и прогресс выбранных целей
+      description: Backend пересчитывает прогресс каждой выбранной миссии по событиям профиля после её selected_at и сохраняет новое состояние.
       operationId: getRecapMission
       security:
         - cookieAuth: []
@@ -383,7 +486,7 @@ paths:
         - $ref: "#/components/parameters/Year"
       responses:
         "200":
-          description: Каталог миссий и выбранная цель; selected равен null до выбора
+          description: Каталог миссий и выбранные цели; selected_missions является пустым массивом до выбора
           content:
             application/json:
               schema:
@@ -398,8 +501,12 @@ paths:
           $ref: "#/components/responses/InternalError"
     put:
       tags: [Recap]
-      summary: Выбрать миссию на следующий год
-      description: Повторный выбор того же кода идемпотентен. Другой код заменяет активную миссию и начинает её с нуля.
+      summary: Выбрать несколько миссий на следующий год
+      description: |-
+        Полностью заменяет выбранный набор. Существующие коды сохраняют progress и
+        selected_at, новые начинаются с нуля, отсутствующие удаляются. codes: [] снимает
+        все миссии. Повторная отправка того же набора идемпотентна. Поле code оставлено
+        только для совместимости и эквивалентно codes: [code].
       operationId: selectRecapMission
       security:
         - cookieAuth: []
@@ -414,7 +521,7 @@ paths:
               $ref: "#/components/schemas/SelectMissionRequest"
       responses:
         "200":
-          description: Обновлённый каталог и выбранная миссия
+          description: Обновлённый каталог и набор выбранных миссий
           content:
             application/json:
               schema:
@@ -550,6 +657,89 @@ paths:
       responses:
         "204":
           description: Шаблон удалён
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/admin/achievement-definitions/options:
+    get:
+      tags: [Admin]
+      summary: Получить доступные метрики и условия для встроенных ачивок
+      operationId: getAchievementDefinitionOptions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Допустимые метрики и операторы условий
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AchievementDefinitionOptions"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+  /api/admin/achievement-definitions:
+    get:
+      tags: [Admin]
+      summary: Получить определения встроенных ачивок
+      operationId: listAchievementDefinitions
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Все встроенные ачивки, включая отключённые
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AchievementDefinition"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/admin/achievement-definitions/{slug}:
+    put:
+      tags: [Admin]
+      summary: Обновить существующую встроенную ачивку
+      description: Системные поля slug, category и sort_order остаются неизменными. Изменение применяется при следующей генерации Recap.
+      operationId: updateAchievementDefinition
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 100
+            pattern: ^[a-z0-9_]+$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAchievementDefinition"
+      responses:
+        "200":
+          description: Обновлённое определение ачивки
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AchievementDefinition"
         "400":
           $ref: "#/components/responses/BadRequest"
         "401":
@@ -917,6 +1107,47 @@ components:
           type: array
           description: Метрики, совместимые с monthly_average и monthly_max.
           items: {type: string, enum: [total_views, favorites, purchases, sales]}
+    UpdateAchievementDefinition:
+      type: object
+      additionalProperties: false
+      required: [title, description, icon, metric, condition_operator, is_active]
+      properties:
+        title: {type: string, minLength: 1, maxLength: 160}
+        description: {type: string, maxLength: 500}
+        icon: {type: string, minLength: 1, maxLength: 50, example: 👀}
+        metric:
+          type: string
+          enum: [total_views, favorites, purchases, sales, listing_views, contacts, reviews, activity_days, categories, deals]
+        condition_operator:
+          type: string
+          enum: [always, gt, gte, lt, lte, eq]
+        condition_value:
+          type: number
+          format: double
+          minimum: 0
+          nullable: true
+          description: Обязательно для всех условий, кроме always.
+        is_active: {type: boolean}
+    AchievementDefinition:
+      allOf:
+        - $ref: "#/components/schemas/UpdateAchievementDefinition"
+        - type: object
+          required: [slug, category, sort_order, updated_at]
+          properties:
+            slug: {type: string, maxLength: 100, pattern: "^[a-z0-9_]+$", example: curious, readOnly: true}
+            category: {type: string, example: views, readOnly: true}
+            sort_order: {type: integer, minimum: 0, readOnly: true}
+            updated_at: {type: string, format: date-time, readOnly: true}
+    AchievementDefinitionOptions:
+      type: object
+      required: [metrics, conditions]
+      properties:
+        metrics:
+          type: array
+          items: {type: string, enum: [total_views, favorites, purchases, sales, listing_views, contacts, reviews, activity_days, categories, deals]}
+        conditions:
+          type: array
+          items: {type: string, enum: [always, gt, gte, lt, lte, eq]}
     GenerateRecapRequest:
       type: object
       additionalProperties: false
@@ -929,15 +1160,100 @@ components:
           type: integer
           minimum: 2000
           example: 2026
+    RecapShareFormat:
+      type: string
+      enum: [responsive, mobile_story]
+      description: responsive — обычная публичная страница; mobile_story — отдельная компоновка 9:16.
+    CreateRecapShareRequest:
+      type: object
+      additionalProperties: false
+      required: [card_ids, format]
+      properties:
+        card_ids:
+          type: array
+          minItems: 1
+          maxItems: 9
+          uniqueItems: true
+          description: ID выбранных карточек из полного Recap; порядок сохраняется в snapshot.
+          items: {type: string, minLength: 1}
+          example: [year_overview, category_mix]
+        format: {$ref: "#/components/schemas/RecapShareFormat"}
+    RecapShareCreated:
+      type: object
+      additionalProperties: false
+      required: [id, public_url, format, created_at, expires_at]
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: ID для досрочного отзыва владельцем; в публичный snapshot не входит.
+        public_url:
+          type: string
+          format: uri
+          example: https://recap.example/share/AbCdEf0123456789012345678901234567890123456
+          description: Пользовательская frontend-ссылка; frontend извлекает token и запрашивает публичный API.
+        format: {$ref: "#/components/schemas/RecapShareFormat"}
+        created_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
+    PublicRecapCardPresentation:
+      type: object
+      additionalProperties: false
+      required: [layout, theme, icon]
+      properties:
+        layout: {type: string, example: statistic}
+        theme: {type: string, example: avito-blue}
+        icon: {type: string, example: sparkles}
+    PublicRecapCard:
+      type: object
+      additionalProperties: false
+      required: [kind, eyebrow, title, description, value, presentation]
+      description: |-
+        Строгий allowlist публичной карточки. source ID, user_id, ad_id, image_url,
+        CTA, params, reason, visualization и исходные данные отсутствуют.
+      properties:
+        kind: {type: string, example: overview}
+        eyebrow: {type: string, example: Итоги 2026}
+        title: {type: string, example: Ваш год на Авито}
+        description: {type: string}
+        value: {type: string, example: "2026"}
+        presentation: {$ref: "#/components/schemas/PublicRecapCardPresentation"}
+    PublicRecapShare:
+      type: object
+      additionalProperties: false
+      required: [format, year, cards, created_at, expires_at]
+      description: Неизменяемый публичный snapshot только выбранных карточек.
+      properties:
+        format: {$ref: "#/components/schemas/RecapShareFormat"}
+        year: {type: integer, minimum: 2000, maximum: 2100, example: 2026}
+        cards:
+          type: array
+          minItems: 1
+          maxItems: 9
+          items: {$ref: "#/components/schemas/PublicRecapCard"}
+        created_at: {type: string, format: date-time}
+        expires_at: {type: string, format: date-time}
     SelectMissionRequest:
       type: object
       additionalProperties: false
-      required: [code]
+      oneOf:
+        - required: [codes]
+        - required: [code]
       properties:
+        codes:
+          type: array
+          minItems: 0
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
+          example: [sell_three_items, try_avito_delivery]
         code:
           type: string
           enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
           example: sell_three_items
+          deprecated: true
+          description: Совместимость со старым клиентом; используйте codes.
     MissionOption:
       type: object
       required: [code, title, description, target, icon, theme, cta]
@@ -954,6 +1270,7 @@ components:
     MissionState:
       type: object
       required:
+        - recap_year
         - code
         - title
         - description
@@ -967,6 +1284,11 @@ components:
         - selected_at
         - updated_at
       properties:
+        recap_year:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+          example: 2026
         code:
           type: string
           enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
@@ -989,17 +1311,32 @@ components:
           nullable: true
     MissionOverview:
       type: object
-      required: [options, selected]
+      required: [options, selected_missions, selected]
       properties:
         options:
           type: array
           minItems: 3
           maxItems: 3
           items: {$ref: "#/components/schemas/MissionOption"}
+        selected_missions:
+          type: array
+          maxItems: 3
+          description: Каноничный полный набор выбранных миссий для указанного recap-года.
+          items: {$ref: "#/components/schemas/MissionState"}
         selected:
           type: object
           allOf: [{$ref: "#/components/schemas/MissionState"}]
           nullable: true
+          deprecated: true
+          description: Совместимый alias одной последней миссии; новые клиенты используют selected_missions.
+    ProfileMissionOverview:
+      type: object
+      required: [missions]
+      properties:
+        missions:
+          type: array
+          description: Миссии всех recap-годов, новые годы идут первыми.
+          items: {$ref: "#/components/schemas/MissionState"}
     CategoryStat:
       type: object
       required: [category, count]
@@ -1031,6 +1368,121 @@ components:
         category:
           type: string
           example: views
+    RecapAmountComparison:
+      type: object
+      required: [previous, current, absolute_change, percent_change]
+      properties:
+        previous:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 120000
+        current:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 156000
+        absolute_change:
+          type: integer
+          format: int64
+          example: 36000
+        percent_change:
+          type: number
+          format: double
+          nullable: true
+          example: 30
+          description: Процент с точностью до 0,1; null, когда прошлое значение равно 0, а текущее больше 0.
+    RecapCategoryComparison:
+      type: object
+      required: [category, previous_score, current_score, absolute_change, percent_change, is_new]
+      properties:
+        category: {type: string, example: Электроника}
+        previous_score:
+          type: integer
+          minimum: 0
+          example: 18
+        current_score:
+          type: integer
+          minimum: 0
+          example: 31
+        absolute_change: {type: integer, example: 13}
+        percent_change:
+          type: number
+          format: double
+          nullable: true
+          example: 72.2
+          description: Процент с точностью до 0,1; null, когда прошлый score равен 0, а текущий больше 0.
+        is_new:
+          type: boolean
+          description: true только при наличии данных прошлого года и переходе score с 0 на положительное значение.
+    RecapComparison:
+      type: object
+      required:
+        - status
+        - message
+        - previous_year
+        - current_year
+        - spending
+        - sales_revenue
+        - categories
+        - new_interests
+      description: |-
+        Сравнение предыдущего и текущего года. Расходы — сумма цен купленных
+        объявлений, выручка — сумма цен проданных объявлений. Score интереса
+        категории: views * 1 + favorites * 3 + purchases * 5.
+      properties:
+        status:
+          type: string
+          enum: [available, first_year, unavailable]
+          description: unavailable встречается у сохранённых итогов, созданных до появления сравнения.
+        message:
+          type: string
+          example: Сравнение итогов за два года
+          description: Для first_year всегда «Это ваши первые итоги года».
+        previous_year: {type: integer, minimum: 1999, example: 2025}
+        current_year: {type: integer, minimum: 2000, example: 2026}
+        spending: {$ref: "#/components/schemas/RecapAmountComparison"}
+        sales_revenue: {$ref: "#/components/schemas/RecapAmountComparison"}
+        categories:
+          type: array
+          items: {$ref: "#/components/schemas/RecapCategoryComparison"}
+        new_interests:
+          type: array
+          maxItems: 3
+          items: {type: string}
+          description: До трёх новых интересов; для first_year массив пуст.
+    RecapAmountForecast:
+      type: object
+      required: [expected, min, max]
+      properties:
+        expected: {type: integer, format: int64, minimum: 0, example: 192000}
+        min: {type: integer, format: int64, minimum: 0, example: 156000}
+        max: {type: integer, format: int64, minimum: 0, example: 228000}
+    RecapForecastCategory:
+      type: object
+      required: [category, expected_score]
+      properties:
+        category: {type: string, example: Электроника}
+        expected_score: {type: integer, minimum: 1, example: 44}
+    RecapForecast:
+      type: object
+      required: [year, method, spending, sales_revenue, likely_categories]
+      description: |-
+        Объяснимая ориентировочная оценка, а не финансовое обещание. При двух
+        годах backend продолжает последнюю абсолютную годовую динамику. При
+        первом годе использует текущий год как базу. Диапазон равен как минимум
+        ±10% для linear_year_over_year и ±20% для current_year_baseline.
+      properties:
+        year: {type: integer, minimum: 2001, example: 2027}
+        method:
+          type: string
+          enum: [linear_year_over_year, current_year_baseline, unavailable]
+        spending: {$ref: "#/components/schemas/RecapAmountForecast"}
+        sales_revenue: {$ref: "#/components/schemas/RecapAmountForecast"}
+        likely_categories:
+          type: array
+          maxItems: 3
+          items: {$ref: "#/components/schemas/RecapForecastCategory"}
     RecapItem:
       type: object
       required: [ad_id, title, category, price]
@@ -1321,7 +1773,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/RecapMetrics"
         - type: object
-          required: [id, user_id, summary, cards]
+          required: [id, user_id, summary, cards, comparison, forecast]
           properties:
             id:
               type: string
@@ -1334,6 +1786,8 @@ components:
             cards:
               type: array
               items: {$ref: "#/components/schemas/RecapCard"}
+            comparison: {$ref: "#/components/schemas/RecapComparison"}
+            forecast: {$ref: "#/components/schemas/RecapForecast"}
     ShareRecap:
       allOf:
         - $ref: "#/components/schemas/RecapMetrics"

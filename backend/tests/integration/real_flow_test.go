@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,11 +22,13 @@ import (
 	"gooffer/backend/internal/repository/postgres"
 	redisrepo "gooffer/backend/internal/repository/redis"
 	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/achievementdefinition"
 	"gooffer/backend/internal/usecase/auth"
 	"gooffer/backend/internal/usecase/carddefinition"
 	"gooffer/backend/internal/usecase/generator"
 	missionusecase "gooffer/backend/internal/usecase/mission"
 	"gooffer/backend/internal/usecase/profile"
+	"gooffer/backend/internal/usecase/recapshare"
 	"gooffer/backend/migrations"
 )
 
@@ -64,6 +67,7 @@ func TestRealApplicationFlow(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 	userRepository := postgres.NewUserRepository(pool)
 	cardDefinitionRepository := postgres.NewCardDefinitionRepository(pool)
+	achievementDefinitionRepository := postgres.NewAchievementDefinitionRepository(pool)
 	recapRepository := redisrepo.NewCachedRecapRepository(
 		postgres.NewRecapRepository(pool),
 		redisrepo.NewRecapCache(redisClient),
@@ -72,14 +76,22 @@ func TestRealApplicationFlow(t *testing.T) {
 	handler := server.NewRouter(server.Dependencies{
 		Auth:           auth.New(postgres.NewAuthRepository(pool), time.Hour),
 		Profiles:       profile.New(logger, userRepository),
-		RecapGenerator: generator.New(userRepository, recapRepository, cardDefinitionRepository),
+		RecapGenerator: generator.New(userRepository, recapRepository, cardDefinitionRepository, achievementDefinitionRepository),
 		Recaps:         recapRepository,
+		RecapShares: recapshare.New(
+			userRepository,
+			recapRepository,
+			postgres.NewRecapShareRepository(pool),
+			cfg.PublicBaseURL,
+			cfg.RecapShareTTL,
+		),
 		Missions: missionusecase.New(
 			userRepository,
 			recapRepository,
 			postgres.NewMissionRepository(pool),
 		),
-		AdminCards: carddefinition.New(cardDefinitionRepository),
+		AdminCards:        carddefinition.New(cardDefinitionRepository),
+		AdminAchievements: achievementdefinition.New(achievementDefinitionRepository),
 	}, server.Options{Logger: logger})
 	adminLogin := realRequest(
 		handler,
@@ -142,7 +154,7 @@ func TestRealApplicationFlow(t *testing.T) {
 		t.Fatalf("parse created profile ID: %v", err)
 	}
 	defer func() {
-		_ = redisClient.Del(ctx, fmt.Sprintf("recap:v1:%s:%d", userID, year)).Err()
+		_ = redisClient.Del(ctx, fmt.Sprintf("recap:v2:%s:%d", userID, year)).Err()
 	}()
 
 	generatePath := "/api/recap/generate"
@@ -183,11 +195,50 @@ func TestRealApplicationFlow(t *testing.T) {
 	}
 	assertShareJSONIsSafe(t, sharePayload)
 
+	publicCreatedResponse := realRequest(
+		handler,
+		http.MethodPost,
+		getPath+"/shares",
+		[]byte(`{"card_ids":["year_overview"],"format":"mobile_story"}`),
+		cookie,
+	)
+	if publicCreatedResponse.Code != http.StatusCreated {
+		t.Fatalf("create public share status = %d: %s", publicCreatedResponse.Code, publicCreatedResponse.Body.String())
+	}
+	var publicCreated domain.RecapShareCreated
+	if err := json.NewDecoder(publicCreatedResponse.Body).Decode(&publicCreated); err != nil {
+		t.Fatalf("decode public share creation: %v", err)
+	}
+	publicToken := strings.TrimPrefix(publicCreated.PublicURL, cfg.PublicBaseURL+"/share/")
+	publicPath := "/api/public/recap-shares/" + publicToken
+	publicResponse := realRequest(handler, http.MethodGet, publicPath, nil, "")
+	if publicResponse.Code != http.StatusOK || publicResponse.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("public share status/headers = %d/%#v: %s", publicResponse.Code, publicResponse.Header(), publicResponse.Body.String())
+	}
+	var publicPayload any
+	if err := json.NewDecoder(publicResponse.Body).Decode(&publicPayload); err != nil {
+		t.Fatalf("decode public share: %v", err)
+	}
+	assertShareJSONIsSafe(t, publicPayload)
+	revoked := realRequest(
+		handler,
+		http.MethodDelete,
+		"/api/recap-shares/"+publicCreated.ID.String(),
+		nil,
+		cookie,
+	)
+	if revoked.Code != http.StatusNoContent {
+		t.Fatalf("revoke public share status = %d: %s", revoked.Code, revoked.Body.String())
+	}
+	if afterRevoke := realRequest(handler, http.MethodGet, publicPath, nil, ""); afterRevoke.Code != http.StatusNotFound {
+		t.Fatalf("revoked public share status = %d, want 404", afterRevoke.Code)
+	}
+
 	mission := realRequest(
 		handler,
 		http.MethodPut,
 		getPath+"/mission",
-		[]byte(`{"code":"sell_three_items"}`),
+		[]byte(`{"codes":["sell_three_items","try_avito_delivery"]}`),
 		cookie,
 	)
 	if mission.Code != http.StatusOK {
@@ -197,8 +248,25 @@ func TestRealApplicationFlow(t *testing.T) {
 	if err := json.NewDecoder(mission.Body).Decode(&overview); err != nil {
 		t.Fatalf("decode mission: %v", err)
 	}
-	if overview.Selected == nil || overview.Selected.Code != domain.MissionSellThreeItems {
-		t.Fatalf("selected mission = %#v", overview.Selected)
+	if len(overview.SelectedMissions) != 2 || overview.SelectedMissions[0].Code != domain.MissionSellThreeItems {
+		t.Fatalf("selected missions = %#v", overview.SelectedMissions)
+	}
+	profileMissions := realRequest(
+		handler,
+		http.MethodGet,
+		"/api/profiles/"+userID.String()+"/missions",
+		nil,
+		cookie,
+	)
+	if profileMissions.Code != http.StatusOK {
+		t.Fatalf("profile missions status = %d: %s", profileMissions.Code, profileMissions.Body.String())
+	}
+	var profileOverview domain.ProfileMissionOverview
+	if err := json.NewDecoder(profileMissions.Body).Decode(&profileOverview); err != nil {
+		t.Fatalf("decode profile missions: %v", err)
+	}
+	if len(profileOverview.Missions) != 2 || profileOverview.Missions[0].RecapYear != year {
+		t.Fatalf("profile missions = %#v", profileOverview.Missions)
 	}
 }
 
