@@ -1,6 +1,7 @@
 import { CheckboxField, DefinitionSelect, TextAreaField, TextField } from './CardDefinitionControls'
+import { CardIconPicker } from './CardIconPicker'
 import { RecapIcon } from '@/components/recap/RecapIcon'
-import { cardIcons, cardLayoutLabels, cardThemes } from '@/constants/cardDefinitionOptions'
+import { cardLayoutLabels, cardThemes } from '@/constants/cardDefinitionOptions'
 import type { CardDefinitionOptions, CardDefinitionRequest, CardLayout } from '@/types/cardDefinition.type'
 
 interface CardDefinitionAppearanceFieldsProps {
@@ -60,10 +61,8 @@ export function CardDefinitionAppearanceFields({ definition, onChange, options }
         options={cardThemes.map(({ label, value }) => ({ label, value }))}
         value={definition.theme}
       />
-      <DefinitionSelect
-        label="Иконка"
+      <CardIconPicker
         onChange={(icon) => onChange({ ...definition, icon })}
-        options={cardIcons.map(({ label, value }) => ({ label, value }))}
         value={definition.icon}
       />
       <div

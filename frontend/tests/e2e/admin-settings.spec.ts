@@ -11,6 +11,8 @@ test('admin creates, edits and deletes a recap card setting', async ({ page }) =
   await page.getByRole('button', { name: /Новая карточка|Новое достижение/ }).click()
   await page.getByLabel('Название настройки').fill('Активный покупатель')
   await page.getByLabel('Заголовок карточки').fill('Вы активно искали')
+  await page.getByRole('radio', { name: 'Иконка Категории' }).click()
+  await expect(page.getByRole('radio', { name: 'Иконка Категории' })).toHaveAttribute('aria-checked', 'true')
   await page.getByRole('button', { name: 'Сохранить' }).click()
   await expect(page.getByText('Активный покупатель')).toBeVisible()
 
