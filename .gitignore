@@ -10,3 +10,4 @@
 /frontend/.env
 /frontend/dist/
 /backend/.bin/
+/backend/coverage.out
