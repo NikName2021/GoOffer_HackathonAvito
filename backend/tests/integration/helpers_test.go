@@ -459,33 +459,43 @@ func (f *fakeApplication) GetOverview(
 		copy := overview
 		return &copy, nil
 	}
-	return &domain.MissionOverview{Options: fakeMissionOptions()}, nil
+	return &domain.MissionOverview{Options: fakeMissionOptions(), SelectedMissions: []domain.MissionState{}}, nil
 }
 
 func (f *fakeApplication) Select(
 	ctx context.Context,
 	accountID, userID uuid.UUID,
 	year int,
-	code domain.MissionCode,
+	codes []domain.MissionCode,
 ) (*domain.MissionOverview, error) {
 	if _, err := f.GetOverview(ctx, accountID, userID, year); err != nil {
 		return nil, err
 	}
-	var selectedOption *domain.MissionOption
-	for _, option := range fakeMissionOptions() {
-		if option.Code == code {
-			copy := option
-			selectedOption = &copy
-			break
+	options := fakeMissionOptions()
+	seen := make(map[domain.MissionCode]struct{}, len(codes))
+	selectedOptions := make([]domain.MissionOption, len(codes))
+	for index, code := range codes {
+		if _, duplicate := seen[code]; duplicate {
+			return nil, apperrors.ErrInvalidMission
 		}
-	}
-	if selectedOption == nil {
-		return nil, apperrors.ErrInvalidMission
+		found := false
+		for _, option := range options {
+			if option.Code == code {
+				selectedOptions[index] = option
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, apperrors.ErrInvalidMission
+		}
+		seen[code] = struct{}{}
 	}
 	now := time.Now().UTC()
-	overview := domain.MissionOverview{
-		Options: fakeMissionOptions(),
-		Selected: &domain.MissionState{
+	selectedMissions := make([]domain.MissionState, len(selectedOptions))
+	for index, selectedOption := range selectedOptions {
+		selectedMissions[index] = domain.MissionState{
+			RecapYear:   year,
 			Code:        selectedOption.Code,
 			Title:       selectedOption.Title,
 			Description: selectedOption.Description,
@@ -496,10 +506,36 @@ func (f *fakeApplication) Select(
 			CTA:         selectedOption.CTA,
 			SelectedAt:  now,
 			UpdatedAt:   now,
-		},
+		}
+	}
+	var legacySelected *domain.MissionState
+	if len(selectedMissions) > 0 {
+		copy := selectedMissions[0]
+		legacySelected = &copy
+	}
+	overview := domain.MissionOverview{
+		Options:          options,
+		SelectedMissions: selectedMissions,
+		Selected:         legacySelected,
 	}
 	f.missions[recapKey(userID, year)] = overview
 	return &overview, nil
+}
+
+func (f *fakeApplication) GetProfileMissions(
+	ctx context.Context,
+	accountID, userID uuid.UUID,
+) (*domain.ProfileMissionOverview, error) {
+	if _, err := f.GetByID(ctx, accountID, userID); err != nil {
+		return nil, err
+	}
+	missions := make([]domain.MissionState, 0)
+	for key, overview := range f.missions {
+		if strings.HasPrefix(key, userID.String()+":") {
+			missions = append(missions, overview.SelectedMissions...)
+		}
+	}
+	return &domain.ProfileMissionOverview{Missions: missions}, nil
 }
 
 func fakeMissionOptions() []domain.MissionOption {

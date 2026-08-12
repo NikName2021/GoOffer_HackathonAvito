@@ -263,6 +263,31 @@ paths:
           $ref: "#/components/responses/NotFound"
         "500":
           $ref: "#/components/responses/InternalError"
+  /api/profiles/{id}/missions:
+    get:
+      tags: [Profiles]
+      summary: Получить выбранные миссии профиля
+      description: Возвращает выбранные миссии всех recap-годов и перед ответом обновляет их прогресс по событиям профиля.
+      operationId: getProfileMissions
+      security:
+        - cookieAuth: []
+      parameters:
+        - $ref: "#/components/parameters/ProfileID"
+      responses:
+        "200":
+          description: Миссии профиля; missions является пустым массивом, если ничего не выбрано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileMissionOverview"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/recap/generate:
     post:
       tags: [Recap]
@@ -373,8 +398,8 @@ paths:
   /api/recap/{user_id}/{year}/mission:
     get:
       tags: [Recap]
-      summary: Получить миссии и прогресс выбранной цели
-      description: Backend пересчитывает прогресс по событиям профиля после selected_at и сохраняет новое состояние.
+      summary: Получить миссии и прогресс выбранных целей
+      description: Backend пересчитывает прогресс каждой выбранной миссии по событиям профиля после её selected_at и сохраняет новое состояние.
       operationId: getRecapMission
       security:
         - cookieAuth: []
@@ -383,7 +408,7 @@ paths:
         - $ref: "#/components/parameters/Year"
       responses:
         "200":
-          description: Каталог миссий и выбранная цель; selected равен null до выбора
+          description: Каталог миссий и выбранные цели; selected_missions является пустым массивом до выбора
           content:
             application/json:
               schema:
@@ -398,8 +423,12 @@ paths:
           $ref: "#/components/responses/InternalError"
     put:
       tags: [Recap]
-      summary: Выбрать миссию на следующий год
-      description: Повторный выбор того же кода идемпотентен. Другой код заменяет активную миссию и начинает её с нуля.
+      summary: Выбрать несколько миссий на следующий год
+      description: |-
+        Полностью заменяет выбранный набор. Существующие коды сохраняют progress и
+        selected_at, новые начинаются с нуля, отсутствующие удаляются. codes: [] снимает
+        все миссии. Повторная отправка того же набора идемпотентна. Поле code оставлено
+        только для совместимости и эквивалентно codes: [code].
       operationId: selectRecapMission
       security:
         - cookieAuth: []
@@ -414,7 +443,7 @@ paths:
               $ref: "#/components/schemas/SelectMissionRequest"
       responses:
         "200":
-          description: Обновлённый каталог и выбранная миссия
+          description: Обновлённый каталог и набор выбранных миссий
           content:
             application/json:
               schema:
@@ -1056,12 +1085,25 @@ components:
     SelectMissionRequest:
       type: object
       additionalProperties: false
-      required: [code]
+      oneOf:
+        - required: [codes]
+        - required: [code]
       properties:
+        codes:
+          type: array
+          minItems: 0
+          maxItems: 3
+          uniqueItems: true
+          items:
+            type: string
+            enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
+          example: [sell_three_items, try_avito_delivery]
         code:
           type: string
           enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
           example: sell_three_items
+          deprecated: true
+          description: Совместимость со старым клиентом; используйте codes.
     MissionOption:
       type: object
       required: [code, title, description, target, icon, theme, cta]
@@ -1078,6 +1120,7 @@ components:
     MissionState:
       type: object
       required:
+        - recap_year
         - code
         - title
         - description
@@ -1091,6 +1134,11 @@ components:
         - selected_at
         - updated_at
       properties:
+        recap_year:
+          type: integer
+          minimum: 2000
+          maximum: 2100
+          example: 2026
         code:
           type: string
           enum: [sell_three_items, buy_from_favorites, try_avito_delivery]
@@ -1113,17 +1161,32 @@ components:
           nullable: true
     MissionOverview:
       type: object
-      required: [options, selected]
+      required: [options, selected_missions, selected]
       properties:
         options:
           type: array
           minItems: 3
           maxItems: 3
           items: {$ref: "#/components/schemas/MissionOption"}
+        selected_missions:
+          type: array
+          maxItems: 3
+          description: Каноничный полный набор выбранных миссий для указанного recap-года.
+          items: {$ref: "#/components/schemas/MissionState"}
         selected:
           type: object
           allOf: [{$ref: "#/components/schemas/MissionState"}]
           nullable: true
+          deprecated: true
+          description: Совместимый alias одной последней миссии; новые клиенты используют selected_missions.
+    ProfileMissionOverview:
+      type: object
+      required: [missions]
+      properties:
+        missions:
+          type: array
+          description: Миссии всех recap-годов, новые годы идут первыми.
+          items: {$ref: "#/components/schemas/MissionState"}
     CategoryStat:
       type: object
       required: [category, count]

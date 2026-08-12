@@ -31,7 +31,8 @@ type MissionOption struct {
 	CTA         RecapCardCTA `json:"cta"`
 }
 
-// RecapMission is the persisted progress for one profile and recap year.
+// RecapMission is the persisted progress for one selected mission of a profile
+// and recap year.
 type RecapMission struct {
 	ID          uuid.UUID
 	UserID      uuid.UUID
@@ -46,6 +47,7 @@ type RecapMission struct {
 }
 
 type MissionState struct {
+	RecapYear       int           `json:"recap_year"`
 	Code            MissionCode   `json:"code"`
 	Title           string        `json:"title"`
 	Description     string        `json:"description"`
@@ -62,6 +64,13 @@ type MissionState struct {
 }
 
 type MissionOverview struct {
-	Options  []MissionOption `json:"options"`
-	Selected *MissionState   `json:"selected"`
+	Options          []MissionOption `json:"options"`
+	SelectedMissions []MissionState  `json:"selected_missions"`
+	// Selected is a deprecated compatibility alias for the most recently
+	// selected mission. New clients must use SelectedMissions.
+	Selected *MissionState `json:"selected"`
+}
+
+type ProfileMissionOverview struct {
+	Missions []MissionState `json:"missions"`
 }

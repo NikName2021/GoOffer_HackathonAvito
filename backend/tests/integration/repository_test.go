@@ -434,3 +434,81 @@ func TestAchievementDefinitionRepositoryLifecycle(t *testing.T) {
 		t.Fatalf("missing update error = %v, want not found", err)
 	}
 }
+
+func TestMissionRepositoryStoresMultipleSelections(t *testing.T) {
+	if os.Getenv("DB_PORT") == "" {
+		t.Skip("set DB_PORT to run integration test against local postgres")
+	}
+
+	ctx := context.Background()
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL())
+	if err != nil {
+		t.Fatalf("connect postgres: %v", err)
+	}
+	defer pool.Close()
+	if err := migrations.Apply(ctx, pool); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+
+	userID := uuid.MustParse("11111111-1111-4111-8111-111111111111")
+	year := 2099
+	recap := &domain.Recap{
+		ID:          uuid.New(),
+		UserID:      userID,
+		Year:        year,
+		GeneratedAt: time.Now().UTC(),
+	}
+	if err := postgres.NewRecapRepository(pool).Save(ctx, recap); err != nil {
+		t.Fatalf("save test recap: %v", err)
+	}
+	defer func() { _, _ = pool.Exec(ctx, `DELETE FROM recaps WHERE user_id = $1 AND year = $2`, userID, year) }()
+
+	now := time.Now().UTC()
+	selected := []domain.RecapMission{
+		{
+			ID: uuid.New(), UserID: userID, RecapYear: year,
+			Code: domain.MissionSellThreeItems, Target: 3, Status: domain.MissionActive,
+			SelectedAt: now, UpdatedAt: now,
+		},
+		{
+			ID: uuid.New(), UserID: userID, RecapYear: year,
+			Code: domain.MissionTryDelivery, Target: 1, Status: domain.MissionActive,
+			SelectedAt: now, UpdatedAt: now,
+		},
+	}
+	repository := postgres.NewMissionRepository(pool)
+	if err := repository.ReplaceSelection(ctx, userID, year, selected); err != nil {
+		t.Fatalf("replace mission selection: %v", err)
+	}
+	loaded, err := repository.ListByUserAndYear(ctx, userID, year)
+	if err != nil {
+		t.Fatalf("list missions by year: %v", err)
+	}
+	if len(loaded) != 2 {
+		t.Fatalf("missions = %d, want 2", len(loaded))
+	}
+
+	loaded[0].Progress = 1
+	loaded[0].UpdatedAt = now.Add(time.Minute)
+	if err := repository.UpdateProgress(ctx, &loaded[0]); err != nil {
+		t.Fatalf("update mission progress: %v", err)
+	}
+	if err := repository.ReplaceSelection(ctx, userID, year, loaded[:1]); err != nil {
+		t.Fatalf("reduce mission selection: %v", err)
+	}
+	loaded, err = repository.ListByUserAndYear(ctx, userID, year)
+	if err != nil || len(loaded) != 1 || loaded[0].Progress != 1 {
+		t.Fatalf("reduced missions = %#v, error = %v", loaded, err)
+	}
+	if err := repository.ReplaceSelection(ctx, userID, year, []domain.RecapMission{}); err != nil {
+		t.Fatalf("clear mission selection: %v", err)
+	}
+	loaded, err = repository.ListByUserAndYear(ctx, userID, year)
+	if err != nil || len(loaded) != 0 {
+		t.Fatalf("cleared missions = %#v, error = %v", loaded, err)
+	}
+}

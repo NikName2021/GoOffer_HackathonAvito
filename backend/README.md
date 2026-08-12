@@ -106,7 +106,8 @@ password: avito2026
 - `/api/profiles*` — профили текущего аккаунта;
 - `POST /api/recap/generate` и `GET /api/recap/{user_id}/{year}` — генерация и чтение итогов;
 - `GET /api/recap/{user_id}/{year}/share` — безопасные данные для PNG/текста;
-- `/api/recap/{user_id}/{year}/mission` — выбор и прогресс миссии;
+- `/api/recap/{user_id}/{year}/mission` — выбор набора и прогресс миссий;
+- `/api/profiles/{id}/missions` — выбранные миссии всех recap-годов профиля;
 - `POST /api/recap/events` — только события из фиксированного allowlist;
 - `/api/admin/card-definitions*` — создание, просмотр, полное обновление и удаление правил дополнительных карточек; доступно только администратору;
 - `/api/admin/achievement-definitions*` — просмотр и редактирование шести встроенных ачивок без создания и удаления; изменения применяются при следующей генерации итогов.

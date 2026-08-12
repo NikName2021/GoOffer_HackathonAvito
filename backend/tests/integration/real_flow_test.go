@@ -190,7 +190,7 @@ func TestRealApplicationFlow(t *testing.T) {
 		handler,
 		http.MethodPut,
 		getPath+"/mission",
-		[]byte(`{"code":"sell_three_items"}`),
+		[]byte(`{"codes":["sell_three_items","try_avito_delivery"]}`),
 		cookie,
 	)
 	if mission.Code != http.StatusOK {
@@ -200,8 +200,25 @@ func TestRealApplicationFlow(t *testing.T) {
 	if err := json.NewDecoder(mission.Body).Decode(&overview); err != nil {
 		t.Fatalf("decode mission: %v", err)
 	}
-	if overview.Selected == nil || overview.Selected.Code != domain.MissionSellThreeItems {
-		t.Fatalf("selected mission = %#v", overview.Selected)
+	if len(overview.SelectedMissions) != 2 || overview.SelectedMissions[0].Code != domain.MissionSellThreeItems {
+		t.Fatalf("selected missions = %#v", overview.SelectedMissions)
+	}
+	profileMissions := realRequest(
+		handler,
+		http.MethodGet,
+		"/api/profiles/"+userID.String()+"/missions",
+		nil,
+		cookie,
+	)
+	if profileMissions.Code != http.StatusOK {
+		t.Fatalf("profile missions status = %d: %s", profileMissions.Code, profileMissions.Body.String())
+	}
+	var profileOverview domain.ProfileMissionOverview
+	if err := json.NewDecoder(profileMissions.Body).Decode(&profileOverview); err != nil {
+		t.Fatalf("decode profile missions: %v", err)
+	}
+	if len(profileOverview.Missions) != 2 || profileOverview.Missions[0].RecapYear != year {
+		t.Fatalf("profile missions = %#v", profileOverview.Missions)
 	}
 }
 
