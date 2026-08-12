@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -41,8 +42,9 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 	userRepo := postgres.NewUserRepository(pool)
 	recapRepo := postgres.NewRecapRepository(pool)
 	cardDefinitionRepo := postgres.NewCardDefinitionRepository(pool)
+	achievementDefinitionRepo := postgres.NewAchievementDefinitionRepository(pool)
 
-	gen := generator.New(userRepo, recapRepo, cardDefinitionRepo)
+	gen := generator.New(userRepo, recapRepo, cardDefinitionRepo, achievementDefinitionRepo)
 
 	accountID := uuid.MustParse("99999999-9999-4999-8999-999999999999")
 	account, _, err := postgres.NewAuthRepository(pool).GetAccountByLogin(ctx, "nikita")
@@ -93,6 +95,13 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 		}
 		if len(recap.Cards) < 7 || len(recap.Cards) > 9 {
 			t.Fatalf("%s cards = %d, want 7-9", user.Name, len(recap.Cards))
+		}
+		loaded, err := recapRepo.GetByUserAndYear(ctx, user.ID, 2026)
+		if err != nil {
+			t.Fatalf("load persisted recap for %s: %v", user.Name, err)
+		}
+		if !reflect.DeepEqual(loaded.Comparison, recap.Comparison) || !reflect.DeepEqual(loaded.Forecast, recap.Forecast) {
+			t.Fatalf("%s persisted comparison/forecast mismatch", user.Name)
 		}
 	}
 }
@@ -361,4 +370,145 @@ func containsCardDefinition(definitions []domain.CardDefinition, id uuid.UUID) b
 		}
 	}
 	return false
+}
+
+func TestAchievementDefinitionRepositoryLifecycle(t *testing.T) {
+	if os.Getenv("DB_PORT") == "" {
+		t.Skip("set DB_PORT to run integration test against local postgres")
+	}
+
+	ctx := context.Background()
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL())
+	if err != nil {
+		t.Fatalf("connect postgres: %v", err)
+	}
+	defer pool.Close()
+	if err := migrations.Apply(ctx, pool); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+
+	repository := postgres.NewAchievementDefinitionRepository(pool)
+	definitions, err := repository.List(ctx)
+	if err != nil {
+		t.Fatalf("list achievement definitions: %v", err)
+	}
+	if len(definitions) != 6 {
+		t.Fatalf("achievement definitions = %d, want 6 seeded rules", len(definitions))
+	}
+
+	original := definitions[0]
+	restored := original
+	defer func() {
+		restored.UpdatedAt = time.Now().UTC()
+		_ = repository.Update(ctx, &restored)
+	}()
+
+	updated := original
+	updated.Title = "Интеграционное название"
+	updated.IsActive = false
+	updated.UpdatedAt = time.Now().UTC()
+	if err := repository.Update(ctx, &updated); err != nil {
+		t.Fatalf("update achievement definition: %v", err)
+	}
+	if updated.Category != original.Category || updated.SortOrder != original.SortOrder {
+		t.Fatalf("immutable fields changed: %#v", updated)
+	}
+
+	active, err := repository.ListActive(ctx)
+	if err != nil {
+		t.Fatalf("list active achievement definitions: %v", err)
+	}
+	for _, definition := range active {
+		if definition.Slug == updated.Slug {
+			t.Fatal("inactive achievement definition was returned by ListActive")
+		}
+	}
+
+	missing := updated
+	missing.Slug = "does_not_exist"
+	if err := repository.Update(ctx, &missing); !errors.Is(err, apperrors.ErrNotFound) {
+		t.Fatalf("missing update error = %v, want not found", err)
+	}
+}
+
+func TestMissionRepositoryStoresMultipleSelections(t *testing.T) {
+	if os.Getenv("DB_PORT") == "" {
+		t.Skip("set DB_PORT to run integration test against local postgres")
+	}
+
+	ctx := context.Background()
+	cfg, err := config.Load()
+	if err != nil {
+		t.Fatalf("load config: %v", err)
+	}
+	pool, err := postgres.NewPool(ctx, cfg.DatabaseURL())
+	if err != nil {
+		t.Fatalf("connect postgres: %v", err)
+	}
+	defer pool.Close()
+	if err := migrations.Apply(ctx, pool); err != nil {
+		t.Fatalf("apply migrations: %v", err)
+	}
+
+	userID := uuid.MustParse("11111111-1111-4111-8111-111111111111")
+	year := 2099
+	recap := &domain.Recap{
+		ID:          uuid.New(),
+		UserID:      userID,
+		Year:        year,
+		GeneratedAt: time.Now().UTC(),
+	}
+	if err := postgres.NewRecapRepository(pool).Save(ctx, recap); err != nil {
+		t.Fatalf("save test recap: %v", err)
+	}
+	defer func() { _, _ = pool.Exec(ctx, `DELETE FROM recaps WHERE user_id = $1 AND year = $2`, userID, year) }()
+
+	now := time.Now().UTC()
+	selected := []domain.RecapMission{
+		{
+			ID: uuid.New(), UserID: userID, RecapYear: year,
+			Code: domain.MissionSellThreeItems, Target: 3, Status: domain.MissionActive,
+			SelectedAt: now, UpdatedAt: now,
+		},
+		{
+			ID: uuid.New(), UserID: userID, RecapYear: year,
+			Code: domain.MissionTryDelivery, Target: 1, Status: domain.MissionActive,
+			SelectedAt: now, UpdatedAt: now,
+		},
+	}
+	repository := postgres.NewMissionRepository(pool)
+	if err := repository.ReplaceSelection(ctx, userID, year, selected); err != nil {
+		t.Fatalf("replace mission selection: %v", err)
+	}
+	loaded, err := repository.ListByUserAndYear(ctx, userID, year)
+	if err != nil {
+		t.Fatalf("list missions by year: %v", err)
+	}
+	if len(loaded) != 2 {
+		t.Fatalf("missions = %d, want 2", len(loaded))
+	}
+
+	loaded[0].Progress = 1
+	loaded[0].UpdatedAt = now.Add(time.Minute)
+	if err := repository.UpdateProgress(ctx, &loaded[0]); err != nil {
+		t.Fatalf("update mission progress: %v", err)
+	}
+	if err := repository.ReplaceSelection(ctx, userID, year, loaded[:1]); err != nil {
+		t.Fatalf("reduce mission selection: %v", err)
+	}
+	loaded, err = repository.ListByUserAndYear(ctx, userID, year)
+	if err != nil || len(loaded) != 1 || loaded[0].Progress != 1 {
+		t.Fatalf("reduced missions = %#v, error = %v", loaded, err)
+	}
+	if err := repository.ReplaceSelection(ctx, userID, year, []domain.RecapMission{}); err != nil {
+		t.Fatalf("clear mission selection: %v", err)
+	}
+	loaded, err = repository.ListByUserAndYear(ctx, userID, year)
+	if err != nil || len(loaded) != 0 {
+		t.Fatalf("cleared missions = %#v, error = %v", loaded, err)
+	}
 }

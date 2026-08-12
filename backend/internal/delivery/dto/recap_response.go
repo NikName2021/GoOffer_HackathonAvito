@@ -21,20 +21,22 @@ type AchievementDTO struct {
 }
 
 type RecapResponse struct {
-	ID             uuid.UUID           `json:"id"`
-	UserID         uuid.UUID           `json:"user_id"`
-	Year           int                 `json:"year"`
-	TotalViews     int                 `json:"total_views"`
-	TotalMessages  int                 `json:"total_messages"`
-	TotalFavorites int                 `json:"total_favorites"`
-	TotalPurchases int                 `json:"total_purchases"`
-	TotalSales     int                 `json:"total_sales"`
-	TopCategories  []CategoryStatDTO   `json:"top_categories"`
-	Achievements   []AchievementDTO    `json:"achievements"`
-	ActivityDays   int                 `json:"activity_days"`
-	Summary        domain.RecapSummary `json:"summary"`
-	Cards          []domain.RecapCard  `json:"cards"`
-	GeneratedAt    time.Time           `json:"generated_at"`
+	ID             uuid.UUID              `json:"id"`
+	UserID         uuid.UUID              `json:"user_id"`
+	Year           int                    `json:"year"`
+	TotalViews     int                    `json:"total_views"`
+	TotalMessages  int                    `json:"total_messages"`
+	TotalFavorites int                    `json:"total_favorites"`
+	TotalPurchases int                    `json:"total_purchases"`
+	TotalSales     int                    `json:"total_sales"`
+	TopCategories  []CategoryStatDTO      `json:"top_categories"`
+	Achievements   []AchievementDTO       `json:"achievements"`
+	ActivityDays   int                    `json:"activity_days"`
+	Summary        domain.RecapSummary    `json:"summary"`
+	Cards          []domain.RecapCard     `json:"cards"`
+	Comparison     domain.RecapComparison `json:"comparison"`
+	Forecast       domain.RecapForecast   `json:"forecast"`
+	GeneratedAt    time.Time              `json:"generated_at"`
 }
 
 type ShareRecapSummary struct {
@@ -117,6 +119,8 @@ func ToRecapResponse(recap *domain.Recap) RecapResponse {
 		ActivityDays:   recap.ActivityDays,
 		Summary:        recap.Summary,
 		Cards:          cards,
+		Comparison:     recap.Comparison,
+		Forecast:       recap.Forecast,
 		GeneratedAt:    recap.GeneratedAt,
 	}
 }

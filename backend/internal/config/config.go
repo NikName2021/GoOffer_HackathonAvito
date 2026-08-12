@@ -16,6 +16,7 @@ const (
 	defaultWriteTimeout    = 20 * time.Second
 	defaultIdleTimeout     = 60 * time.Second
 	defaultSessionTTL      = 24 * time.Hour
+	defaultRecapShareTTL   = 72 * time.Hour
 )
 
 type Config struct {
@@ -32,6 +33,8 @@ type Config struct {
 	WriteTimeout    time.Duration
 	IdleTimeout     time.Duration
 	SessionTTL      time.Duration
+	RecapShareTTL   time.Duration
+	PublicBaseURL   string
 	CookieSecure    bool
 }
 
@@ -50,6 +53,7 @@ func Load() (Config, error) {
 		WriteTimeout:    defaultWriteTimeout,
 		IdleTimeout:     defaultIdleTimeout,
 		SessionTTL:      defaultSessionTTL,
+		RecapShareTTL:   defaultRecapShareTTL,
 	}
 
 	var err error
@@ -60,6 +64,12 @@ func Load() (Config, error) {
 		return Config{}, err
 	}
 	if cfg.SessionTTL, err = durationValue("SESSION_TTL", defaultSessionTTL); err != nil {
+		return Config{}, err
+	}
+	if cfg.RecapShareTTL, err = durationValue("RECAP_SHARE_TTL", defaultRecapShareTTL); err != nil {
+		return Config{}, err
+	}
+	if cfg.PublicBaseURL, err = publicBaseURLValue("PUBLIC_BASE_URL", "http://localhost"); err != nil {
 		return Config{}, err
 	}
 	if cfg.CookieSecure, err = boolValue("COOKIE_SECURE", false); err != nil {
@@ -149,4 +159,15 @@ func splitCSV(value string) []string {
 		}
 	}
 	return result
+}
+
+func publicBaseURLValue(key, fallback string) (string, error) {
+	raw := valueOrDefault(key, fallback)
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" ||
+		parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" ||
+		(parsed.EscapedPath() != "" && parsed.EscapedPath() != "/") {
+		return "", fmt.Errorf("%s must be an absolute HTTP(S) origin without path, query or fragment", key)
+	}
+	return strings.TrimRight(raw, "/"), nil
 }

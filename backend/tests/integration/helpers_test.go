@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gooffer/backend/internal/domain"
 	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/recapshare"
 	apperrors "gooffer/backend/pkg/errors"
 )
 
@@ -28,22 +29,100 @@ type fakeCredential struct {
 }
 
 type fakeApplication struct {
-	users          []domain.User
-	recaps         map[string]domain.Recap
-	missions       map[string]domain.MissionOverview
-	businessEvents []string
-	ctaImpressions int
-	profileErr     error
-	generatorErr   error
-	readerErr      error
-	panicProfiles  bool
-	credentials    map[string]fakeCredential
-	sessions       map[string]uuid.UUID
-	adminCards     *fakeAdminCardService
+	users             []domain.User
+	recaps            map[string]domain.Recap
+	missions          map[string]domain.MissionOverview
+	businessEvents    []string
+	ctaImpressions    int
+	profileErr        error
+	generatorErr      error
+	readerErr         error
+	panicProfiles     bool
+	credentials       map[string]fakeCredential
+	sessions          map[string]uuid.UUID
+	adminCards        *fakeAdminCardService
+	adminAchievements *fakeAdminAchievementService
+	recapShares       *fakeRecapShareRepository
+}
+
+type fakeRecapShareRepository struct {
+	byToken map[string]domain.RecapShare
+	byID    map[uuid.UUID]string
+}
+
+func newFakeRecapShareRepository() *fakeRecapShareRepository {
+	return &fakeRecapShareRepository{
+		byToken: make(map[string]domain.RecapShare),
+		byID:    make(map[uuid.UUID]string),
+	}
+}
+
+func (f *fakeRecapShareRepository) Create(_ context.Context, share *domain.RecapShare) error {
+	copy := *share
+	key := string(share.TokenHash)
+	f.byToken[key] = copy
+	f.byID[share.ID] = key
+	return nil
+}
+
+func (f *fakeRecapShareRepository) GetActiveByTokenHash(
+	_ context.Context,
+	tokenHash []byte,
+	now time.Time,
+) (*domain.RecapShare, error) {
+	share, exists := f.byToken[string(tokenHash)]
+	if !exists || share.RevokedAt != nil || !share.ExpiresAt.After(now) {
+		return nil, apperrors.ErrNotFound
+	}
+	copy := share
+	return &copy, nil
+}
+
+func (f *fakeRecapShareRepository) Revoke(
+	_ context.Context,
+	accountID, shareID uuid.UUID,
+	revokedAt time.Time,
+) error {
+	key, exists := f.byID[shareID]
+	share := f.byToken[key]
+	if !exists || share.AccountID != accountID || share.RevokedAt != nil || !share.ExpiresAt.After(revokedAt) {
+		return apperrors.ErrNotFound
+	}
+	share.RevokedAt = &revokedAt
+	f.byToken[key] = share
+	return nil
 }
 
 type fakeAdminCardService struct {
 	definitions []domain.CardDefinition
+}
+
+type fakeAdminAchievementService struct {
+	definitions []domain.AchievementDefinition
+}
+
+func (f *fakeAdminAchievementService) List(context.Context) ([]domain.AchievementDefinition, error) {
+	return append([]domain.AchievementDefinition(nil), f.definitions...), nil
+}
+
+func (f *fakeAdminAchievementService) Update(
+	_ context.Context,
+	slug string,
+	definition *domain.AchievementDefinition,
+) (*domain.AchievementDefinition, error) {
+	for index := range f.definitions {
+		if f.definitions[index].Slug != slug {
+			continue
+		}
+		updated := *definition
+		updated.Slug = slug
+		updated.Category = f.definitions[index].Category
+		updated.SortOrder = f.definitions[index].SortOrder
+		updated.UpdatedAt = time.Now().UTC()
+		f.definitions[index] = updated
+		return &updated, nil
+	}
+	return nil, apperrors.ErrNotFound
 }
 
 func (f *fakeAdminCardService) Create(
@@ -182,6 +261,19 @@ func newFakeApplication() *fakeApplication {
 			},
 			{ID: "largest_purchase", Kind: "buyer", Title: "Крупная покупка", Shareable: false},
 		},
+		Comparison: domain.RecapComparison{
+			Status:       domain.RecapComparisonUnavailable,
+			Message:      "Сравнение появится после повторной генерации итогов.",
+			PreviousYear: 2024,
+			CurrentYear:  2025,
+			Categories:   []domain.RecapCategoryComparison{},
+			NewInterests: []string{},
+		},
+		Forecast: domain.RecapForecast{
+			Year:             2026,
+			Method:           domain.RecapForecastUnavailable,
+			LikelyCategories: []domain.RecapForecastCategory{},
+		},
 		GeneratedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
 	}
 	account := domain.Account{
@@ -197,8 +289,29 @@ func newFakeApplication() *fakeApplication {
 		credentials: map[string]fakeCredential{
 			"nikita": {account: account, password: "avito2026"},
 		},
-		sessions:   map[string]uuid.UUID{"test-session": testAccountID},
-		adminCards: &fakeAdminCardService{},
+		sessions:          map[string]uuid.UUID{"test-session": testAccountID},
+		adminCards:        &fakeAdminCardService{},
+		adminAchievements: &fakeAdminAchievementService{definitions: fakeAchievementDefinitions()},
+		recapShares:       newFakeRecapShareRepository(),
+	}
+}
+
+func fakeAchievementDefinitions() []domain.AchievementDefinition {
+	threshold := 500.0
+	return []domain.AchievementDefinition{
+		{
+			Slug:              "curious",
+			Title:             "Любопытный",
+			Description:       "Просмотрел не менее 500 объявлений за год",
+			Icon:              "👀",
+			Category:          "views",
+			Metric:            domain.CardMetricTotalViews,
+			ConditionOperator: domain.CardConditionGTE,
+			ConditionValue:    &threshold,
+			SortOrder:         10,
+			IsActive:          true,
+			UpdatedAt:         time.Now().UTC(),
+		},
 	}
 }
 
@@ -294,9 +407,22 @@ func (f *fakeApplication) Execute(_ context.Context, accountID, userID uuid.UUID
 	recap, ok := f.recaps[recapKey(userID, year)]
 	if !ok {
 		recap = domain.Recap{
-			ID:          uuid.New(),
-			UserID:      userID,
-			Year:        year,
+			ID:     uuid.New(),
+			UserID: userID,
+			Year:   year,
+			Comparison: domain.RecapComparison{
+				Status:       domain.RecapComparisonUnavailable,
+				Message:      "Сравнение недоступно в тестовом генераторе.",
+				PreviousYear: year - 1,
+				CurrentYear:  year,
+				Categories:   []domain.RecapCategoryComparison{},
+				NewInterests: []string{},
+			},
+			Forecast: domain.RecapForecast{
+				Year:             year + 1,
+				Method:           domain.RecapForecastUnavailable,
+				LikelyCategories: []domain.RecapForecastCategory{},
+			},
 			GeneratedAt: time.Now().UTC(),
 		}
 		f.recaps[recapKey(userID, year)] = recap
@@ -384,33 +510,43 @@ func (f *fakeApplication) GetOverview(
 		copy := overview
 		return &copy, nil
 	}
-	return &domain.MissionOverview{Options: fakeMissionOptions()}, nil
+	return &domain.MissionOverview{Options: fakeMissionOptions(), SelectedMissions: []domain.MissionState{}}, nil
 }
 
 func (f *fakeApplication) Select(
 	ctx context.Context,
 	accountID, userID uuid.UUID,
 	year int,
-	code domain.MissionCode,
+	codes []domain.MissionCode,
 ) (*domain.MissionOverview, error) {
 	if _, err := f.GetOverview(ctx, accountID, userID, year); err != nil {
 		return nil, err
 	}
-	var selectedOption *domain.MissionOption
-	for _, option := range fakeMissionOptions() {
-		if option.Code == code {
-			copy := option
-			selectedOption = &copy
-			break
+	options := fakeMissionOptions()
+	seen := make(map[domain.MissionCode]struct{}, len(codes))
+	selectedOptions := make([]domain.MissionOption, len(codes))
+	for index, code := range codes {
+		if _, duplicate := seen[code]; duplicate {
+			return nil, apperrors.ErrInvalidMission
 		}
-	}
-	if selectedOption == nil {
-		return nil, apperrors.ErrInvalidMission
+		found := false
+		for _, option := range options {
+			if option.Code == code {
+				selectedOptions[index] = option
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, apperrors.ErrInvalidMission
+		}
+		seen[code] = struct{}{}
 	}
 	now := time.Now().UTC()
-	overview := domain.MissionOverview{
-		Options: fakeMissionOptions(),
-		Selected: &domain.MissionState{
+	selectedMissions := make([]domain.MissionState, len(selectedOptions))
+	for index, selectedOption := range selectedOptions {
+		selectedMissions[index] = domain.MissionState{
+			RecapYear:   year,
 			Code:        selectedOption.Code,
 			Title:       selectedOption.Title,
 			Description: selectedOption.Description,
@@ -421,10 +557,36 @@ func (f *fakeApplication) Select(
 			CTA:         selectedOption.CTA,
 			SelectedAt:  now,
 			UpdatedAt:   now,
-		},
+		}
+	}
+	var legacySelected *domain.MissionState
+	if len(selectedMissions) > 0 {
+		copy := selectedMissions[0]
+		legacySelected = &copy
+	}
+	overview := domain.MissionOverview{
+		Options:          options,
+		SelectedMissions: selectedMissions,
+		Selected:         legacySelected,
 	}
 	f.missions[recapKey(userID, year)] = overview
 	return &overview, nil
+}
+
+func (f *fakeApplication) GetProfileMissions(
+	ctx context.Context,
+	accountID, userID uuid.UUID,
+) (*domain.ProfileMissionOverview, error) {
+	if _, err := f.GetByID(ctx, accountID, userID); err != nil {
+		return nil, err
+	}
+	missions := make([]domain.MissionState, 0)
+	for key, overview := range f.missions {
+		if strings.HasPrefix(key, userID.String()+":") {
+			missions = append(missions, overview.SelectedMissions...)
+		}
+	}
+	return &domain.ProfileMissionOverview{Missions: missions}, nil
 }
 
 func fakeMissionOptions() []domain.MissionOption {
@@ -438,14 +600,23 @@ func fakeMissionOptions() []domain.MissionOption {
 func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	recapShareService := recapshare.New(
+		application,
+		application,
+		application.recapShares,
+		"https://recap.example",
+		72*time.Hour,
+	)
 	return server.NewRouter(server.Dependencies{
-		Auth:           application,
-		Profiles:       application,
-		RecapGenerator: application,
-		Recaps:         application,
-		Missions:       application,
-		BusinessEvents: application,
-		AdminCards:     application.adminCards,
+		Auth:              application,
+		Profiles:          application,
+		RecapGenerator:    application,
+		Recaps:            application,
+		RecapShares:       recapShareService,
+		Missions:          application,
+		BusinessEvents:    application,
+		AdminCards:        application.adminCards,
+		AdminAchievements: application.adminAchievements,
 	}, server.Options{
 		Logger:         logger,
 		AllowedOrigins: []string{"http://localhost:5173"},

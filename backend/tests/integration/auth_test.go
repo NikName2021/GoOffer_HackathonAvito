@@ -58,6 +58,7 @@ func TestAuthAPI(t *testing.T) {
 			t.Fatalf("foreign profile status = %d, want %d", foreignProfile.Code, http.StatusNotFound)
 		}
 		for _, path := range []string{
+			"/api/profiles/" + testUserID.String() + "/missions",
 			"/api/recap/" + testUserID.String() + "/2025",
 			"/api/recap/" + testUserID.String() + "/2025/share",
 			"/api/recap/" + testUserID.String() + "/2025/mission",
