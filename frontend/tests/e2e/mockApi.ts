@@ -28,6 +28,7 @@ export async function mockApi(
   { isAdmin = false, profileOverride }: MockApiOptions = {},
 ) {
   const definitions: Record<string, unknown>[] = [];
+  let selectedMissions: Record<string, unknown>[] = [];
   const achievements: Record<string, unknown>[] = [
     {
       category: "views",
@@ -127,21 +128,16 @@ export async function mockApi(
       return json(route, selectedProfile);
     if (pathname === "/api/recap/generate") return json(route, recap, 201);
     if (pathname === `/api/recap/${profileId}/2026/mission`) {
-      if (request.method() === "GET") return json(route, missionOverview);
-      const { code } = request.postDataJSON() as { code: string };
-      const option = missionOverview.options.find((item) => item.code === code);
-      return json(route, {
-        ...missionOverview,
-        selected: option && {
-          ...option,
-          completed_at: null,
-          progress: 0,
-          progress_percent: 0,
-          selected_at: "2026-08-08T00:00:00Z",
-          status: "active",
-          updated_at: "2026-08-08T00:00:00Z",
-        },
+      if (request.method() === "GET") return json(route, { ...missionOverview, selected_missions: selectedMissions });
+      const { codes } = request.postDataJSON() as { codes: string[] };
+      selectedMissions = codes.flatMap((code) => {
+        const option = missionOverview.options.find((item) => item.code === code);
+        return option ? [{ ...option, progress: 0, progress_percent: 0, recap_year: 2026, selected_at: "2026-08-08T00:00:00Z", status: "active", updated_at: "2026-08-08T00:00:00Z" }] : [];
       });
+      return json(route, { ...missionOverview, selected_missions: selectedMissions });
+    }
+    if (pathname === `/api/profiles/${profileId}/missions`) {
+      return json(route, { missions: selectedMissions });
     }
     if (pathname === "/api/recap/events") {
       await route.fulfill({ headers: corsHeaders, status: 204 });

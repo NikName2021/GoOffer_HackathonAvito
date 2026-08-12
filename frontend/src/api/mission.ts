@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 import { apiClient } from './api'
-import type { MissionCode, MissionOverview } from '@/types/mission.type'
+import type { MissionCode, MissionOverview, ProfileMissionOverview } from '@/types/mission.type'
 
 interface MissionErrorEnvelope {
   error?: { message?: string }
@@ -35,9 +35,20 @@ export async function getMission(userId: string, year: number): Promise<MissionO
   }
 }
 
-export async function selectMission(userId: string, year: number, code: MissionCode): Promise<MissionOverview> {
+export async function selectMissions(userId: string, year: number, codes: MissionCode[]): Promise<MissionOverview> {
   try {
-    const { data } = await apiClient.put<MissionOverview>(missionUrl(userId, year), { code })
+    const { data } = await apiClient.put<MissionOverview>(missionUrl(userId, year), { codes })
+    return data
+  } catch (error) {
+    throwMissionError(error)
+  }
+}
+
+export async function getProfileMissions(profileId: string): Promise<ProfileMissionOverview> {
+  try {
+    const { data } = await apiClient.get<ProfileMissionOverview>(
+      `/profiles/${encodeURIComponent(profileId)}/missions`,
+    )
     return data
   } catch (error) {
     throwMissionError(error)

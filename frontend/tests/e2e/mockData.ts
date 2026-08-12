@@ -162,5 +162,6 @@ export const missionOverview = {
       title: 'Попробовать Авито Доставку',
     },
   ],
+  selected_missions: [],
   selected: null,
 }

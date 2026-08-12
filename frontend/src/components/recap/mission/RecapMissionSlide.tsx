@@ -31,7 +31,7 @@ export function RecapMissionSlide({ profileId, year }: RecapMissionSlideProps) {
           Следующий год начинается сейчас
         </h2>
         <p className="mt-3 max-w-2xl text-sm leading-6 text-[#6f7377] sm:text-base">
-          Выберите одну цель. Мы сохраним её и будем отмечать прогресс по вашей активности на Авито.
+          Выберите до трёх целей. Мы сохраним их и будем отмечать прогресс по вашей активности на Авито.
         </p>
         <RecapMission profileId={profileId} year={year} />
       </div>

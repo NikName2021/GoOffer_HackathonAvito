@@ -1,9 +1,10 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { CalendarDays, ExternalLink } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { ActivityHistory } from './details/ActivityHistory'
 import { ProfileYearSummary } from './details/ProfileYearSummary'
+import { ProfileMissions } from './details/ProfileMissions'
 import { ProfileImage } from './ProfileImage'
 import {
   Dialog,
@@ -23,8 +24,10 @@ interface ProfileDetailsDialogProps {
 }
 
 export function ProfileDetailsDialog({ children, profile }: ProfileDetailsDialogProps) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <Dialog>
+    <Dialog onOpenChange={setOpen} open={open}>
       {children}
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-[28px] p-5 sm:max-w-2xl sm:p-7">
         <DialogHeader className="pr-10">
@@ -41,6 +44,7 @@ export function ProfileDetailsDialog({ children, profile }: ProfileDetailsDialog
         </DialogHeader>
 
         <ProfileYearSummary profile={profile} />
+        <ProfileMissions enabled={open} profileId={profile.id} />
         <ActivityHistory profile={profile} />
         <Link
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#00aaff] px-5 py-3 text-sm font-bold text-white transition hover:bg-[#0099e6]"

@@ -1,9 +1,8 @@
-import { ArrowUpRight, CheckCircle2, Pencil } from 'lucide-react'
+import { ArrowUpRight, CheckCircle2 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { MissionIcon } from './MissionIcon'
 import { sendRecapEvent } from '@/api/recapEvents'
-import { Button } from '@/components/ui/button'
 import { DialogClose } from '@/components/ui/dialog'
 import type { MissionState } from '@/types/mission.type'
 import { getRecapCtaUrl } from '@/utils/recapCta'
@@ -11,10 +10,9 @@ import { getRecapCtaUrl } from '@/utils/recapCta'
 interface MissionProgressProps {
   mission: MissionState
   profileId: string
-  onChange: () => void
 }
 
-export function MissionProgress({ mission, onChange, profileId }: MissionProgressProps) {
+export function MissionProgress({ mission, profileId }: MissionProgressProps) {
   const isCompleted = mission.status === 'completed'
   const progress = Math.min(100, Math.max(0, mission.progress_percent))
 
@@ -43,7 +41,7 @@ export function MissionProgress({ mission, onChange, profileId }: MissionProgres
         <div className="h-full rounded-full bg-gradient-to-r from-[#00aaff] via-[#00d667] to-[#a169f7] transition-[width] duration-700" style={{ width: `${progress}%` }} />
       </div>
 
-      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+      <div className="mt-4">
         <DialogClose
           nativeButton={false}
           render={<Link className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-full bg-[#00aaff] px-5 text-sm font-bold text-white transition hover:bg-[#0099f7]" onClick={() => void sendRecapEvent({ event: 'mission_cta_clicked' }, { keepalive: true })} to={getRecapCtaUrl(mission.cta, profileId)} />}
@@ -51,10 +49,6 @@ export function MissionProgress({ mission, onChange, profileId }: MissionProgres
           {isCompleted ? <CheckCircle2 className="size-4" /> : <ArrowUpRight className="size-4" />}
           {mission.cta.label}
         </DialogClose>
-        <Button className="h-11 px-5" onClick={onChange} variant="outline">
-          <Pencil className="size-4" />
-          Изменить
-        </Button>
       </div>
     </div>
   )
