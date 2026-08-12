@@ -28,6 +28,21 @@ export async function mockApi(
   { isAdmin = false, profileOverride }: MockApiOptions = {},
 ) {
   const definitions: Record<string, unknown>[] = [];
+  const achievements: Record<string, unknown>[] = [
+    {
+      category: "views",
+      condition_operator: "gte",
+      condition_value: 500,
+      description: "Просмотрел не менее 500 объявлений за год",
+      icon: "👀",
+      is_active: true,
+      metric: "total_views",
+      slug: "curious",
+      sort_order: 10,
+      title: "Любопытный",
+      updated_at: "2026-08-12T00:00:00Z",
+    },
+  ];
   const selectedProfile = profileOverride ?? profile;
   await page.route("http://localhost:8000/api/**", async (route) => {
     const request = route.request();
@@ -53,6 +68,34 @@ export async function mockApi(
         metrics: ["total_views", "favorites", "purchases", "sales", "deals"],
         monthly_metrics: ["total_views", "favorites", "purchases", "sales"],
       });
+    }
+    if (pathname === "/api/admin/achievement-definitions/options") {
+      return json(route, {
+        conditions: ["always", "gt", "gte", "lt", "lte", "eq"],
+        metrics: [
+          "total_views",
+          "favorites",
+          "purchases",
+          "sales",
+          "listing_views",
+          "contacts",
+          "reviews",
+          "activity_days",
+          "categories",
+          "deals",
+        ],
+      });
+    }
+    if (pathname === "/api/admin/achievement-definitions") {
+      return json(route, { items: achievements });
+    }
+    if (pathname.startsWith("/api/admin/achievement-definitions/")) {
+      const slug = decodeURIComponent(pathname.split("/").at(-1) ?? "");
+      const index = achievements.findIndex((achievement) => achievement.slug === slug);
+      if (index < 0) return json(route, { error: { message: "Not found" } }, 404);
+      const updated = { ...achievements[index], ...request.postDataJSON() };
+      achievements[index] = updated;
+      return json(route, updated);
     }
     if (pathname === "/api/admin/card-definitions") {
       if (request.method() === "GET")

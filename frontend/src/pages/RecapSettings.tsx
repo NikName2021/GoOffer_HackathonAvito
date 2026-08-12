@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { CardDefinitionCard } from '@/components/admin/CardDefinitionCard'
 import { CardDefinitionDialog } from '@/components/admin/CardDefinitionDialog'
 import { DeleteCardDefinitionDialog } from '@/components/admin/DeleteCardDefinitionDialog'
+import { AchievementDefinitionsSection } from '@/components/admin/AchievementDefinitionsSection'
 import { Sidebar } from '@/components/sidebar/Sidebar'
 import { Button } from '@/components/ui/button'
 import {
@@ -82,8 +83,16 @@ export function RecapSettingsPage() {
           {definitionsQuery.isSuccess && definitions.length === 0 && (
             <SettingsNotice text="Настроек пока нет. Создайте первую карточку итогов года." />
           )}
+          <AchievementDefinitionsSection enabled={isAdmin} />
+          <section className="mt-10" aria-labelledby="card-definitions-heading">
+            <h2 className="text-2xl font-black tracking-[-0.02em]" id="card-definitions-heading">
+              Дополнительные карточки
+            </h2>
+            <p className="mt-1 text-sm text-[#6f7377]">
+              Создавайте дополнительные персональные карточки для следующих итогов.
+            </p>
           {definitions.length > 0 && (
-            <section className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="mt-5 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
               {definitions.map((definition) => (
                 <CardDefinitionCard
                   definition={definition}
@@ -96,8 +105,9 @@ export function RecapSettingsPage() {
                   profileName={profiles.find((profile) => profile.id === definition.target_user_id)?.name}
                 />
               ))}
-            </section>
+            </div>
           )}
+          </section>
         </div>
       </main>
 

@@ -29,3 +29,23 @@ test('regular user does not see recap settings', async ({ page }) => {
   await page.goto('/')
   await expect(page.getByRole('link', { name: 'Настройка итогов года' })).toHaveCount(0)
 })
+
+test('admin edits an existing achievement without create or delete controls', async ({ page }) => {
+  await mockApi(page, { isAdmin: true })
+  await page.goto('/')
+
+  await page.getByRole('link', { name: 'Настройка итогов года' }).click()
+  await expect(page.getByRole('heading', { name: 'Встроенные ачивки' })).toBeVisible()
+  await expect(page.getByText('Любопытный', { exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /создать ачивку|удалить ачивку/i })).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Редактировать ачивку Любопытный' }).click()
+  await page.getByLabel('Название ачивки').fill('Очень любопытный')
+  await page.getByLabel('Пороговое значение').fill('750')
+  await page.getByLabel('Ачивка активна').uncheck()
+  await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
+
+  await expect(page.getByText('Очень любопытный', { exact: true })).toBeVisible()
+  await expect(page.getByText('Отключена', { exact: true })).toBeVisible()
+  await expect(page.getByText('Не меньше 750', { exact: true })).toBeVisible()
+})
