@@ -17,6 +17,7 @@ type Dependencies struct {
 	Profiles          handlers.ProfileService
 	RecapGenerator    handlers.RecapGenerator
 	Recaps            handlers.RecapReader
+	RecapShares       handlers.RecapShareService
 	Missions          handlers.MissionService
 	BusinessEvents    handlers.BusinessEventRecorder
 	AdminCards        handlers.AdminCardDefinitionService
@@ -85,6 +86,13 @@ func NewRouter(dependencies Dependencies, options Options) http.Handler {
 		logger,
 	)
 	recapHandler.Register(protectedMux)
+	recapShareHandler := handlers.NewRecapShareHandler(
+		dependencies.RecapShares,
+		dependencies.BusinessEvents,
+		logger,
+	)
+	recapShareHandler.RegisterProtected(protectedMux)
+	recapShareHandler.RegisterPublic(mux)
 	missionHandler := handlers.NewMissionHandler(dependencies.Missions, logger)
 	missionHandler.Register(protectedMux)
 	adminCardHandler := handlers.NewAdminCardDefinitionHandler(dependencies.AdminCards, logger)

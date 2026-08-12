@@ -14,4 +14,5 @@ var (
 	ErrInvalidMission               = errors.New("invalid mission")
 	ErrInvalidCardDefinition        = errors.New("invalid card definition")
 	ErrInvalidAchievementDefinition = errors.New("invalid achievement definition")
+	ErrInvalidRecapShare            = errors.New("invalid recap share")
 )

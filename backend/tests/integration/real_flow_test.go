@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"gooffer/backend/internal/usecase/generator"
 	missionusecase "gooffer/backend/internal/usecase/mission"
 	"gooffer/backend/internal/usecase/profile"
+	"gooffer/backend/internal/usecase/recapshare"
 	"gooffer/backend/migrations"
 )
 
@@ -76,6 +78,13 @@ func TestRealApplicationFlow(t *testing.T) {
 		Profiles:       profile.New(logger, userRepository),
 		RecapGenerator: generator.New(userRepository, recapRepository, cardDefinitionRepository, achievementDefinitionRepository),
 		Recaps:         recapRepository,
+		RecapShares: recapshare.New(
+			userRepository,
+			recapRepository,
+			postgres.NewRecapShareRepository(pool),
+			cfg.PublicBaseURL,
+			cfg.RecapShareTTL,
+		),
 		Missions: missionusecase.New(
 			userRepository,
 			recapRepository,
@@ -185,6 +194,45 @@ func TestRealApplicationFlow(t *testing.T) {
 		t.Fatalf("decode share: %v", err)
 	}
 	assertShareJSONIsSafe(t, sharePayload)
+
+	publicCreatedResponse := realRequest(
+		handler,
+		http.MethodPost,
+		getPath+"/shares",
+		[]byte(`{"card_ids":["year_overview"],"format":"mobile_story"}`),
+		cookie,
+	)
+	if publicCreatedResponse.Code != http.StatusCreated {
+		t.Fatalf("create public share status = %d: %s", publicCreatedResponse.Code, publicCreatedResponse.Body.String())
+	}
+	var publicCreated domain.RecapShareCreated
+	if err := json.NewDecoder(publicCreatedResponse.Body).Decode(&publicCreated); err != nil {
+		t.Fatalf("decode public share creation: %v", err)
+	}
+	publicToken := strings.TrimPrefix(publicCreated.PublicURL, cfg.PublicBaseURL+"/share/")
+	publicPath := "/api/public/recap-shares/" + publicToken
+	publicResponse := realRequest(handler, http.MethodGet, publicPath, nil, "")
+	if publicResponse.Code != http.StatusOK || publicResponse.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("public share status/headers = %d/%#v: %s", publicResponse.Code, publicResponse.Header(), publicResponse.Body.String())
+	}
+	var publicPayload any
+	if err := json.NewDecoder(publicResponse.Body).Decode(&publicPayload); err != nil {
+		t.Fatalf("decode public share: %v", err)
+	}
+	assertShareJSONIsSafe(t, publicPayload)
+	revoked := realRequest(
+		handler,
+		http.MethodDelete,
+		"/api/recap-shares/"+publicCreated.ID.String(),
+		nil,
+		cookie,
+	)
+	if revoked.Code != http.StatusNoContent {
+		t.Fatalf("revoke public share status = %d: %s", revoked.Code, revoked.Body.String())
+	}
+	if afterRevoke := realRequest(handler, http.MethodGet, publicPath, nil, ""); afterRevoke.Code != http.StatusNotFound {
+		t.Fatalf("revoked public share status = %d, want 404", afterRevoke.Code)
+	}
 
 	mission := realRequest(
 		handler,

@@ -65,6 +65,8 @@ go run ./cmd/server
 | `REDIS_URL` | Необязательно, по умолчанию `redis://localhost:6379`. |
 | `PORT` | Необязательно, по умолчанию `8000`. |
 | `SESSION_TTL` | Необязательно, Go duration, по умолчанию `24h`. |
+| `RECAP_SHARE_TTL` | Необязательно, срок жизни публичной ссылки в формате Go duration, по умолчанию `72h`. |
+| `PUBLIC_BASE_URL` | Публичный HTTP(S)-origin без path/query, например `https://recap.example.ru`. Используется в создаваемых share-ссылках; production Compose требует явное значение. |
 | `COOKIE_SECURE` | Для локального HTTP `false`; в production Compose принудительно `true`. |
 | `CORS_ORIGINS` | CSV без `*`, например `https://recap.example.ru`. Production Compose требует явное значение. При same-origin `/api` браузеру CORS не нужен, но origin всё равно задаётся явно как безопасный список. |
 
@@ -76,7 +78,7 @@ go run ./cmd/server
 
 Перед запуском production Compose:
 
-1. Укажите сильные `POSTGRES_PASSWORD`, production `CORS_ORIGINS=https://<ваш-домен>` и Nginx-конфигурацию в `NGINX_FILE`.
+1. Укажите сильные `POSTGRES_PASSWORD`, `PUBLIC_BASE_URL=https://<ваш-домен>`, production `CORS_ORIGINS=https://<ваш-домен>` и Nginx-конфигурацию в `NGINX_FILE`.
 2. Завершайте TLS на Nginx или внешнем reverse proxy и передавайте `/api/` в backend. Репозиторий не содержит production-сертификатов.
 3. Проверьте, что клиент открывает сайт по HTTPS. Backend выставляет `gooffer_session` с `Secure`, `HttpOnly`, `SameSite=Lax`, поэтому по обычному HTTP браузер cookie не отправит.
 4. Создайте внешнюю сеть `result_year` и запустите `docker compose --env-file <prod-env> -f docker-compose.prod.yaml up -d --build --wait`.
@@ -105,14 +107,17 @@ password: avito2026
 - `/api/auth/*` — регистрация, вход, выход, текущий аккаунт;
 - `/api/profiles*` — профили текущего аккаунта;
 - `POST /api/recap/generate` и `GET /api/recap/{user_id}/{year}` — генерация и чтение итогов;
-- `GET /api/recap/{user_id}/{year}/share` — безопасные данные для PNG/текста;
+- `GET /api/recap/{user_id}/{year}/share` — авторизованные безопасные данные для PNG/текста;
+- `POST /api/recap/{user_id}/{year}/shares` — создать временную публичную ссылку из выбранных карточек;
+- `GET /api/public/recap-shares/{token}` — прочитать публичный снимок без авторизации;
+- `DELETE /api/recap-shares/{share_id}` — досрочно отозвать свою ссылку;
 - `/api/recap/{user_id}/{year}/mission` — выбор набора и прогресс миссий;
 - `/api/profiles/{id}/missions` — выбранные миссии всех recap-годов профиля;
 - `POST /api/recap/events` — только события из фиксированного allowlist;
 - `/api/admin/card-definitions*` — создание, просмотр, полное обновление и удаление правил дополнительных карточек; доступно только администратору;
 - `/api/admin/achievement-definitions*` — просмотр и редактирование шести встроенных ачивок без создания и удаления; изменения применяются при следующей генерации итогов.
 
-Все profiles/recap/mission endpoint требуют cookie `gooffer_session` и проверяют владельца. Чужой профиль или recap возвращается как `404`, чтобы не подтверждать существование ресурса.
+Все profiles/recap/mission endpoint требуют cookie `gooffer_session` и проверяют владельца. Единственное исключение — чтение публичного снимка по криптографическому token. Чужой профиль, recap или share возвращается как `404`, чтобы не подтверждать существование ресурса.
 
 Ошибки имеют единый формат:
 
@@ -128,7 +133,7 @@ password: avito2026
 
 | HTTP | Типичные коды | Когда |
 |---|---|---|
-| `400` | `invalid_request`, `invalid_profile`, `invalid_id`, `invalid_year`, `invalid_event`, `invalid_mission` | Некорректный JSON, поле, UUID, год или enum. |
+| `400` | `invalid_request`, `invalid_profile`, `invalid_id`, `invalid_year`, `invalid_event`, `invalid_mission`, `invalid_share` | Некорректный JSON, поле, UUID, год, enum или набор публичных карточек. |
 | `401` | `unauthorized`, `invalid_credentials` | Нет действующей cookie или неверная пара логин/пароль. |
 | `403` | `forbidden` | Сессия действительна, но у аккаунта нет прав администратора. |
 | `404` | `profile_not_found`, `recap_not_found`, `not_found` | Ресурс не существует, не принадлежит аккаунту или маршрут неизвестен. |
@@ -195,7 +200,7 @@ JSON декодируется с запретом неизвестных пол�
 
 ## Безопасность share
 
-`/share` не является публичным endpoint и требует владельца. Ответ не читает актуальный профиль напрямую, а преобразует уже сохранённый recap через `ShareRecapCardDTO` с allowlist:
+Старый `GET .../share` остаётся авторизованным экспортом для PNG/текста. Он не читает актуальный профиль напрямую, а преобразует сохранённый recap через `ShareRecapCardDTO` с allowlist:
 
 ```text
 kind, eyebrow, title, description, value, presentation
@@ -203,7 +208,9 @@ kind, eyebrow, title, description, value, presentation
 
 Из всего вложенного JSON исключены `id`, `user_id`, `ad_id`, `image_url`, `shareable`, `reason`, `visualization`, `cta` и `params`. Название собственного объявления заменяется нейтральной фразой; изображения объявлений не экспортируются. Unit, API и реальный integration-тест рекурсивно проверяют отсутствие запрещённых ключей.
 
-Публичные token-ссылки не входят в MVP. Поделиться можно только скачанным PNG или скопированным текстом. Поэтому в текущей версии нет публичного token lifecycle, отзыва ссылки и rate limit публичного чтения.
+Для публичной ссылки владелец передаёт от 1 до 9 уникальных `card_ids`; backend повторно проверяет, что каждая карточка существует и имеет `shareable=true`. В PostgreSQL сохраняется неизменяемый снимок только выбранных allowlist-полей и SHA-256 token, но не сам token. Изменение или повторная генерация исходного recap уже опубликованный снимок не меняет.
+
+Ссылка живёт `RECAP_SHARE_TTL` (по умолчанию 72 часа) и может быть досрочно отозвана владельцем. Неверный, истёкший и отозванный token одинаково возвращают `404`. Все ответы публичного маршрута используют `Cache-Control: no-store`, `X-Robots-Tag: noindex, nofollow, noarchive` и `Referrer-Policy: no-referrer`; backend access log заменяет сам token шаблоном маршрута. Формат `responsive` предназначен для обычной страницы, `mobile_story` — для отдельной вертикальной мобильной вёрстки; изображения backend не рендерит.
 
 ## PostgreSQL и Redis
 
@@ -229,7 +236,7 @@ REDIS_URL=redis://localhost:6379 \
 make test-integration
 ```
 
-CI содержит обязательный job с чистыми PostgreSQL и Redis services. Он применяет миграции и выполняет сценарий регистрация → профиль → генерация → повторная генерация/кэш → share → миссия. Отдельно публикуется `coverage.out`, а coverage пакетов бизнес-логики не может быть ниже 75%. OpenAPI проверяется Redocly.
+CI содержит обязательный job с чистыми PostgreSQL и Redis services. Он применяет миграции и выполняет сценарий регистрация → профиль → генерация → повторная генерация/кэш → публичный share → отзыв ссылки → миссия. Отдельно публикуется `coverage.out`, а coverage пакетов бизнес-логики не может быть ниже 75%. OpenAPI проверяется Redocly.
 
 Версия golangci-lint закреплена в `.golangci-version`. Включены:
 
@@ -243,9 +250,8 @@ CI содержит обязательный job с чистыми PostgreSQL и
 
 ## Границы MVP
 
-- нет публичных share-ссылок, только PNG/текст владельца;
 - нет датированных событий чатов и общего `likes`, поэтому они исключены из recap;
 - изображения хранятся в profile JSON как URL/data URL; отдельного object storage и upload API нет;
 - тестовые профили находятся в миграциях и требуют отделения для строгого production-контура;
 - Redis — необязательный кэш, не очередь и не source of truth;
-- rate limiting для authenticated API пока не реализован; публичных read endpoint нет.
+- rate limiting пока не реализован; публичное чтение защищено длинным случайным token, ограниченным TTL и запретом кэширования/индексации.

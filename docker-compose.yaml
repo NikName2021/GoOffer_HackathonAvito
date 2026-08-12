@@ -52,6 +52,8 @@ services:
       DB_NAME: ${POSTGRES_DATABASE}
       REDIS_URL: redis://redis:6379
       SESSION_TTL: ${SESSION_TTL:-24h}
+      RECAP_SHARE_TTL: ${RECAP_SHARE_TTL:-72h}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost}
       COOKIE_SECURE: "false"
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:5173}
     depends_on:

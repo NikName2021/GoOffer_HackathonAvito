@@ -14,6 +14,7 @@ import (
 	"github.com/google/uuid"
 	"gooffer/backend/internal/domain"
 	"gooffer/backend/internal/server"
+	"gooffer/backend/internal/usecase/recapshare"
 	apperrors "gooffer/backend/pkg/errors"
 )
 
@@ -41,6 +42,55 @@ type fakeApplication struct {
 	sessions          map[string]uuid.UUID
 	adminCards        *fakeAdminCardService
 	adminAchievements *fakeAdminAchievementService
+	recapShares       *fakeRecapShareRepository
+}
+
+type fakeRecapShareRepository struct {
+	byToken map[string]domain.RecapShare
+	byID    map[uuid.UUID]string
+}
+
+func newFakeRecapShareRepository() *fakeRecapShareRepository {
+	return &fakeRecapShareRepository{
+		byToken: make(map[string]domain.RecapShare),
+		byID:    make(map[uuid.UUID]string),
+	}
+}
+
+func (f *fakeRecapShareRepository) Create(_ context.Context, share *domain.RecapShare) error {
+	copy := *share
+	key := string(share.TokenHash)
+	f.byToken[key] = copy
+	f.byID[share.ID] = key
+	return nil
+}
+
+func (f *fakeRecapShareRepository) GetActiveByTokenHash(
+	_ context.Context,
+	tokenHash []byte,
+	now time.Time,
+) (*domain.RecapShare, error) {
+	share, exists := f.byToken[string(tokenHash)]
+	if !exists || share.RevokedAt != nil || !share.ExpiresAt.After(now) {
+		return nil, apperrors.ErrNotFound
+	}
+	copy := share
+	return &copy, nil
+}
+
+func (f *fakeRecapShareRepository) Revoke(
+	_ context.Context,
+	accountID, shareID uuid.UUID,
+	revokedAt time.Time,
+) error {
+	key, exists := f.byID[shareID]
+	share := f.byToken[key]
+	if !exists || share.AccountID != accountID || share.RevokedAt != nil || !share.ExpiresAt.After(revokedAt) {
+		return apperrors.ErrNotFound
+	}
+	share.RevokedAt = &revokedAt
+	f.byToken[key] = share
+	return nil
 }
 
 type fakeAdminCardService struct {
@@ -242,6 +292,7 @@ func newFakeApplication() *fakeApplication {
 		sessions:          map[string]uuid.UUID{"test-session": testAccountID},
 		adminCards:        &fakeAdminCardService{},
 		adminAchievements: &fakeAdminAchievementService{definitions: fakeAchievementDefinitions()},
+		recapShares:       newFakeRecapShareRepository(),
 	}
 }
 
@@ -549,11 +600,19 @@ func fakeMissionOptions() []domain.MissionOption {
 func newTestHandler(t *testing.T, application *fakeApplication) http.Handler {
 	t.Helper()
 	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	recapShareService := recapshare.New(
+		application,
+		application,
+		application.recapShares,
+		"https://recap.example",
+		72*time.Hour,
+	)
 	return server.NewRouter(server.Dependencies{
 		Auth:              application,
 		Profiles:          application,
 		RecapGenerator:    application,
 		Recaps:            application,
+		RecapShares:       recapShareService,
 		Missions:          application,
 		BusinessEvents:    application,
 		AdminCards:        application.adminCards,

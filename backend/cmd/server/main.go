@@ -24,6 +24,7 @@ import (
 	"gooffer/backend/internal/usecase/generator"
 	missionusecase "gooffer/backend/internal/usecase/mission"
 	"gooffer/backend/internal/usecase/profile"
+	"gooffer/backend/internal/usecase/recapshare"
 	"gooffer/backend/migrations"
 )
 
@@ -80,6 +81,7 @@ func run(logger *slog.Logger) error {
 	authRepository := postgres.NewAuthRepository(database)
 	recapStore := postgres.NewRecapRepository(database)
 	missionRepository := postgres.NewMissionRepository(database)
+	recapShareRepository := postgres.NewRecapShareRepository(database)
 	cardDefinitionRepository := postgres.NewCardDefinitionRepository(database)
 	achievementDefinitionRepository := postgres.NewAchievementDefinitionRepository(database)
 	recapCache := redisrepo.NewRecapCache(redisClient)
@@ -105,12 +107,20 @@ func run(logger *slog.Logger) error {
 		achievementDefinitionRepository,
 	)
 	missionService := missionusecase.New(userRepository, recapRepository, missionRepository)
+	recapShareService := recapshare.New(
+		userRepository,
+		recapRepository,
+		recapShareRepository,
+		cfg.PublicBaseURL,
+		cfg.RecapShareTTL,
+	)
 
 	httpServer := server.New(cfg.HTTPAddress(), server.Dependencies{
 		Auth:              authService,
 		Profiles:          profileService,
 		RecapGenerator:    recapGenerator,
 		Recaps:            recapRepository,
+		RecapShares:       recapShareService,
 		Missions:          missionService,
 		BusinessEvents:    businessMetrics,
 		AdminCards:        adminCardService,
