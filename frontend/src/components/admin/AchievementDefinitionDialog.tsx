@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 
+import { AchievementIconPicker } from './AchievementIconPicker'
 import { CheckboxField, DefinitionSelect, TextAreaField, TextField } from './CardDefinitionControls'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -79,11 +80,9 @@ export function AchievementDefinitionDialog({
               required
               value={definition.title}
             />
-            <TextField
-              label="Иконка"
-              maxLength={50}
-              onChange={(event) => setDefinition({ ...definition, icon: event.target.value })}
-              required
+            <AchievementIconPicker
+              disabled={submitting}
+              onChange={(icon) => setDefinition({ ...definition, icon })}
               value={definition.icon}
             />
             <div className="sm:col-span-2">

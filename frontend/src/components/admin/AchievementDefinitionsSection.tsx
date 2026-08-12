@@ -1,4 +1,4 @@
-import { Award, RotateCw } from 'lucide-react'
+import { RotateCw } from 'lucide-react'
 import { useState } from 'react'
 
 import { AchievementDefinitionCard } from './AchievementDefinitionCard'
@@ -30,12 +30,8 @@ export function AchievementDefinitionsSection({ enabled }: { enabled: boolean })
   return (
     <section className="mt-10" aria-labelledby="achievements-heading">
       <div>
-        <p className="flex items-center gap-2 text-sm font-bold text-[#965eeb]">
-          <Award className="size-4" />
-          Встроенные правила
-        </p>
         <h2 className="mt-1 text-2xl font-black tracking-[-0.02em]" id="achievements-heading">
-          Встроенные ачивки
+          Встроенные достижения
         </h2>
         <p className="mt-1 text-sm text-[#6f7377]">Редактируйте условия существующих достижений без создания новых.</p>
       </div>
