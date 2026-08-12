@@ -32,6 +32,9 @@ func TestRecapAPI(t *testing.T) {
 		if recap.Summary.Headline == "" || len(recap.Cards) != 2 {
 			t.Fatalf("recap summary/cards = %#v/%#v", recap.Summary, recap.Cards)
 		}
+		if recap.Comparison.Status != "unavailable" || recap.Forecast.Year != 2026 {
+			t.Fatalf("recap comparison/forecast = %#v/%#v", recap.Comparison, recap.Forecast)
+		}
 	})
 
 	t.Run("reject unknown request fields", func(t *testing.T) {
@@ -121,6 +124,7 @@ func assertShareJSONIsSafe(t *testing.T, value any) {
 	forbidden := map[string]struct{}{
 		"id": {}, "user_id": {}, "ad_id": {}, "image_url": {},
 		"shareable": {}, "reason": {}, "visualization": {}, "cta": {}, "params": {},
+		"comparison": {}, "forecast": {},
 	}
 	var visit func(any)
 	visit = func(current any) {

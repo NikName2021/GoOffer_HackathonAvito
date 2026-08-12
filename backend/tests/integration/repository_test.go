@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -94,6 +95,13 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 		}
 		if len(recap.Cards) < 7 || len(recap.Cards) > 9 {
 			t.Fatalf("%s cards = %d, want 7-9", user.Name, len(recap.Cards))
+		}
+		loaded, err := recapRepo.GetByUserAndYear(ctx, user.ID, 2026)
+		if err != nil {
+			t.Fatalf("load persisted recap for %s: %v", user.Name, err)
+		}
+		if !reflect.DeepEqual(loaded.Comparison, recap.Comparison) || !reflect.DeepEqual(loaded.Forecast, recap.Forecast) {
+			t.Fatalf("%s persisted comparison/forecast mismatch", user.Name)
 		}
 	}
 }

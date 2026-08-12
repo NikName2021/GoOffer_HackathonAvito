@@ -192,6 +192,15 @@ func TestGenerator_Execute_Success(t *testing.T) {
 	if recap.TotalPurchases != 1 || recap.TotalSales != 1 {
 		t.Fatalf("purchases/sales = %d/%d, want 1/1", recap.TotalPurchases, recap.TotalSales)
 	}
+	if recap.Comparison.Status != domain.RecapComparisonFirstYear || recap.Comparison.Message != "Это ваши первые итоги года" {
+		t.Fatalf("comparison = %#v, want first-year response", recap.Comparison)
+	}
+	if recap.Comparison.Spending.Current != 100000 || recap.Comparison.SalesRevenue.Current != 7000 {
+		t.Fatalf("spending/revenue = %d/%d, want 100000/7000", recap.Comparison.Spending.Current, recap.Comparison.SalesRevenue.Current)
+	}
+	if recap.Forecast.Year != 2027 || recap.Forecast.Method != domain.RecapForecastCurrentBaseline {
+		t.Fatalf("forecast = %#v", recap.Forecast)
+	}
 	if recap.Summary.Buyer.AvitoDeliveryPurchases != 1 {
 		t.Fatalf("delivery purchases = %d, want 1", recap.Summary.Buyer.AvitoDeliveryPurchases)
 	}

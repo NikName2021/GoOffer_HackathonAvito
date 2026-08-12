@@ -128,6 +128,73 @@ type RecapCard struct {
 	CTA           *RecapCardCTA         `json:"cta,omitempty"`
 }
 
+type RecapComparisonStatus string
+
+const (
+	RecapComparisonAvailable   RecapComparisonStatus = "available"
+	RecapComparisonFirstYear   RecapComparisonStatus = "first_year"
+	RecapComparisonUnavailable RecapComparisonStatus = "unavailable"
+)
+
+type RecapAmountComparison struct {
+	Previous       int64    `json:"previous"`
+	Current        int64    `json:"current"`
+	AbsoluteChange int64    `json:"absolute_change"`
+	PercentChange  *float64 `json:"percent_change"`
+}
+
+type RecapCategoryComparison struct {
+	Category       string   `json:"category"`
+	PreviousScore  int      `json:"previous_score"`
+	CurrentScore   int      `json:"current_score"`
+	AbsoluteChange int      `json:"absolute_change"`
+	PercentChange  *float64 `json:"percent_change"`
+	IsNew          bool     `json:"is_new"`
+}
+
+// RecapComparison contains buyer-side interests and yearly money totals.
+// Interest score = views + favorites*3 + purchases*5.
+type RecapComparison struct {
+	Status       RecapComparisonStatus     `json:"status"`
+	Message      string                    `json:"message"`
+	PreviousYear int                       `json:"previous_year"`
+	CurrentYear  int                       `json:"current_year"`
+	Spending     RecapAmountComparison     `json:"spending"`
+	SalesRevenue RecapAmountComparison     `json:"sales_revenue"`
+	Categories   []RecapCategoryComparison `json:"categories"`
+	NewInterests []string                  `json:"new_interests"`
+}
+
+type RecapForecastMethod string
+
+const (
+	RecapForecastLinearYearOverYear RecapForecastMethod = "linear_year_over_year"
+	RecapForecastCurrentBaseline    RecapForecastMethod = "current_year_baseline"
+	RecapForecastUnavailable        RecapForecastMethod = "unavailable"
+)
+
+type RecapAmountForecast struct {
+	Expected int64 `json:"expected"`
+	Min      int64 `json:"min"`
+	Max      int64 `json:"max"`
+}
+
+type RecapForecastCategory struct {
+	Category      string `json:"category"`
+	ExpectedScore int    `json:"expected_score"`
+}
+
+// RecapForecast is an explainable estimate, not a financial prediction.
+// With two years it extends the latest year-over-year delta; with one year it
+// uses the current year as a baseline.
+type RecapForecast struct {
+	Year             int                     `json:"year"`
+	Method           RecapForecastMethod     `json:"method"`
+	Spending         RecapAmountForecast     `json:"spending"`
+	SalesRevenue     RecapAmountForecast     `json:"sales_revenue"`
+	LikelyCategories []RecapForecastCategory `json:"likely_categories"`
+}
+
 type Recap struct {
 	ID             uuid.UUID
 	UserID         uuid.UUID
@@ -142,5 +209,7 @@ type Recap struct {
 	ActivityDays   int
 	Summary        RecapSummary
 	Cards          []RecapCard
+	Comparison     RecapComparison
+	Forecast       RecapForecast
 	GeneratedAt    time.Time
 }

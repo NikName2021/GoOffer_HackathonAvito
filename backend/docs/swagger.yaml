@@ -1155,6 +1155,121 @@ components:
         category:
           type: string
           example: views
+    RecapAmountComparison:
+      type: object
+      required: [previous, current, absolute_change, percent_change]
+      properties:
+        previous:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 120000
+        current:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 156000
+        absolute_change:
+          type: integer
+          format: int64
+          example: 36000
+        percent_change:
+          type: number
+          format: double
+          nullable: true
+          example: 30
+          description: Процент с точностью до 0,1; null, когда прошлое значение равно 0, а текущее больше 0.
+    RecapCategoryComparison:
+      type: object
+      required: [category, previous_score, current_score, absolute_change, percent_change, is_new]
+      properties:
+        category: {type: string, example: Электроника}
+        previous_score:
+          type: integer
+          minimum: 0
+          example: 18
+        current_score:
+          type: integer
+          minimum: 0
+          example: 31
+        absolute_change: {type: integer, example: 13}
+        percent_change:
+          type: number
+          format: double
+          nullable: true
+          example: 72.2
+          description: Процент с точностью до 0,1; null, когда прошлый score равен 0, а текущий больше 0.
+        is_new:
+          type: boolean
+          description: true только при наличии данных прошлого года и переходе score с 0 на положительное значение.
+    RecapComparison:
+      type: object
+      required:
+        - status
+        - message
+        - previous_year
+        - current_year
+        - spending
+        - sales_revenue
+        - categories
+        - new_interests
+      description: |-
+        Сравнение предыдущего и текущего года. Расходы — сумма цен купленных
+        объявлений, выручка — сумма цен проданных объявлений. Score интереса
+        категории: views * 1 + favorites * 3 + purchases * 5.
+      properties:
+        status:
+          type: string
+          enum: [available, first_year, unavailable]
+          description: unavailable встречается у сохранённых итогов, созданных до появления сравнения.
+        message:
+          type: string
+          example: Сравнение итогов за два года
+          description: Для first_year всегда «Это ваши первые итоги года».
+        previous_year: {type: integer, minimum: 1999, example: 2025}
+        current_year: {type: integer, minimum: 2000, example: 2026}
+        spending: {$ref: "#/components/schemas/RecapAmountComparison"}
+        sales_revenue: {$ref: "#/components/schemas/RecapAmountComparison"}
+        categories:
+          type: array
+          items: {$ref: "#/components/schemas/RecapCategoryComparison"}
+        new_interests:
+          type: array
+          maxItems: 3
+          items: {type: string}
+          description: До трёх новых интересов; для first_year массив пуст.
+    RecapAmountForecast:
+      type: object
+      required: [expected, min, max]
+      properties:
+        expected: {type: integer, format: int64, minimum: 0, example: 192000}
+        min: {type: integer, format: int64, minimum: 0, example: 156000}
+        max: {type: integer, format: int64, minimum: 0, example: 228000}
+    RecapForecastCategory:
+      type: object
+      required: [category, expected_score]
+      properties:
+        category: {type: string, example: Электроника}
+        expected_score: {type: integer, minimum: 1, example: 44}
+    RecapForecast:
+      type: object
+      required: [year, method, spending, sales_revenue, likely_categories]
+      description: |-
+        Объяснимая ориентировочная оценка, а не финансовое обещание. При двух
+        годах backend продолжает последнюю абсолютную годовую динамику. При
+        первом годе использует текущий год как базу. Диапазон равен как минимум
+        ±10% для linear_year_over_year и ±20% для current_year_baseline.
+      properties:
+        year: {type: integer, minimum: 2001, example: 2027}
+        method:
+          type: string
+          enum: [linear_year_over_year, current_year_baseline, unavailable]
+        spending: {$ref: "#/components/schemas/RecapAmountForecast"}
+        sales_revenue: {$ref: "#/components/schemas/RecapAmountForecast"}
+        likely_categories:
+          type: array
+          maxItems: 3
+          items: {$ref: "#/components/schemas/RecapForecastCategory"}
     RecapItem:
       type: object
       required: [ad_id, title, category, price]
@@ -1445,7 +1560,7 @@ components:
       allOf:
         - $ref: "#/components/schemas/RecapMetrics"
         - type: object
-          required: [id, user_id, summary, cards]
+          required: [id, user_id, summary, cards, comparison, forecast]
           properties:
             id:
               type: string
@@ -1458,6 +1573,8 @@ components:
             cards:
               type: array
               items: {$ref: "#/components/schemas/RecapCard"}
+            comparison: {$ref: "#/components/schemas/RecapComparison"}
+            forecast: {$ref: "#/components/schemas/RecapForecast"}
     ShareRecap:
       allOf:
         - $ref: "#/components/schemas/RecapMetrics"

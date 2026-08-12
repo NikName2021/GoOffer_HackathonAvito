@@ -211,6 +211,19 @@ func newFakeApplication() *fakeApplication {
 			},
 			{ID: "largest_purchase", Kind: "buyer", Title: "Крупная покупка", Shareable: false},
 		},
+		Comparison: domain.RecapComparison{
+			Status:       domain.RecapComparisonUnavailable,
+			Message:      "Сравнение появится после повторной генерации итогов.",
+			PreviousYear: 2024,
+			CurrentYear:  2025,
+			Categories:   []domain.RecapCategoryComparison{},
+			NewInterests: []string{},
+		},
+		Forecast: domain.RecapForecast{
+			Year:             2026,
+			Method:           domain.RecapForecastUnavailable,
+			LikelyCategories: []domain.RecapForecastCategory{},
+		},
 		GeneratedAt: time.Date(2026, time.January, 1, 0, 0, 0, 0, time.UTC),
 	}
 	account := domain.Account{
@@ -343,9 +356,22 @@ func (f *fakeApplication) Execute(_ context.Context, accountID, userID uuid.UUID
 	recap, ok := f.recaps[recapKey(userID, year)]
 	if !ok {
 		recap = domain.Recap{
-			ID:          uuid.New(),
-			UserID:      userID,
-			Year:        year,
+			ID:     uuid.New(),
+			UserID: userID,
+			Year:   year,
+			Comparison: domain.RecapComparison{
+				Status:       domain.RecapComparisonUnavailable,
+				Message:      "Сравнение недоступно в тестовом генераторе.",
+				PreviousYear: year - 1,
+				CurrentYear:  year,
+				Categories:   []domain.RecapCategoryComparison{},
+				NewInterests: []string{},
+			},
+			Forecast: domain.RecapForecast{
+				Year:             year + 1,
+				Method:           domain.RecapForecastUnavailable,
+				LikelyCategories: []domain.RecapForecastCategory{},
+			},
 			GeneratedAt: time.Now().UTC(),
 		}
 		f.recaps[recapKey(userID, year)] = recap

@@ -74,6 +74,7 @@ func assertNoForbiddenJSONFields(t *testing.T, value any) {
 	forbidden := map[string]struct{}{
 		"id": {}, "user_id": {}, "ad_id": {}, "image_url": {},
 		"shareable": {}, "reason": {}, "visualization": {}, "cta": {}, "params": {},
+		"comparison": {}, "forecast": {},
 	}
 	var visit func(any)
 	visit = func(current any) {
@@ -98,5 +99,16 @@ func TestRecapResponseUsesEmptyCardsArray(t *testing.T) {
 	response := dto.ToRecapResponse(&domain.Recap{})
 	if response.Cards == nil {
 		t.Fatal("cards must be an empty array, not nil")
+	}
+}
+
+func TestRecapResponseIncludesComparisonAndForecast(t *testing.T) {
+	recap := &domain.Recap{
+		Comparison: domain.RecapComparison{Status: domain.RecapComparisonAvailable, CurrentYear: 2026},
+		Forecast:   domain.RecapForecast{Year: 2027, Method: domain.RecapForecastLinearYearOverYear},
+	}
+	response := dto.ToRecapResponse(recap)
+	if response.Comparison.Status != domain.RecapComparisonAvailable || response.Forecast.Year != 2027 {
+		t.Fatalf("response comparison/forecast = %#v/%#v", response.Comparison, response.Forecast)
 	}
 }

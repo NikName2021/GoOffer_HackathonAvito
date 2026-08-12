@@ -145,7 +145,7 @@ func TestRealApplicationFlow(t *testing.T) {
 		t.Fatalf("parse created profile ID: %v", err)
 	}
 	defer func() {
-		_ = redisClient.Del(ctx, fmt.Sprintf("recap:v1:%s:%d", userID, year)).Err()
+		_ = redisClient.Del(ctx, fmt.Sprintf("recap:v2:%s:%d", userID, year)).Err()
 	}()
 
 	generatePath := "/api/recap/generate"

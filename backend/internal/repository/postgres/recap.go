@@ -38,13 +38,21 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 	if err != nil {
 		return fmt.Errorf("marshal cards: %w", err)
 	}
+	comparison, err := json.Marshal(recap.Comparison)
+	if err != nil {
+		return fmt.Errorf("marshal comparison: %w", err)
+	}
+	forecast, err := json.Marshal(recap.Forecast)
+	if err != nil {
+		return fmt.Errorf("marshal forecast: %w", err)
+	}
 
 	const query = `
 		INSERT INTO recaps (
 			id, user_id, year, total_views, total_messages, total_favorites,
 			total_purchases, total_sales, top_categories, achievements,
-			activity_days, summary, cards, generated_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+			activity_days, summary, cards, comparison, forecast, generated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
 		ON CONFLICT (user_id, year) DO UPDATE SET
 			id = EXCLUDED.id,
 			total_views = EXCLUDED.total_views,
@@ -57,6 +65,8 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 			activity_days = EXCLUDED.activity_days,
 			summary = EXCLUDED.summary,
 			cards = EXCLUDED.cards,
+			comparison = EXCLUDED.comparison,
+			forecast = EXCLUDED.forecast,
 			generated_at = EXCLUDED.generated_at`
 
 	if _, err := r.pool.Exec(ctx, query,
@@ -73,6 +83,8 @@ func (r *RecapRepository) Save(ctx context.Context, recap *domain.Recap) error {
 		recap.ActivityDays,
 		summary,
 		cards,
+		comparison,
+		forecast,
 		recap.GeneratedAt,
 	); err != nil {
 		return fmt.Errorf("save recap: %w", err)
@@ -88,7 +100,7 @@ func (r *RecapRepository) GetByUserAndYear(
 	const query = `
 		SELECT id, user_id, year, total_views, total_messages, total_favorites,
 		       total_purchases, total_sales, top_categories, achievements,
-		       activity_days, summary, cards, generated_at
+		       activity_days, summary, cards, comparison, forecast, generated_at
 		FROM recaps
 		WHERE user_id = $1 AND year = $2`
 
@@ -97,6 +109,8 @@ func (r *RecapRepository) GetByUserAndYear(
 	var achievements []byte
 	var summary []byte
 	var cards []byte
+	var comparison []byte
+	var forecast []byte
 	err := r.pool.QueryRow(ctx, query, userID, year).Scan(
 		&recap.ID,
 		&recap.UserID,
@@ -111,6 +125,8 @@ func (r *RecapRepository) GetByUserAndYear(
 		&recap.ActivityDays,
 		&summary,
 		&cards,
+		&comparison,
+		&forecast,
 		&recap.GeneratedAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -131,6 +147,12 @@ func (r *RecapRepository) GetByUserAndYear(
 	if err := json.Unmarshal(cards, &recap.Cards); err != nil {
 		return nil, fmt.Errorf("unmarshal cards: %w", err)
 	}
+	if err := json.Unmarshal(comparison, &recap.Comparison); err != nil {
+		return nil, fmt.Errorf("unmarshal comparison: %w", err)
+	}
+	if err := json.Unmarshal(forecast, &recap.Forecast); err != nil {
+		return nil, fmt.Errorf("unmarshal forecast: %w", err)
+	}
 	if recap.TopCategories == nil {
 		recap.TopCategories = []domain.CategoryStat{}
 	}
@@ -139,6 +161,15 @@ func (r *RecapRepository) GetByUserAndYear(
 	}
 	if recap.Cards == nil {
 		recap.Cards = []domain.RecapCard{}
+	}
+	if recap.Comparison.Categories == nil {
+		recap.Comparison.Categories = []domain.RecapCategoryComparison{}
+	}
+	if recap.Comparison.NewInterests == nil {
+		recap.Comparison.NewInterests = []string{}
+	}
+	if recap.Forecast.LikelyCategories == nil {
+		recap.Forecast.LikelyCategories = []domain.RecapForecastCategory{}
 	}
 	return &recap, nil
 }

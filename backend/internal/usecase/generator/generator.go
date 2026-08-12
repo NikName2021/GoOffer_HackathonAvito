@@ -38,6 +38,9 @@ func (g *Generator) Execute(ctx context.Context, accountID, userID uuid.UUID, ye
 	}
 
 	metrics := calculateProfileMetrics(user, year)
+	previousMetrics := calculateProfileMetrics(user, year-1)
+	comparison := buildRecapComparison(previousMetrics, metrics)
+	forecast := buildRecapForecast(previousMetrics, metrics, comparison.Status)
 	summary := buildRecapSummary(metrics)
 	cards := buildRecapCards(metrics, summary, user.RegisteredAt)
 	if g.cardDefinitionRepo != nil {
@@ -71,6 +74,8 @@ func (g *Generator) Execute(ctx context.Context, accountID, userID uuid.UUID, ye
 		ActivityDays:   metrics.ActivityDays,
 		Summary:        summary,
 		Cards:          cards,
+		Comparison:     comparison,
+		Forecast:       forecast,
 		GeneratedAt:    time.Now().UTC(),
 	}
 
