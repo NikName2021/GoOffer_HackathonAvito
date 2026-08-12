@@ -45,6 +45,8 @@ export async function mockApi(
     },
   ];
   const selectedProfile = profileOverride ?? profile;
+  const publicToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  const mobileStoryToken = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
   await page.route("http://localhost:8000/api/**", async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
@@ -127,6 +129,44 @@ export async function mockApi(
     if (pathname === `/api/profiles/${profileId}`)
       return json(route, selectedProfile);
     if (pathname === "/api/recap/generate") return json(route, recap, 201);
+    if (pathname === `/api/recap/${profileId}/2026/shares`) {
+      const body = request.postDataJSON() as { card_ids: string[]; format: "responsive" | "mobile_story" };
+      return json(route, {
+        created_at: "2026-08-13T00:00:00Z",
+        expires_at: "2026-08-16T00:00:00Z",
+        format: body.format,
+        id: "share-id",
+        public_url: `/share/${publicToken}`,
+      }, 201);
+    }
+    if (pathname === `/api/public/recap-shares/${publicToken}`) {
+      const cards = recap.cards
+        .filter((card) => card.shareable)
+        .map(({ description, eyebrow = "", kind, presentation, title, value = "" }) => ({
+          description, eyebrow, kind, presentation, title, value,
+        }));
+      return json(route, {
+        cards,
+        created_at: "2026-08-13T00:00:00Z",
+        expires_at: "2026-08-16T00:00:00Z",
+        format: "responsive",
+        year: 2026,
+      });
+    }
+    if (pathname === `/api/public/recap-shares/${mobileStoryToken}`) {
+      const firstCard = recap.cards.find((card) => card.shareable)!;
+      const { description, eyebrow = "", kind, presentation, title, value = "" } = firstCard;
+      return json(route, {
+        cards: [{ description, eyebrow, kind, presentation, title, value }],
+        created_at: "2026-08-13T00:00:00Z",
+        expires_at: "2026-08-16T00:00:00Z",
+        format: "mobile_story",
+        year: 2026,
+      });
+    }
+    if (pathname.startsWith("/api/public/recap-shares/")) {
+      return json(route, { error: { code: "share_not_found", message: "public share not found" } }, 404);
+    }
     if (pathname === `/api/recap/${profileId}/2026/mission`) {
       if (request.method() === "GET") return json(route, { ...missionOverview, selected_missions: selectedMissions });
       const { codes } = request.postDataJSON() as { codes: string[] };

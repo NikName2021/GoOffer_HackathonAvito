@@ -190,13 +190,22 @@ export interface RecapResponse {
   generated_at: string
 }
 
-export interface ShareRecapSummary {
-  headline: string
-  description: string
-  combined: CombinedRecapSummary
+export type RecapShareFormat = 'responsive' | 'mobile_story'
+
+export interface CreateRecapShareRequest {
+  card_ids: string[]
+  format: RecapShareFormat
 }
 
-export interface ShareRecapCardResponse {
+export interface RecapShareCreated {
+  id: string
+  public_url: string
+  format: RecapShareFormat
+  created_at: string
+  expires_at: string
+}
+
+export interface PublicRecapCard {
   kind: RecapCardResponse['kind']
   eyebrow: string
   title: string
@@ -205,7 +214,10 @@ export interface ShareRecapCardResponse {
   presentation: RecapCardPresentation
 }
 
-export interface ShareRecapResponse extends Omit<RecapResponse, 'id' | 'user_id' | 'summary' | 'cards' | 'comparison' | 'forecast'> {
-  summary: ShareRecapSummary
-  cards: ShareRecapCardResponse[]
+export interface PublicRecapShare {
+  format: RecapShareFormat
+  year: number
+  cards: PublicRecapCard[]
+  created_at: string
+  expires_at: string
 }

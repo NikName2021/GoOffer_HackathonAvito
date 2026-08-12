@@ -2,7 +2,7 @@ import { Check } from 'lucide-react'
 
 import { RecapIcon } from './RecapIcon'
 import { cn } from '@/lib/utils'
-import type { ShareRecapCardResponse } from '@/types/recap.type'
+import type { RecapCardResponse } from '@/types/recap.type'
 
 const themes: Record<string, { accent: string; surface: string }> = {
   'avito-blue': { accent: 'text-[#00aaff]', surface: 'from-[#e5f6ff] to-[#f7fcff]' },
@@ -13,7 +13,7 @@ const themes: Record<string, { accent: string; surface: string }> = {
 }
 
 interface RecapShareCardOptionProps {
-  card: ShareRecapCardResponse
+  card: Pick<RecapCardResponse, 'eyebrow' | 'presentation' | 'title' | 'value'>
   onToggle: () => void
   selected: boolean
 }

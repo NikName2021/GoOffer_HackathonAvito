@@ -16,7 +16,7 @@ const ReactQueryDevtools = import.meta.env.DEV
     )
   : null
 
-void store.dispatch(restoreSession())
+if (!window.location.pathname.startsWith('/share/')) void store.dispatch(restoreSession())
 
 const queryClient = new QueryClient({
   defaultOptions: {

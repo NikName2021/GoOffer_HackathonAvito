@@ -1,7 +1,13 @@
 import axios from 'axios'
 
-import { apiClient } from './api'
-import type { GenerateRecapRequest, RecapResponse, ShareRecapResponse } from '@/types/recap.type'
+import { API_BASE_URL, apiClient } from './api'
+import type {
+  CreateRecapShareRequest,
+  GenerateRecapRequest,
+  PublicRecapShare,
+  RecapResponse,
+  RecapShareCreated,
+} from '@/types/recap.type'
 
 interface RecapErrorEnvelope {
   error?: {
@@ -37,12 +43,34 @@ export async function generateRecap(request: GenerateRecapRequest): Promise<Reca
   }
 }
 
-export async function getShareRecap(userId: string, year: number): Promise<ShareRecapResponse> {
+export async function createRecapShare(
+  userId: string,
+  year: number,
+  request: CreateRecapShareRequest,
+): Promise<RecapShareCreated> {
   try {
     const safeUserId = encodeURIComponent(userId)
-    const { data } = await apiClient.get<ShareRecapResponse>(`/recap/${safeUserId}/${year}/share`)
+    const { data } = await apiClient.post<RecapShareCreated>(`/recap/${safeUserId}/${year}/shares`, request)
     return data
   } catch (error) {
     throwRecapError(error)
+  }
+}
+
+export async function getPublicRecapShare(token: string): Promise<PublicRecapShare> {
+  try {
+    const { data } = await axios.get<PublicRecapShare>(
+      `${API_BASE_URL}/public/recap-shares/${encodeURIComponent(token)}`,
+      { withCredentials: false },
+    )
+    return data
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      throw new Error('Ссылка недействительна или срок её действия истёк.', { cause: error })
+    }
+    if (axios.isAxiosError(error) && (!error.response || error.response.status >= 500)) {
+      throw new Error('Не удалось загрузить публичные итоги. Попробуйте ещё раз.', { cause: error })
+    }
+    throw error instanceof Error ? error : new Error('Не удалось загрузить публичные итоги.', { cause: error })
   }
 }

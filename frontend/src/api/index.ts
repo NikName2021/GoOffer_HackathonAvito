@@ -1,6 +1,6 @@
 export { API_BASE_URL, apiClient } from './api'
 export { getAuthFailure, logout, getCurrentAccount, register, login } from './auth'
 export { createProfile, deleteProfile, getProfile, getProfiles, updateProfile } from './profile'
-export { generateRecap, getShareRecap } from './recap'
+export { createRecapShare, generateRecap, getPublicRecapShare } from './recap'
 export { sendRecapEvent } from './recapEvents'
 export { getMission, getProfileMissions, selectMissions } from './mission'
