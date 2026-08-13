@@ -124,6 +124,20 @@ func TestRecapAPI(t *testing.T) {
 		if !ok || len(cards) != 1 {
 			t.Fatalf("public cards = %#v", payload["cards"])
 		}
+		achievements, ok := payload["achievements"].([]any)
+		if !ok || len(achievements) != 1 {
+			t.Fatalf("public achievements = %#v, want one earned medal", payload["achievements"])
+		}
+		achievement, ok := achievements[0].(map[string]any)
+		if !ok {
+			t.Fatalf("public achievement = %#v", achievements[0])
+		}
+		assertPublicAchievementJSONIsSafe(t, achievement)
+		if achievement["slug"] != "curious" || achievement["title"] != "Любопытный" ||
+			achievement["description"] != "Просмотрел не менее 500 объявлений за год" ||
+			achievement["icon"] != "👀" {
+			t.Fatalf("public achievement = %#v", achievement)
+		}
 	})
 
 	t.Run("reject non-shareable selected card", func(t *testing.T) {
@@ -210,7 +224,8 @@ func TestRecapAPI(t *testing.T) {
 func assertShareJSONIsSafe(t *testing.T, value any) {
 	t.Helper()
 	forbidden := map[string]struct{}{
-		"id": {}, "user_id": {}, "ad_id": {}, "image_url": {},
+		"id": {}, "user_id": {}, "profile_id": {}, "recap_id": {}, "account_id": {},
+		"ad_id": {}, "image_url": {},
 		"shareable": {}, "reason": {}, "visualization": {}, "cta": {}, "params": {},
 		"comparison": {}, "forecast": {},
 	}
@@ -231,4 +246,19 @@ func assertShareJSONIsSafe(t *testing.T, value any) {
 		}
 	}
 	visit(value)
+}
+
+func assertPublicAchievementJSONIsSafe(t *testing.T, achievement map[string]any) {
+	t.Helper()
+	allowed := map[string]struct{}{
+		"slug": {}, "title": {}, "description": {}, "icon": {},
+	}
+	if len(achievement) != len(allowed) {
+		t.Errorf("public achievement has unexpected fields: %#v", achievement)
+	}
+	for key := range achievement {
+		if _, ok := allowed[key]; !ok {
+			t.Errorf("public achievement contains forbidden field %q", key)
+		}
+	}
 }

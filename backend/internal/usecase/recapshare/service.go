@@ -80,6 +80,7 @@ func (s *Service) Create(
 	if err != nil {
 		return nil, err
 	}
+	achievements := toPublicAchievements(recap.Achievements)
 
 	token, tokenHash, err := s.generateToken()
 	if err != nil {
@@ -94,9 +95,10 @@ func (s *Service) Create(
 		TokenHash: tokenHash,
 		Format:    format,
 		Snapshot: domain.PublicRecapSnapshot{
-			Format: format,
-			Year:   year,
-			Cards:  cards,
+			Format:       format,
+			Year:         year,
+			Cards:        cards,
+			Achievements: achievements,
 		},
 		CreatedAt: now,
 		ExpiresAt: now.Add(s.ttl),
@@ -126,12 +128,17 @@ func (s *Service) GetPublic(ctx context.Context, token string) (*domain.PublicRe
 	if cards == nil {
 		cards = []domain.PublicRecapCard{}
 	}
+	achievements := append([]domain.PublicRecapAchievement(nil), share.Snapshot.Achievements...)
+	if achievements == nil {
+		achievements = []domain.PublicRecapAchievement{}
+	}
 	return &domain.PublicRecapShare{
-		Format:    share.Snapshot.Format,
-		Year:      share.Snapshot.Year,
-		Cards:     cards,
-		CreatedAt: share.CreatedAt,
-		ExpiresAt: share.ExpiresAt,
+		Format:       share.Snapshot.Format,
+		Year:         share.Snapshot.Year,
+		Cards:        cards,
+		Achievements: achievements,
+		CreatedAt:    share.CreatedAt,
+		ExpiresAt:    share.ExpiresAt,
 	}, nil
 }
 
@@ -215,4 +222,17 @@ func toPublicCard(card domain.RecapCard) domain.PublicRecapCard {
 			Icon:   card.Presentation.Icon,
 		},
 	}
+}
+
+func toPublicAchievements(source []domain.Achievement) []domain.PublicRecapAchievement {
+	achievements := make([]domain.PublicRecapAchievement, 0, len(source))
+	for _, achievement := range source {
+		achievements = append(achievements, domain.PublicRecapAchievement{
+			Slug:        achievement.Slug,
+			Title:       achievement.Title,
+			Description: achievement.Description,
+			Icon:        achievement.Icon,
+		})
+	}
+	return achievements
 }

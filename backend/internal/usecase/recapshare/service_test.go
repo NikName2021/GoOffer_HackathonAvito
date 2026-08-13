@@ -39,6 +39,9 @@ func (f *fakeShareRepository) Create(_ context.Context, share *domain.RecapShare
 	copy := *share
 	copy.TokenHash = append([]byte(nil), share.TokenHash...)
 	copy.Snapshot.Cards = append([]domain.PublicRecapCard(nil), share.Snapshot.Cards...)
+	copy.Snapshot.Achievements = append(
+		[]domain.PublicRecapAchievement{}, share.Snapshot.Achievements...,
+	)
 	f.share = &copy
 	return nil
 }
@@ -54,6 +57,9 @@ func (f *fakeShareRepository) GetActiveByTokenHash(
 	}
 	copy := *f.share
 	copy.Snapshot.Cards = append([]domain.PublicRecapCard(nil), f.share.Snapshot.Cards...)
+	copy.Snapshot.Achievements = append(
+		[]domain.PublicRecapAchievement{}, f.share.Snapshot.Achievements...,
+	)
 	return &copy, nil
 }
 
@@ -87,6 +93,13 @@ func TestCreatePublishesOnlySelectedAllowlistedCards(t *testing.T) {
 		},
 		{ID: "largest_purchase", Kind: "buyer", Title: "Личная покупка", Shareable: false},
 	}
+	recap.Achievements = []domain.Achievement{
+		{
+			Slug: "curious", Title: "Любопытный",
+			Description: "Просмотрел не менее 500 объявлений за год", Icon: "👀",
+			Category: "views",
+		},
+	}
 
 	created, err := service.Create(
 		context.Background(),
@@ -109,12 +122,20 @@ func TestCreatePublishesOnlySelectedAllowlistedCards(t *testing.T) {
 		shares.share.Snapshot.Cards[0].Title != "Ваше объявление стало звездой" {
 		t.Fatalf("snapshot cards = %#v", shares.share.Snapshot.Cards)
 	}
+	if len(shares.share.Snapshot.Achievements) != 1 ||
+		shares.share.Snapshot.Achievements[0].Slug != "curious" ||
+		shares.share.Snapshot.Achievements[0].Title != "Любопытный" {
+		t.Fatalf("snapshot achievements = %#v", shares.share.Snapshot.Achievements)
+	}
 
 	encoded, err := json.Marshal(shares.share.Snapshot)
 	if err != nil {
 		t.Fatalf("marshal snapshot: %v", err)
 	}
-	for _, forbidden := range []string{"user_id", "ad_id", "image_url", "shareable", "reason", "visualization", "cta", "params"} {
+	for _, forbidden := range []string{
+		"id", "user_id", "profile_id", "recap_id", "account_id", "ad_id",
+		"image_url", "shareable", "reason", "visualization", "cta", "params", "category",
+	} {
 		if strings.Contains(string(encoded), `"`+forbidden+`"`) {
 			t.Errorf("snapshot contains forbidden field %q: %s", forbidden, encoded)
 		}
@@ -122,12 +143,83 @@ func TestCreatePublishesOnlySelectedAllowlistedCards(t *testing.T) {
 
 	token := strings.TrimPrefix(created.PublicURL, "https://recap.example/share/")
 	recap.Cards[0].Title = "Changed after publication"
+	recap.Achievements[0].Title = "Changed after publication"
+	recap.Achievements[0].Category = "private"
 	public, err := service.GetPublic(context.Background(), token)
 	if err != nil {
 		t.Fatalf("get public share: %v", err)
 	}
 	if public.Cards[1].Title != "Безопасный итог" || public.Format != domain.RecapShareMobileStory {
 		t.Fatalf("public immutable snapshot = %#v", public)
+	}
+	if len(public.Achievements) != 1 || public.Achievements[0].Title != "Любопытный" {
+		t.Fatalf("public immutable achievements = %#v", public.Achievements)
+	}
+}
+
+func TestCreatePublishesEmptyAchievementsArrayWhenRecapHasNone(t *testing.T) {
+	service, recap, shares := newShareTestService(time.Now().UTC())
+	recap.Cards = []domain.RecapCard{{ID: "overview", Shareable: true}}
+
+	created, err := service.Create(
+		context.Background(), uuid.New(), recap.UserID, recap.Year,
+		[]string{"overview"}, domain.RecapShareResponsive,
+	)
+	if err != nil {
+		t.Fatalf("create public share: %v", err)
+	}
+	if shares.share.Snapshot.Achievements == nil || len(shares.share.Snapshot.Achievements) != 0 {
+		t.Fatalf("snapshot achievements = %#v, want non-nil empty array", shares.share.Snapshot.Achievements)
+	}
+
+	token := strings.TrimPrefix(created.PublicURL, "https://recap.example/share/")
+	public, err := service.GetPublic(context.Background(), token)
+	if err != nil {
+		t.Fatalf("get public share: %v", err)
+	}
+	encoded, err := json.Marshal(public)
+	if err != nil {
+		t.Fatalf("marshal public share: %v", err)
+	}
+	if !strings.Contains(string(encoded), `"achievements":[]`) {
+		t.Fatalf("public share = %s, want achievements: []", encoded)
+	}
+}
+
+func TestGetPublicNormalizesLegacySnapshotWithoutAchievements(t *testing.T) {
+	now := time.Date(2026, time.August, 12, 10, 0, 0, 0, time.UTC)
+	service, recap, shares := newShareTestService(now)
+	recap.Cards = []domain.RecapCard{{ID: "overview", Shareable: true}}
+	created, err := service.Create(
+		context.Background(), uuid.New(), recap.UserID, recap.Year,
+		[]string{"overview"}, domain.RecapShareResponsive,
+	)
+	if err != nil {
+		t.Fatalf("create public share: %v", err)
+	}
+
+	var legacy domain.PublicRecapSnapshot
+	if err := json.Unmarshal(
+		[]byte(`{"format":"responsive","year":2026,"cards":[]}`),
+		&legacy,
+	); err != nil {
+		t.Fatalf("decode legacy snapshot: %v", err)
+	}
+	shares.share.Snapshot = legacy
+	token := strings.TrimPrefix(created.PublicURL, "https://recap.example/share/")
+	public, err := service.GetPublic(context.Background(), token)
+	if err != nil {
+		t.Fatalf("get legacy public share: %v", err)
+	}
+	if public.Achievements == nil || len(public.Achievements) != 0 {
+		t.Fatalf("legacy achievements = %#v, want non-nil empty array", public.Achievements)
+	}
+	encoded, err := json.Marshal(public)
+	if err != nil {
+		t.Fatalf("marshal legacy public share: %v", err)
+	}
+	if !strings.Contains(string(encoded), `"achievements":[]`) {
+		t.Fatalf("legacy public share = %s, want achievements: []", encoded)
 	}
 }
 
