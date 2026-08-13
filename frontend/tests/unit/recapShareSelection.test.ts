@@ -15,9 +15,13 @@ function card(id: string, shareable = true): RecapCardResponse {
   }
 }
 
+function finalCard(id: string): RecapCardResponse {
+  return { ...card(id), kind: 'final' }
+}
+
 describe('recap public share selection', () => {
   it('shows and preselects only shareable cards', () => {
-    const cards = [card('year_overview'), card('private', false), card('category_mix')]
+    const cards = [card('year_overview'), card('private', false), finalCard('year_final'), card('category_mix')]
     expect(getShareableRecapCards(cards).map(({ id }) => id)).toEqual(['year_overview', 'category_mix'])
     expect(getInitialShareCardIds(cards)).toEqual(['year_overview', 'category_mix'])
   })

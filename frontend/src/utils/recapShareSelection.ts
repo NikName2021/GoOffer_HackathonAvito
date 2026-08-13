@@ -3,7 +3,7 @@ import type { RecapCardResponse } from '@/types/recap.type'
 const MAX_SHARE_CARDS = 9
 
 export function getShareableRecapCards(cards: RecapCardResponse[]) {
-  return cards.filter((card) => card.shareable)
+  return cards.filter((card) => card.shareable && card.kind !== 'final')
 }
 
 export function getInitialShareCardIds(cards: RecapCardResponse[]) {

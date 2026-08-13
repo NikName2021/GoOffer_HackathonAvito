@@ -1,7 +1,6 @@
 import { RecapIcon } from '@/components/recap/RecapIcon'
-import { PublicShareAchievements } from './PublicShareAchievements'
 import { cn } from '@/lib/utils'
-import type { PublicRecapAchievement, PublicRecapCard } from '@/types/recap.type'
+import type { PublicRecapCard } from '@/types/recap.type'
 
 const themes: Record<string, { accent: string; background: string; glow: string }> = {
   'avito-blue': { accent: 'text-[#00aaff]', background: 'from-[#dff5ff] to-[#f5fbff]', glow: 'bg-[#00aaff]/20' },
@@ -12,12 +11,11 @@ const themes: Record<string, { accent: string; background: string; glow: string 
 }
 
 interface PublicShareCardProps {
-  achievements: PublicRecapAchievement[]
   card: PublicRecapCard
   story?: boolean
 }
 
-export function PublicShareCard({ achievements, card, story = false }: PublicShareCardProps) {
+export function PublicShareCard({ card, story = false }: PublicShareCardProps) {
   const theme = themes[card.presentation.theme] ?? themes['avito-blue']
 
   return (
@@ -35,7 +33,6 @@ export function PublicShareCard({ achievements, card, story = false }: PublicSha
         <h2 className={cn('mt-3 font-black tracking-[-0.045em] text-[#1f1f1f]', story ? 'text-4xl leading-[0.98]' : 'text-3xl leading-tight sm:text-4xl')}>{card.title}</h2>
         {card.value && <p className={cn('mt-4 text-3xl font-black sm:text-4xl', theme.accent)}>{card.value}</p>}
         {card.description && <p className="mt-5 max-w-2xl text-sm leading-6 text-[#515459] sm:text-base">{card.description}</p>}
-        {card.kind === 'final' && <PublicShareAchievements achievements={achievements} />}
       </div>
     </article>
   )

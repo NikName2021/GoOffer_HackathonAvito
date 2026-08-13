@@ -2,6 +2,7 @@ import { AlertCircle, LoaderCircle, Sparkles } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { useParams } from 'react-router-dom'
 
+import { PublicShareAchievements } from '@/components/publicShare/PublicShareAchievements'
 import { PublicShareCard } from '@/components/publicShare/PublicShareCard'
 import { usePublicRecapShare } from '@/hooks/useRecap'
 import { cn } from '@/lib/utils'
@@ -21,7 +22,8 @@ export function PublicRecapSharePage() {
     return <ShareStatus error icon={<AlertCircle className="size-9" />} text={message} />
   }
 
-  const { cards, format, year } = shareQuery.data
+  const { achievements, cards, format, year } = shareQuery.data
+  const contentCards = cards.filter((card) => card.kind !== 'final')
   const isStory = format === 'mobile_story'
 
   return (
@@ -43,12 +45,14 @@ export function PublicRecapSharePage() {
             ? 'aspect-[9/16] snap-y snap-mandatory overflow-y-auto rounded-[36px] bg-[#15141f] p-3 shadow-[0_30px_90px_rgba(17,17,24,0.3)]'
             : 'grid gap-5 md:grid-cols-2',
         )}>
-          {cards.map((card, index) => (
+          {contentCards.map((card, index) => (
             <div className={cn(isStory && 'flex min-h-full snap-start items-center py-2')} key={`${card.kind}-${index}`}>
-              <PublicShareCard achievements={shareQuery.data.achievements} card={card} story={isStory} />
+              <PublicShareCard card={card} story={isStory} />
             </div>
           ))}
         </section>
+
+        <PublicShareAchievements achievements={achievements} />
 
         <footer className={cn('text-center text-xs text-[#8a8d91]', isStory ? 'mt-4' : 'mt-8')}>
           Публичная ссылка действует ограниченное время.
