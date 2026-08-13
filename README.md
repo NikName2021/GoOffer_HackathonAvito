@@ -98,64 +98,6 @@ docker compose down
 
 Аккаунт `nikita` также имеет доступ к административным правилам дополнительных recap-карточек через backend API.
 
-## Локальная разработка
-
-### Бэкенд
-
-Запустите PostgreSQL и Redis:
-
-```bash
-docker network create result_year
-docker compose --env-file .env up -d postgres redis
-```
-
-Затем в отдельном терминале:
-
-```bash
-cd backend
-set -a
-source ../.env
-set +a
-go mod download
-go run ./cmd/server
-```
-
-Бэкенд использует Go 1.22 и запускается на <http://localhost:8000>. Значения `DB_HOST=localhost` и `DB_PORT=5446` уже заданы в `.env.example` для такого режима.
-
-### Фронтенд
-
-```bash
-cd frontend
-npm ci
-npm run dev
-```
-
-Dev-сервер будет доступен на <http://localhost:5173>. По умолчанию фронтенд обращается к `http://localhost:8000/api`; другой адрес можно задать переменной `VITE_BASE_API_URL`.
-
-### Проверки
-
-Бэкенд:
-
-```bash
-cd backend
-go test -mod=readonly ./...
-make lint
-```
-
-Фронтенд:
-
-```bash
-cd frontend
-npm ci
-npm test -- --ci --runInBand
-npm run lint
-npm run build
-npx playwright install chromium
-npm run test:e2e
-```
-
-E2E-тесты сами поднимают Vite на порту `4173` и подменяют ответы API, поэтому работающий бэкенд для них не требуется.
-
 ## Мониторинг
 
 Основное приложение должно быть запущено в сети `result_year`. После этого стек наблюдаемости запускается отдельно:
