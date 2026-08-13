@@ -145,8 +145,11 @@ export async function mockApi(
         .map(({ description, eyebrow = "", kind, presentation, title, value = "" }) => ({
           description, eyebrow, kind, presentation, title, value,
         }));
+      const achievements = recap.achievements.map(({ description, icon, slug, title }) => ({
+        description, icon, slug, title,
+      }));
       return json(route, {
-        achievements: recap.achievements,
+        achievements,
         cards,
         created_at: "2026-08-13T00:00:00Z",
         expires_at: "2026-08-16T00:00:00Z",
@@ -157,8 +160,11 @@ export async function mockApi(
     if (pathname === `/api/public/recap-shares/${mobileStoryToken}`) {
       const firstCard = recap.cards.find((card) => card.shareable)!;
       const { description, eyebrow = "", kind, presentation, title, value = "" } = firstCard;
+      const achievements = recap.achievements.map(({ description, icon, slug, title }) => ({
+        description, icon, slug, title,
+      }));
       return json(route, {
-        achievements: recap.achievements,
+        achievements,
         cards: [{ description, eyebrow, kind, presentation, title, value }],
         created_at: "2026-08-13T00:00:00Z",
         expires_at: "2026-08-16T00:00:00Z",

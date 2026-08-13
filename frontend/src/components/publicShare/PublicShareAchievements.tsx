@@ -1,8 +1,8 @@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import type { RecapAchievement } from '@/types/recap.type'
+import type { PublicRecapAchievement } from '@/types/recap.type'
 
 interface PublicShareAchievementsProps {
-  achievements: RecapAchievement[]
+  achievements: PublicRecapAchievement[]
 }
 
 export function PublicShareAchievements({ achievements }: PublicShareAchievementsProps) {

@@ -1,7 +1,7 @@
 import { RecapIcon } from '@/components/recap/RecapIcon'
 import { PublicShareAchievements } from './PublicShareAchievements'
 import { cn } from '@/lib/utils'
-import type { PublicRecapCard, RecapAchievement } from '@/types/recap.type'
+import type { PublicRecapAchievement, PublicRecapCard } from '@/types/recap.type'
 
 const themes: Record<string, { accent: string; background: string; glow: string }> = {
   'avito-blue': { accent: 'text-[#00aaff]', background: 'from-[#dff5ff] to-[#f5fbff]', glow: 'bg-[#00aaff]/20' },
@@ -12,7 +12,7 @@ const themes: Record<string, { accent: string; background: string; glow: string 
 }
 
 interface PublicShareCardProps {
-  achievements: RecapAchievement[]
+  achievements: PublicRecapAchievement[]
   card: PublicRecapCard
   story?: boolean
 }

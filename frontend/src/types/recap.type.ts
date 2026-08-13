@@ -8,11 +8,14 @@ export interface RecapCategoryStat {
   count: number
 }
 
-export interface RecapAchievement {
+export interface PublicRecapAchievement {
   slug: string
   title: string
   description: string
   icon: string
+}
+
+export interface RecapAchievement extends PublicRecapAchievement {
   category: string
 }
 
@@ -218,7 +221,7 @@ export interface PublicRecapShare {
   format: RecapShareFormat
   year: number
   cards: PublicRecapCard[]
-  achievements?: RecapAchievement[]
+  achievements: PublicRecapAchievement[]
   created_at: string
   expires_at: string
 }

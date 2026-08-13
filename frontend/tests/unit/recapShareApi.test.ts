@@ -27,7 +27,14 @@ describe('recap public share API', () => {
   })
 
   it('loads a public snapshot without credentials', async () => {
-    const response = { cards: [], format: 'responsive', year: 2026 }
+    const response = {
+      achievements: [{ description: '500 просмотров', icon: '👀', slug: 'curious', title: 'Любопытный' }],
+      cards: [],
+      created_at: '2026-08-13T00:00:00Z',
+      expires_at: '2026-08-16T00:00:00Z',
+      format: 'responsive',
+      year: 2026,
+    }
     jest.mocked(axios.get).mockResolvedValue({ data: response })
 
     await expect(getPublicRecapShare('public/token')).resolves.toBe(response)
