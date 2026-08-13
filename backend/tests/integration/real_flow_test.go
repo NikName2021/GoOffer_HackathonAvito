@@ -215,11 +215,15 @@ func TestRealApplicationFlow(t *testing.T) {
 	if publicResponse.Code != http.StatusOK || publicResponse.Header().Get("Cache-Control") != "no-store" {
 		t.Fatalf("public share status/headers = %d/%#v: %s", publicResponse.Code, publicResponse.Header(), publicResponse.Body.String())
 	}
-	var publicPayload any
+	var publicPayload map[string]any
 	if err := json.NewDecoder(publicResponse.Body).Decode(&publicPayload); err != nil {
 		t.Fatalf("decode public share: %v", err)
 	}
 	assertShareJSONIsSafe(t, publicPayload)
+	achievements, ok := publicPayload["achievements"].([]any)
+	if !ok || len(achievements) != 0 {
+		t.Fatalf("public achievements = %#v, want empty array", publicPayload["achievements"])
+	}
 	revoked := realRequest(
 		handler,
 		http.MethodDelete,

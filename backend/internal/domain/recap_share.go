@@ -30,12 +30,22 @@ type PublicRecapCard struct {
 	Presentation PublicRecapCardPresentation `json:"presentation"`
 }
 
+// PublicRecapAchievement is a strict allowlist. It intentionally excludes
+// achievement category and all user, profile and recap identifiers.
+type PublicRecapAchievement struct {
+	Slug        string `json:"slug"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Icon        string `json:"icon"`
+}
+
 // PublicRecapSnapshot is immutable after publication and contains no profile,
 // account, recap or listing identifiers.
 type PublicRecapSnapshot struct {
-	Format RecapShareFormat  `json:"format"`
-	Year   int               `json:"year"`
-	Cards  []PublicRecapCard `json:"cards"`
+	Format       RecapShareFormat         `json:"format"`
+	Year         int                      `json:"year"`
+	Cards        []PublicRecapCard        `json:"cards"`
+	Achievements []PublicRecapAchievement `json:"achievements"`
 }
 
 type RecapShare struct {
@@ -60,9 +70,10 @@ type RecapShareCreated struct {
 }
 
 type PublicRecapShare struct {
-	Format    RecapShareFormat  `json:"format"`
-	Year      int               `json:"year"`
-	Cards     []PublicRecapCard `json:"cards"`
-	CreatedAt time.Time         `json:"created_at"`
-	ExpiresAt time.Time         `json:"expires_at"`
+	Format       RecapShareFormat         `json:"format"`
+	Year         int                      `json:"year"`
+	Cards        []PublicRecapCard        `json:"cards"`
+	Achievements []PublicRecapAchievement `json:"achievements"`
+	CreatedAt    time.Time                `json:"created_at"`
+	ExpiresAt    time.Time                `json:"expires_at"`
 }

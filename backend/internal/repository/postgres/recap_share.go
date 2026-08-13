@@ -107,11 +107,24 @@ func scanRecapShare(scanner rowScanner) (domain.RecapShare, error) {
 	if err != nil {
 		return domain.RecapShare{}, err
 	}
-	if err := json.Unmarshal(snapshot, &share.Snapshot); err != nil {
-		return domain.RecapShare{}, fmt.Errorf("unmarshal public recap snapshot: %w", err)
+	decoded, err := decodePublicRecapSnapshot(snapshot)
+	if err != nil {
+		return domain.RecapShare{}, err
 	}
-	if share.Snapshot.Cards == nil {
-		share.Snapshot.Cards = []domain.PublicRecapCard{}
-	}
+	share.Snapshot = decoded
 	return share, nil
+}
+
+func decodePublicRecapSnapshot(raw []byte) (domain.PublicRecapSnapshot, error) {
+	var snapshot domain.PublicRecapSnapshot
+	if err := json.Unmarshal(raw, &snapshot); err != nil {
+		return domain.PublicRecapSnapshot{}, fmt.Errorf("unmarshal public recap snapshot: %w", err)
+	}
+	if snapshot.Cards == nil {
+		snapshot.Cards = []domain.PublicRecapCard{}
+	}
+	if snapshot.Achievements == nil {
+		snapshot.Achievements = []domain.PublicRecapAchievement{}
+	}
+	return snapshot, nil
 }
