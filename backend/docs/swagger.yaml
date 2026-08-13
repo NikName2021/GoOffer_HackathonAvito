@@ -380,8 +380,10 @@ paths:
       summary: Создать временную публичную ссылку
       description: |-
         Backend принимает только ID карточек, повторно проверяет shareable=true и
-        сохраняет неизменяемый allowlist-snapshot. Исходный профиль, полный Recap,
-        идентификаторы объявлений, изображения, CTA и диаграммы не публикуются.
+        сохраняет неизменяемый allowlist-snapshot карточек и полученных медалей.
+        Медали фиксируются в момент создания ссылки: последующее изменение их
+        настроек не меняет уже опубликованный snapshot. Исходный профиль, полный
+        Recap, идентификаторы объявлений, изображения, CTA и диаграммы не публикуются.
       operationId: createPublicRecapShare
       security:
         - cookieAuth: []
@@ -431,7 +433,8 @@ paths:
       description: |-
         Не требует cookie. Невалидный, истёкший и отозванный токен одинаково дают
         404. Ответ содержит Cache-Control: no-store, X-Robots-Tag: noindex и
-        Referrer-Policy: no-referrer.
+        Referrer-Policy: no-referrer. Для старых snapshot без поля achievements
+        возвращается achievements: [].
       operationId: getPublicRecapShare
       security: []
       parameters:
@@ -444,7 +447,7 @@ paths:
             maxLength: 43
       responses:
         "200":
-          description: Безопасный snapshot выбранных карточек
+          description: Безопасный snapshot выбранных карточек и полученных медалей
           content:
             application/json:
               schema: {$ref: "#/components/schemas/PublicRecapShare"}
@@ -1217,11 +1220,23 @@ components:
         description: {type: string}
         value: {type: string, example: "2026"}
         presentation: {$ref: "#/components/schemas/PublicRecapCardPresentation"}
+    PublicRecapAchievement:
+      type: object
+      additionalProperties: false
+      required: [slug, title, description, icon]
+      description: |-
+        Строгий allowlist полученной медали. Содержит только публичные поля;
+        category и идентификаторы пользователя, профиля и recap отсутствуют.
+      properties:
+        slug: {type: string, example: curious}
+        title: {type: string, example: Любопытный}
+        description: {type: string, example: Просмотрел не менее 500 объявлений за год}
+        icon: {type: string, example: "👀"}
     PublicRecapShare:
       type: object
       additionalProperties: false
-      required: [format, year, cards, created_at, expires_at]
-      description: Неизменяемый публичный snapshot только выбранных карточек.
+      required: [format, year, cards, achievements, created_at, expires_at]
+      description: Неизменяемый публичный snapshot выбранных карточек и полученных медалей.
       properties:
         format: {$ref: "#/components/schemas/RecapShareFormat"}
         year: {type: integer, minimum: 2000, maximum: 2100, example: 2026}
@@ -1230,6 +1245,15 @@ components:
           minItems: 1
           maxItems: 9
           items: {$ref: "#/components/schemas/PublicRecapCard"}
+        achievements:
+          type: array
+          description: Полученные медали на момент публикации; для старых snapshot возвращается пустой массив.
+          items: {$ref: "#/components/schemas/PublicRecapAchievement"}
+          example:
+            - slug: curious
+              title: Любопытный
+              description: Просмотрел не менее 500 объявлений за год
+              icon: "👀"
         created_at: {type: string, format: date-time}
         expires_at: {type: string, format: date-time}
     SelectMissionRequest:

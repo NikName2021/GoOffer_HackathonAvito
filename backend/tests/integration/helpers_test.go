@@ -59,6 +59,11 @@ func newFakeRecapShareRepository() *fakeRecapShareRepository {
 
 func (f *fakeRecapShareRepository) Create(_ context.Context, share *domain.RecapShare) error {
 	copy := *share
+	copy.TokenHash = append([]byte(nil), share.TokenHash...)
+	copy.Snapshot.Cards = append([]domain.PublicRecapCard(nil), share.Snapshot.Cards...)
+	copy.Snapshot.Achievements = append(
+		[]domain.PublicRecapAchievement{}, share.Snapshot.Achievements...,
+	)
 	key := string(share.TokenHash)
 	f.byToken[key] = copy
 	f.byID[share.ID] = key
@@ -75,6 +80,11 @@ func (f *fakeRecapShareRepository) GetActiveByTokenHash(
 		return nil, apperrors.ErrNotFound
 	}
 	copy := share
+	copy.TokenHash = append([]byte(nil), share.TokenHash...)
+	copy.Snapshot.Cards = append([]domain.PublicRecapCard(nil), share.Snapshot.Cards...)
+	copy.Snapshot.Achievements = append(
+		[]domain.PublicRecapAchievement{}, share.Snapshot.Achievements...,
+	)
 	return &copy, nil
 }
 
@@ -243,7 +253,11 @@ func newFakeApplication() *fakeApplication {
 			{Category: "Электроника", Count: 300},
 		},
 		Achievements: []domain.Achievement{
-			{Slug: "curious", Title: "Любопытный", Description: "500 просмотров", Icon: "👀", Category: "views"},
+			{
+				Slug: "curious", Title: "Любопытный",
+				Description: "Просмотрел не менее 500 объявлений за год", Icon: "👀",
+				Category: "views",
+			},
 		},
 		ActivityDays: 300,
 		Summary: domain.RecapSummary{

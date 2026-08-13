@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -67,16 +68,36 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 	}
 	assertSharedSeedTransactions(t, users)
 	expectedRecaps := map[uuid.UUID]struct {
-		purchases    int
-		sales        int
-		mainCategory string
+		purchases          int
+		sales              int
+		mainCategory       string
+		previousSpending   int64
+		previousSalesValue int64
 	}{
-		uuid.MustParse("11111111-1111-4111-8111-111111111111"): {purchases: 5, sales: 2, mainCategory: "Электроника"},
-		uuid.MustParse("22222222-2222-4222-8222-222222222222"): {purchases: 5, sales: 4, mainCategory: "Хобби и отдых"},
-		uuid.MustParse("33333333-3333-4333-8333-333333333333"): {purchases: 6, sales: 2, mainCategory: "Для дома и дачи"},
-		uuid.MustParse("44444444-4444-4444-8444-444444444444"): {purchases: 6, sales: 3, mainCategory: "Транспорт"},
-		uuid.MustParse("55555555-5555-4555-8555-555555555555"): {purchases: 6, sales: 2, mainCategory: "Товары для детей"},
-		uuid.MustParse("66666666-6666-4666-8666-666666666666"): {purchases: 5, sales: 5, mainCategory: "Хобби и отдых"},
+		uuid.MustParse("11111111-1111-4111-8111-111111111111"): {
+			purchases: 5, sales: 2, mainCategory: "Электроника",
+			previousSpending: 48_500, previousSalesValue: 21_000,
+		},
+		uuid.MustParse("22222222-2222-4222-8222-222222222222"): {
+			purchases: 5, sales: 4, mainCategory: "Хобби и отдых",
+			previousSpending: 21_500, previousSalesValue: 62_000,
+		},
+		uuid.MustParse("33333333-3333-4333-8333-333333333333"): {
+			purchases: 6, sales: 2, mainCategory: "Для дома и дачи",
+			previousSpending: 15_500, previousSalesValue: 26_000,
+		},
+		uuid.MustParse("44444444-4444-4444-8444-444444444444"): {
+			purchases: 6, sales: 3, mainCategory: "Транспорт",
+			previousSpending: 20_000, previousSalesValue: 68_000,
+		},
+		uuid.MustParse("55555555-5555-4555-8555-555555555555"): {
+			purchases: 6, sales: 2, mainCategory: "Товары для детей",
+			previousSpending: 13_500, previousSalesValue: 14_500,
+		},
+		uuid.MustParse("66666666-6666-4666-8666-666666666666"): {
+			purchases: 5, sales: 5, mainCategory: "Хобби и отдых",
+			previousSpending: 46_000, previousSalesValue: 68_000,
+		},
 	}
 	for _, user := range users {
 		recap, err := gen.Execute(ctx, accountID, user.ID, 2026)
@@ -96,6 +117,24 @@ func TestRepositoriesAndGenerator(t *testing.T) {
 		if len(recap.Cards) < 7 || len(recap.Cards) > 9 {
 			t.Fatalf("%s cards = %d, want 7-9", user.Name, len(recap.Cards))
 		}
+		if recap.Comparison.Status != domain.RecapComparisonAvailable ||
+			recap.Comparison.PreviousYear != 2025 || recap.Comparison.CurrentYear != 2026 {
+			t.Fatalf("%s comparison = %#v, want available 2025/2026", user.Name, recap.Comparison)
+		}
+		if recap.Comparison.Spending.Previous != expected.previousSpending ||
+			recap.Comparison.SalesRevenue.Previous != expected.previousSalesValue {
+			t.Fatalf(
+				"%s previous spending/sales = %d/%d, want %d/%d",
+				user.Name,
+				recap.Comparison.Spending.Previous,
+				recap.Comparison.SalesRevenue.Previous,
+				expected.previousSpending,
+				expected.previousSalesValue,
+			)
+		}
+		if recap.Forecast.Method != domain.RecapForecastLinearYearOverYear {
+			t.Fatalf("%s forecast method = %q, want linear year-over-year", user.Name, recap.Forecast.Method)
+		}
 		loaded, err := recapRepo.GetByUserAndYear(ctx, user.ID, 2026)
 		if err != nil {
 			t.Fatalf("load persisted recap for %s: %v", user.Name, err)
@@ -112,6 +151,8 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 		t.Fatalf("profile %q has only %d viewed and %d own ads", user.Name, len(user.Views), len(user.OwnAds))
 	}
 	totalEvents := 0
+	previousViews := 0
+	previousOwnAds := 0
 	adIDs := make(map[string]struct{}, len(user.Views)+len(user.OwnAds))
 	for _, view := range user.Views {
 		if view.AdID == "" {
@@ -121,6 +162,14 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 			t.Fatalf("profile %q contains duplicate adId %q", user.Name, view.AdID)
 		}
 		adIDs[view.AdID] = struct{}{}
+		if strings.HasPrefix(view.AdID, "history-2025-") {
+			previousViews++
+			for _, event := range view.ViewedAt {
+				if event.Time.UTC().Year() != 2025 {
+					t.Fatalf("profile %q history ad %q has event outside 2025", user.Name, view.AdID)
+				}
+			}
+		}
 		if view.ImageURL == "" {
 			t.Fatalf("profile %q viewed ad %q has no image", user.Name, view.AdID)
 		}
@@ -170,6 +219,12 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 			t.Fatalf("profile %q contains duplicate adId %q", user.Name, ad.AdID)
 		}
 		adIDs[ad.AdID] = struct{}{}
+		if strings.HasPrefix(ad.AdID, "history-2025-") {
+			previousOwnAds++
+			if ad.PublishedAt.UTC().Year() != 2025 || ad.SoldAt == nil || ad.SoldAt.UTC().Year() != 2025 {
+				t.Fatalf("profile %q history ad %q is outside 2025", user.Name, ad.AdID)
+			}
+		}
 		if ad.ImageURL == "" {
 			t.Fatalf("profile %q own ad %q has no image", user.Name, ad.AdID)
 		}
@@ -186,6 +241,14 @@ func assertSeedProfileConsistency(t *testing.T, user *domain.User) {
 	}
 	if totalEvents < 50 {
 		t.Fatalf("profile %q has only %d item-level events", user.Name, totalEvents)
+	}
+	if previousViews != 3 || previousOwnAds != 2 {
+		t.Fatalf(
+			"profile %q previous-year history = %d views/%d own ads, want 3/2",
+			user.Name,
+			previousViews,
+			previousOwnAds,
+		)
 	}
 }
 
