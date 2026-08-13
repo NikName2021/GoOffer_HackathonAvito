@@ -1,16 +1,16 @@
-import type { ShareRecapCardResponse } from '@/types/recap.type'
+import type { RecapCardResponse } from '@/types/recap.type'
 
-export function getAllShareCardIndexes(cards: ShareRecapCardResponse[]) {
-  return cards.map((_, index) => index)
+const MAX_SHARE_CARDS = 9
+
+export function getShareableRecapCards(cards: RecapCardResponse[]) {
+  return cards.filter((card) => card.shareable && card.kind !== 'final')
 }
 
-export function getSelectedShareCards(cards: ShareRecapCardResponse[], selectedIndexes: number[]) {
-  const selected = new Set(selectedIndexes)
-  return cards.filter((_, index) => selected.has(index))
+export function getInitialShareCardIds(cards: RecapCardResponse[]) {
+  return getShareableRecapCards(cards).slice(0, MAX_SHARE_CARDS).map((card) => card.id)
 }
 
-export function toggleShareCardIndex(selectedIndexes: number[], index: number) {
-  return selectedIndexes.includes(index)
-    ? selectedIndexes.filter((selectedIndex) => selectedIndex !== index)
-    : [...selectedIndexes, index]
+export function toggleShareCardId(selectedIds: string[], id: string) {
+  if (selectedIds.includes(id)) return selectedIds.filter((selectedId) => selectedId !== id)
+  return selectedIds.length >= MAX_SHARE_CARDS ? selectedIds : [...selectedIds, id]
 }

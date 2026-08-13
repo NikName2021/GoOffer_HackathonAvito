@@ -28,7 +28,25 @@ export async function mockApi(
   { isAdmin = false, profileOverride }: MockApiOptions = {},
 ) {
   const definitions: Record<string, unknown>[] = [];
+  let selectedMissions: Record<string, unknown>[] = [];
+  const achievements: Record<string, unknown>[] = [
+    {
+      category: "views",
+      condition_operator: "gte",
+      condition_value: 500,
+      description: "Просмотрел не менее 500 объявлений за год",
+      icon: "👀",
+      is_active: true,
+      metric: "total_views",
+      slug: "curious",
+      sort_order: 10,
+      title: "Любопытный",
+      updated_at: "2026-08-12T00:00:00Z",
+    },
+  ];
   const selectedProfile = profileOverride ?? profile;
+  const publicToken = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  const mobileStoryToken = "BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB";
   await page.route("http://localhost:8000/api/**", async (route) => {
     const request = route.request();
     const pathname = new URL(request.url()).pathname;
@@ -53,6 +71,34 @@ export async function mockApi(
         metrics: ["total_views", "favorites", "purchases", "sales", "deals"],
         monthly_metrics: ["total_views", "favorites", "purchases", "sales"],
       });
+    }
+    if (pathname === "/api/admin/achievement-definitions/options") {
+      return json(route, {
+        conditions: ["always", "gt", "gte", "lt", "lte", "eq"],
+        metrics: [
+          "total_views",
+          "favorites",
+          "purchases",
+          "sales",
+          "listing_views",
+          "contacts",
+          "reviews",
+          "activity_days",
+          "categories",
+          "deals",
+        ],
+      });
+    }
+    if (pathname === "/api/admin/achievement-definitions") {
+      return json(route, { items: achievements });
+    }
+    if (pathname.startsWith("/api/admin/achievement-definitions/")) {
+      const slug = decodeURIComponent(pathname.split("/").at(-1) ?? "");
+      const index = achievements.findIndex((achievement) => achievement.slug === slug);
+      if (index < 0) return json(route, { error: { message: "Not found" } }, 404);
+      const updated = { ...achievements[index], ...request.postDataJSON() };
+      achievements[index] = updated;
+      return json(route, updated);
     }
     if (pathname === "/api/admin/card-definitions") {
       if (request.method() === "GET")
@@ -83,22 +129,63 @@ export async function mockApi(
     if (pathname === `/api/profiles/${profileId}`)
       return json(route, selectedProfile);
     if (pathname === "/api/recap/generate") return json(route, recap, 201);
-    if (pathname === `/api/recap/${profileId}/2026/mission`) {
-      if (request.method() === "GET") return json(route, missionOverview);
-      const { code } = request.postDataJSON() as { code: string };
-      const option = missionOverview.options.find((item) => item.code === code);
+    if (pathname === `/api/recap/${profileId}/2026/shares`) {
+      const body = request.postDataJSON() as { card_ids: string[]; format: "responsive" | "mobile_story" };
       return json(route, {
-        ...missionOverview,
-        selected: option && {
-          ...option,
-          completed_at: null,
-          progress: 0,
-          progress_percent: 0,
-          selected_at: "2026-08-08T00:00:00Z",
-          status: "active",
-          updated_at: "2026-08-08T00:00:00Z",
-        },
+        created_at: "2026-08-13T00:00:00Z",
+        expires_at: "2026-08-16T00:00:00Z",
+        format: body.format,
+        id: "share-id",
+        public_url: `/share/${publicToken}`,
+      }, 201);
+    }
+    if (pathname === `/api/public/recap-shares/${publicToken}`) {
+      const cards = recap.cards
+        .filter((card) => card.shareable)
+        .map(({ description, eyebrow = "", kind, presentation, title, value = "" }) => ({
+          description, eyebrow, kind, presentation, title, value,
+        }));
+      const achievements = recap.achievements.map(({ description, icon, slug, title }) => ({
+        description, icon, slug, title,
+      }));
+      return json(route, {
+        achievements,
+        cards,
+        created_at: "2026-08-13T00:00:00Z",
+        expires_at: "2026-08-16T00:00:00Z",
+        format: "responsive",
+        year: 2026,
       });
+    }
+    if (pathname === `/api/public/recap-shares/${mobileStoryToken}`) {
+      const firstCard = recap.cards.find((card) => card.shareable)!;
+      const { description, eyebrow = "", kind, presentation, title, value = "" } = firstCard;
+      const achievements = recap.achievements.map(({ description, icon, slug, title }) => ({
+        description, icon, slug, title,
+      }));
+      return json(route, {
+        achievements,
+        cards: [{ description, eyebrow, kind, presentation, title, value }],
+        created_at: "2026-08-13T00:00:00Z",
+        expires_at: "2026-08-16T00:00:00Z",
+        format: "mobile_story",
+        year: 2026,
+      });
+    }
+    if (pathname.startsWith("/api/public/recap-shares/")) {
+      return json(route, { error: { code: "share_not_found", message: "public share not found" } }, 404);
+    }
+    if (pathname === `/api/recap/${profileId}/2026/mission`) {
+      if (request.method() === "GET") return json(route, { ...missionOverview, selected_missions: selectedMissions });
+      const { codes } = request.postDataJSON() as { codes: string[] };
+      selectedMissions = codes.flatMap((code) => {
+        const option = missionOverview.options.find((item) => item.code === code);
+        return option ? [{ ...option, progress: 0, progress_percent: 0, recap_year: 2026, selected_at: "2026-08-08T00:00:00Z", status: "active", updated_at: "2026-08-08T00:00:00Z" }] : [];
+      });
+      return json(route, { ...missionOverview, selected_missions: selectedMissions });
+    }
+    if (pathname === `/api/profiles/${profileId}/missions`) {
+      return json(route, { missions: selectedMissions });
     }
     if (pathname === "/api/recap/events") {
       await route.fulfill({ headers: corsHeaders, status: 204 });

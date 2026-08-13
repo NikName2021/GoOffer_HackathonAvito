@@ -1,5 +1,6 @@
 import {
   ArrowUpRight,
+  BarChart3,
   CalendarDays,
   Compass,
   Eye,
@@ -20,7 +21,7 @@ import {
 const icons: Record<string, LucideIcon> = {
   arrow: ArrowUpRight,
   bag: ShoppingBag,
-  chart: Shapes,
+  chart: BarChart3,
   calendar: CalendarDays,
   categories: Shapes,
   compass: Compass,

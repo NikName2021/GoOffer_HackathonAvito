@@ -51,8 +51,18 @@ export const profile = {
 }
 
 export const recap = {
-  achievements: [],
+  achievements: [{ category: 'views', description: 'Просмотрено не менее 500 объявлений', icon: '👀', slug: 'curious', title: 'Любопытный' }],
   activity_days: 4,
+  comparison: {
+    categories: [{ absolute_change: 12, category: 'Электроника', current_score: 22, is_new: false, percent_change: 120, previous_score: 10 }],
+    current_year: 2026,
+    message: 'В этом году вы стали активнее.',
+    new_interests: [],
+    previous_year: 2025,
+    sales_revenue: { absolute_change: 1_000, current: 2_000, percent_change: 100, previous: 1_000 },
+    spending: { absolute_change: 500, current: 1_000, percent_change: 100, previous: 500 },
+    status: 'available',
+  },
   cards: [
     {
       description: 'История тестового профиля.',
@@ -73,10 +83,17 @@ export const recap = {
       presentation: { icon: 'sparkles', layout: 'hero', theme: 'avito-blue' },
       reason: 'Финальный экран итогов.',
       shareable: true,
-      title: 'Продолжение следует',
+      title: 'Впереди новые находки',
     },
   ],
   generated_at: '2026-08-08T00:00:00Z',
+  forecast: {
+    likely_categories: [{ category: 'Электроника', expected_score: 25 }],
+    method: 'linear_year_over_year',
+    sales_revenue: { expected: 3_000, max: 3_500, min: 2_500 },
+    spending: { expected: 1_500, max: 2_000, min: 1_000 },
+    year: 2027,
+  },
   id: 'recap-e2e',
   summary: {
     buyer: {
@@ -145,5 +162,6 @@ export const missionOverview = {
       title: 'Попробовать Авито Доставку',
     },
   ],
+  selected_missions: [],
   selected: null,
 }

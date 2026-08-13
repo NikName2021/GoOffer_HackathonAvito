@@ -1,13 +1,24 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
-import { generateRecap, getShareRecap } from '@/api/recap'
+import { createRecapShare, generateRecap, getPublicRecapShare } from '@/api/recap'
+import type { CreateRecapShareRequest } from '@/types/recap.type'
 
 export function useGenerateRecap() {
   return useMutation({ mutationFn: generateRecap })
 }
 
-export function useShareRecap() {
+export function useCreateRecapShare() {
   return useMutation({
-    mutationFn: ({ userId, year }: { userId: string; year: number }) => getShareRecap(userId, year),
+    mutationFn: ({ request, userId, year }: { request: CreateRecapShareRequest; userId: string; year: number }) =>
+      createRecapShare(userId, year, request),
+  })
+}
+
+export function usePublicRecapShare(token: string) {
+  return useQuery({
+    enabled: Boolean(token),
+    queryFn: () => getPublicRecapShare(token),
+    queryKey: ['public-recap-share', token],
+    retry: false,
   })
 }

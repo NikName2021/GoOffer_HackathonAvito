@@ -1,38 +1,40 @@
 import { describe, expect, it } from '@jest/globals'
 
-import type { ShareRecapCardResponse } from '@/types/recap.type'
-import { getAllShareCardIndexes, getSelectedShareCards, toggleShareCardIndex } from '@/utils/recapShareSelection'
+import type { RecapCardResponse } from '@/types/recap.type'
+import { getInitialShareCardIds, getShareableRecapCards, toggleShareCardId } from '@/utils/recapShareSelection'
 
-const cards: ShareRecapCardResponse[] = [
-  {
-    description: 'Описание первой карточки',
-    eyebrow: 'Итоги года',
+function card(id: string, shareable = true): RecapCardResponse {
+  return {
+    description: `Описание ${id}`,
+    id,
     kind: 'overview',
     presentation: { icon: 'sparkles', layout: 'hero', theme: 'avito-blue' },
-    title: 'Первая карточка',
-    value: '2026',
-  },
-  {
-    description: 'Описание второй карточки',
-    eyebrow: 'Категория',
-    kind: 'interest',
-    presentation: { icon: 'heart', layout: 'stat', theme: 'avito-purple' },
-    title: 'Вторая карточка',
-    value: '30%',
-  },
-]
+    reason: 'Тест',
+    shareable,
+    title: `Карточка ${id}`,
+  }
+}
 
-describe('share card selection without backend identifiers', () => {
-  it('selects every card by its response position', () => {
-    expect(getAllShareCardIndexes(cards)).toEqual([0, 1])
+function finalCard(id: string): RecapCardResponse {
+  return { ...card(id), kind: 'final' }
+}
+
+describe('recap public share selection', () => {
+  it('shows and preselects only shareable cards', () => {
+    const cards = [card('year_overview'), card('private', false), finalCard('year_final'), card('category_mix')]
+    expect(getShareableRecapCards(cards).map(({ id }) => id)).toEqual(['year_overview', 'category_mix'])
+    expect(getInitialShareCardIds(cards)).toEqual(['year_overview', 'category_mix'])
   })
 
-  it('toggles one card without affecting cards with similar public fields', () => {
-    expect(toggleShareCardIndex([0, 1], 0)).toEqual([1])
-    expect(toggleShareCardIndex([1], 0)).toEqual([1, 0])
+  it('limits initial and manual selection to nine unique card ids', () => {
+    const cards = Array.from({ length: 11 }, (_, index) => card(`card-${index}`))
+    const selected = getInitialShareCardIds(cards)
+    expect(selected).toHaveLength(9)
+    expect(toggleShareCardId(selected, 'card-10')).toEqual(selected)
   })
 
-  it('returns cards in backend order', () => {
-    expect(getSelectedShareCards(cards, [1])).toEqual([cards[1]])
+  it('removes and adds a selected card id', () => {
+    expect(toggleShareCardId(['year_overview', 'category_mix'], 'year_overview')).toEqual(['category_mix'])
+    expect(toggleShareCardId(['category_mix'], 'year_overview')).toEqual(['category_mix', 'year_overview'])
   })
 })

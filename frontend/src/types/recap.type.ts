@@ -8,11 +8,14 @@ export interface RecapCategoryStat {
   count: number
 }
 
-export interface RecapAchievement {
+export interface PublicRecapAchievement {
   slug: string
   title: string
   description: string
   icon: string
+}
+
+export interface RecapAchievement extends PublicRecapAchievement {
   category: string
 }
 
@@ -112,6 +115,50 @@ export interface RecapVisualization {
   highlight?: RecapChartHighlight | null
 }
 
+export interface AmountComparison {
+  previous: number
+  current: number
+  absolute_change: number
+  percent_change: number | null
+}
+
+export interface CategoryComparison {
+  category: string
+  previous_score: number
+  current_score: number
+  absolute_change: number
+  percent_change: number | null
+  is_new: boolean
+}
+
+export interface RecapComparison {
+  status: 'available' | 'first_year' | 'unavailable'
+  message: string
+  previous_year: number
+  current_year: number
+  spending: AmountComparison
+  sales_revenue: AmountComparison
+  categories: CategoryComparison[]
+  new_interests: string[]
+}
+
+export interface AmountForecast {
+  expected: number
+  min: number
+  max: number
+}
+
+export interface RecapForecast {
+  year: number
+  method: 'linear_year_over_year' | 'current_year_baseline' | 'unavailable'
+  spending: AmountForecast
+  sales_revenue: AmountForecast
+  likely_categories: Array<{
+    category: string
+    expected_score: number
+  }>
+}
+
 export interface RecapCardResponse {
   id: string
   kind: 'overview' | 'interest' | 'buyer' | 'seller' | 'combined' | 'chart' | 'final'
@@ -140,17 +187,28 @@ export interface RecapResponse {
   achievements: RecapAchievement[]
   activity_days: number
   summary: RecapSummary
+  comparison?: RecapComparison | null
+  forecast?: RecapForecast | null
   cards: RecapCardResponse[]
   generated_at: string
 }
 
-export interface ShareRecapSummary {
-  headline: string
-  description: string
-  combined: CombinedRecapSummary
+export type RecapShareFormat = 'responsive' | 'mobile_story'
+
+export interface CreateRecapShareRequest {
+  card_ids: string[]
+  format: RecapShareFormat
 }
 
-export interface ShareRecapCardResponse {
+export interface RecapShareCreated {
+  id: string
+  public_url: string
+  format: RecapShareFormat
+  created_at: string
+  expires_at: string
+}
+
+export interface PublicRecapCard {
   kind: RecapCardResponse['kind']
   eyebrow: string
   title: string
@@ -159,7 +217,11 @@ export interface ShareRecapCardResponse {
   presentation: RecapCardPresentation
 }
 
-export interface ShareRecapResponse extends Omit<RecapResponse, 'id' | 'user_id' | 'summary' | 'cards'> {
-  summary: ShareRecapSummary
-  cards: ShareRecapCardResponse[]
+export interface PublicRecapShare {
+  format: RecapShareFormat
+  year: number
+  cards: PublicRecapCard[]
+  achievements: PublicRecapAchievement[]
+  created_at: string
+  expires_at: string
 }

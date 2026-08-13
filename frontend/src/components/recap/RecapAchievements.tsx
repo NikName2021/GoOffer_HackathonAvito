@@ -1,4 +1,3 @@
-import { Award } from 'lucide-react'
 import { motion } from 'motion/react'
 
 import type { RecapAchievement } from '@/types/recap.type'
@@ -15,7 +14,7 @@ export function RecapAchievements({ achievements }: RecapAchievementsProps) {
       {achievements.slice(0, 3).map((achievement) => (
         <motion.div className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/80 bg-white/70 p-3 shadow-sm backdrop-blur-xl" key={achievement.slug} whileHover={{ rotate: -1, scale: 1.035, y: -3 }}>
           <motion.span animate={{ rotate: [0, 8, -6, 0] }} className="grid size-9 shrink-0 place-items-center rounded-2xl bg-[#fff3d6] text-[#e18400]" transition={{ duration: 4, repeat: Infinity }}>
-            <Award aria-hidden="true" className="size-4" />
+            <span aria-hidden="true" className="text-lg leading-none">{achievement.icon}</span>
           </motion.span>
           <div className="min-w-0">
             <p className="truncate text-xs font-bold">{achievement.title}</p>

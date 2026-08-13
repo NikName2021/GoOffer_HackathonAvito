@@ -20,12 +20,18 @@ const RecapSettingsPage = lazy(() =>
     default: module.RecapSettingsPage,
   })),
 );
+const PublicRecapSharePage = lazy(() =>
+  import("@/pages/PublicRecapShare").then((module) => ({
+    default: module.PublicRecapSharePage,
+  })),
+);
 
 export function AppRouter() {
   const navigations = [
     { path: PATHS.HOME, element: <HomePage /> },
     { path: `${PATHS.AVITO}/*`, element: <AvitoPage /> },
     { path: PATHS.DOCUMENTATION, element: <DocumentationPage /> },
+    { path: `${PATHS.SHARE}/:token`, element: <PublicRecapSharePage /> },
     {
       path: PATHS.RECAP_SETTINGS,
       element: (

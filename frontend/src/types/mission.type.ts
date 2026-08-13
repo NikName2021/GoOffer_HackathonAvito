@@ -14,19 +14,26 @@ export interface MissionOption {
 }
 
 export interface MissionState extends MissionOption {
+  recap_year: number
   progress: number
   progress_percent: number
   status: MissionStatus
   selected_at: string
   updated_at: string
-  completed_at?: string | null
+  completed_at?: string
 }
 
 export interface MissionOverview {
   options: MissionOption[]
+  selected_missions: MissionState[]
+  /** @deprecated Используйте selected_missions. */
   selected: MissionState | null
 }
 
 export interface SelectMissionRequest {
-  code: MissionCode
+  codes: MissionCode[]
+}
+
+export interface ProfileMissionOverview {
+  missions: MissionState[]
 }
