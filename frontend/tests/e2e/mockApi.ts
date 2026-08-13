@@ -146,6 +146,7 @@ export async function mockApi(
           description, eyebrow, kind, presentation, title, value,
         }));
       return json(route, {
+        achievements: recap.achievements,
         cards,
         created_at: "2026-08-13T00:00:00Z",
         expires_at: "2026-08-16T00:00:00Z",
@@ -157,6 +158,7 @@ export async function mockApi(
       const firstCard = recap.cards.find((card) => card.shareable)!;
       const { description, eyebrow = "", kind, presentation, title, value = "" } = firstCard;
       return json(route, {
+        achievements: recap.achievements,
         cards: [{ description, eyebrow, kind, presentation, title, value }],
         created_at: "2026-08-13T00:00:00Z",
         expires_at: "2026-08-16T00:00:00Z",

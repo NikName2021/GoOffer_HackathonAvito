@@ -45,7 +45,7 @@ export function PublicRecapSharePage() {
         )}>
           {cards.map((card, index) => (
             <div className={cn(isStory && 'flex min-h-full snap-start items-center py-2')} key={`${card.kind}-${index}`}>
-              <PublicShareCard card={card} story={isStory} />
+              <PublicShareCard achievements={shareQuery.data.achievements ?? []} card={card} story={isStory} />
             </div>
           ))}
         </section>

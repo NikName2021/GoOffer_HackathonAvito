@@ -24,6 +24,10 @@ test('owner selects only shareable cards and opens the public link', async ({ pa
   await page.getByRole('button', { name: /Создать (и открыть )?ссылку/ }).click()
   await expect(page).toHaveURL(`/share/${token}`)
   await expect(page.getByText('Публичная подборка · без приватных данных')).toBeVisible()
+  await expect(page.getByRole('complementary', { name: 'Полученные медали' })).toBeVisible()
+  await expect(page.getByText('Впереди новые находки')).toBeVisible()
+  await page.getByRole('button', { name: /Любопытный/ }).hover()
+  await expect(page.getByText('Просмотрено не менее 500 объявлений')).toBeVisible()
   expect(shareBodies).toEqual([{ card_ids: ['year_overview', 'year_final'], format: 'responsive' }])
 })
 

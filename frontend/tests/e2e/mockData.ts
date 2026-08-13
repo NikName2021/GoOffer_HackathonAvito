@@ -51,7 +51,7 @@ export const profile = {
 }
 
 export const recap = {
-  achievements: [],
+  achievements: [{ category: 'views', description: 'Просмотрено не менее 500 объявлений', icon: '👀', slug: 'curious', title: 'Любопытный' }],
   activity_days: 4,
   comparison: {
     categories: [{ absolute_change: 12, category: 'Электроника', current_score: 22, is_new: false, percent_change: 120, previous_score: 10 }],
@@ -83,7 +83,7 @@ export const recap = {
       presentation: { icon: 'sparkles', layout: 'hero', theme: 'avito-blue' },
       reason: 'Финальный экран итогов.',
       shareable: true,
-      title: 'Продолжение следует',
+      title: 'Впереди новые находки',
     },
   ],
   generated_at: '2026-08-08T00:00:00Z',

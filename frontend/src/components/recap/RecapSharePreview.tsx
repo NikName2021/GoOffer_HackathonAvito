@@ -44,7 +44,7 @@ export function RecapSharePreview({ recap }: RecapSharePreviewProps) {
     setDownloadError(undefined)
     try {
       const selectedCards = shareableCards.filter((card) => selectedIds.includes(card.id))
-      const downloaded = await downloadRecapImage(selectedCards, recap.year, format)
+      const downloaded = await downloadRecapImage(selectedCards, recap.achievements, recap.year, format)
       if (!downloaded) setDownloadError('Не удалось подготовить изображение. Попробуйте ещё раз.')
       else trackShareCreated()
     } catch {

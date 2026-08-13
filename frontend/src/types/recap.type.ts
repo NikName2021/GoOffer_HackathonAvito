@@ -218,6 +218,7 @@ export interface PublicRecapShare {
   format: RecapShareFormat
   year: number
   cards: PublicRecapCard[]
+  achievements?: RecapAchievement[]
   created_at: string
   expires_at: string
 }

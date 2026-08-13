@@ -14,7 +14,7 @@ describe('downloadRecapImage', () => {
   })
 
   it('rejects an empty card selection without starting a download', async () => {
-    await expect(downloadRecapImage([], 2026, 'responsive')).resolves.toBe(false)
+    await expect(downloadRecapImage([], [], 2026, 'responsive')).resolves.toBe(false)
     expect(URL.createObjectURL).not.toHaveBeenCalled()
   })
 
@@ -25,8 +25,9 @@ describe('downloadRecapImage', () => {
     jest.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation((callback) => callback(new Blob(['png'], { type: 'image/png' })))
     jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined)
 
-    await expect(downloadRecapImage([card], 2026, 'mobile_story')).resolves.toBe(true)
+    await expect(downloadRecapImage([card], [{ category: 'views', description: '500 просмотров', icon: '👀', slug: 'curious', title: 'Любопытный' }], 2026, 'mobile_story')).resolves.toBe(true)
     expect(URL.createObjectURL).toHaveBeenCalled()
     expect(fillText).toHaveBeenCalledWith('Самое важное за год', 60, 210)
+    expect(fillText).toHaveBeenCalledWith('👀', 60, 1820)
   })
 })
