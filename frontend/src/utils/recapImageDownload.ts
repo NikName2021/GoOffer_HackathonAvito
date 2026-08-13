@@ -1,4 +1,4 @@
-import type { RecapAchievement, RecapCardResponse, RecapShareFormat } from '@/types/recap.type'
+import type { RecapCardResponse, RecapShareFormat } from '@/types/recap.type'
 
 const themes: Record<string, { accent: string; surface: string }> = {
   'avito-blue': { accent: '#00aaff', surface: '#e8f7ff' },
@@ -67,7 +67,7 @@ function triggerDownload(blob: Blob, year: number) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1_000)
 }
 
-export function downloadRecapImage(cards: RecapCardResponse[], achievements: RecapAchievement[], year: number, format: RecapShareFormat) {
+export function downloadRecapImage(cards: RecapCardResponse[], year: number, format: RecapShareFormat) {
   return new Promise<boolean>((resolve) => {
     if (cards.length === 0) return resolve(false)
     const story = format === 'mobile_story'
@@ -93,24 +93,9 @@ export function downloadRecapImage(cards: RecapCardResponse[], achievements: Rec
     const rows = Math.ceil(cards.length / columns)
     const gap = 18
     const width = (960 - gap * (columns - 1)) / columns
-    const medalsSpace = achievements.length > 0 ? 170 : 0
-    const availableHeight = canvas.height - top - 110 - medalsSpace
+    const availableHeight = canvas.height - top - 80
     const height = Math.min(story ? 170 : 190, (availableHeight - gap * (rows - 1)) / rows)
     cards.forEach((card, index) => drawCard(context, card, 60 + (index % columns) * (width + gap), top + Math.floor(index / columns) * (height + gap), width, height))
-
-    if (achievements.length > 0) {
-      const medals = achievements.slice(0, 8)
-      const y = canvas.height - 112
-      context.fillStyle = '#1f1f1f'
-      context.font = '800 20px Inter, Arial, sans-serif'
-      context.fillText('Полученные медали', 60, y - 28)
-      context.font = '32px "Segoe UI Emoji", "Apple Color Emoji", sans-serif'
-      medals.forEach((achievement, index) => context.fillText(achievement.icon, 60 + index * 58, y + 12))
-    }
-
-    context.fillStyle = '#6f7377'
-    context.font = '600 22px Inter, Arial, sans-serif'
-    context.fillText('Создано в «Итогах года»', 60, canvas.height - 46)
     canvas.toBlob((blob) => {
       if (!blob) return resolve(false)
       triggerDownload(blob, year)

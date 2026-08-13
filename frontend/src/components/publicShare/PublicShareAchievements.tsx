@@ -17,11 +17,12 @@ export function PublicShareAchievements({ achievements }: PublicShareAchievement
             <Tooltip key={achievement.slug}>
               <TooltipTrigger
                 aria-label={`${achievement.title}. ${achievement.description}`}
-                className="grid size-12 place-items-center rounded-2xl border border-[#dff3ff] bg-gradient-to-br from-white to-[#eaf8ff] text-2xl shadow-[0_8px_24px_rgba(0,170,255,0.12)] transition hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,170,255,0.2)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#00aaff]/25"
+                className="inline-grid size-12 shrink-0 place-items-center rounded-2xl border border-[#dff3ff] bg-gradient-to-br from-white to-[#eaf8ff] p-0 text-2xl leading-none shadow-[0_8px_24px_rgba(0,170,255,0.12)] transition hover:-translate-y-1 hover:shadow-[0_12px_28px_rgba(0,170,255,0.2)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-[#00aaff]/25"
+                type="button"
               >
                 <span aria-hidden="true">{achievement.icon}</span>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent className="text-center" side="top" sideOffset={10}>
                 <p className="font-bold">{achievement.title}</p>
                 <p className="mt-1 text-white/75">{achievement.description}</p>
               </TooltipContent>
